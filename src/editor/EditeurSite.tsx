@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import type { Projet } from '../domain/projet.ts'
+import { lirePolylignesDxf, preparerVoiesDxf, type CalquesDxf } from '../geometry/dxf.ts'
 import { useApplication } from '../ui/store.ts'
+import { lireFichierTexte } from './fichier.ts'
 import { arrondiMetre, ETAT_INITIAL_ZONE, idUnique, modifierProjet, pkAuClic } from './outils.ts'
 
 // Éditeur de site : tracé des voies à la souris, pose des zones et des
@@ -22,6 +24,120 @@ function BoutonSupprimer({ surClic }: { surClic: () => void }) {
     <button onClick={surClic} title="Supprimer" style={{ cursor: 'pointer', marginLeft: 'auto' }}>
       ✕
     </button>
+  )
+}
+
+// Import des voies depuis un plan DXF : l'utilisateur choisit le calque qui
+// porte les voies, chaque polyligne du calque devient une voie, aux
+// coordonnées du plan. (Un DWG s'exporte en DXF depuis AutoCAD — Enregistrer
+// sous → DXF — ou avec le convertisseur gratuit ODA File Converter.)
+function ImportDxf() {
+  const [calques, setCalques] = useState<CalquesDxf | null>(null)
+  const [calqueChoisi, setCalqueChoisi] = useState('')
+  const [echelle, setEchelle] = useState('1')
+  const [recentrer, setRecentrer] = useState(true)
+  const [message, setMessage] = useState('')
+
+  const surFichier = async (fichier: File | undefined) => {
+    if (!fichier) return
+    try {
+      const lecture = lirePolylignesDxf(await lireFichierTexte(fichier))
+      const nomsCalques = Object.keys(lecture.calques)
+      if (nomsCalques.length === 0) {
+        setCalques(null)
+        setMessage('Aucune polyligne trouvée dans ce DXF.')
+        return
+      }
+      setCalques(lecture.calques)
+      setCalqueChoisi(nomsCalques[0])
+      setMessage(
+        lecture.entitesIgnorees > 0
+          ? `${lecture.entitesIgnorees} entité(s) non lisibles ignorées (splines, blocs…).`
+          : '',
+      )
+    } catch (erreur) {
+      setMessage(`Échec de lecture : ${(erreur as Error).message}`)
+    }
+  }
+
+  const creerVoies = () => {
+    if (!calques || !calques[calqueChoisi]) return
+    const facteur = Number(echelle)
+    if (!Number.isFinite(facteur) || facteur <= 0) {
+      setMessage('Échelle invalide.')
+      return
+    }
+    const polylignes = preparerVoiesDxf(calques[calqueChoisi], { echelle: facteur, recentrer })
+    if (polylignes.length === 0) {
+      setMessage('Aucune polyligne exploitable sur ce calque.')
+      return
+    }
+    modifierProjet((p) => {
+      for (const polyligne of polylignes) {
+        p.site.voies.push({
+          id: idUnique('voie', p.site.voies),
+          nom: `Voie DXF ${p.site.voies.length + 1}`,
+          polyligne,
+          pkOrigine: 0,
+        })
+      }
+    })
+    setMessage(`${polylignes.length} voie(s) créée(s) depuis le calque « ${calqueChoisi} ».`)
+  }
+
+  return (
+    <div style={{ background: '#f2f5f7', borderRadius: 4, padding: '6px 8px', margin: '6px 0' }}>
+      <div style={{ fontWeight: 600 }}>Importer les voies depuis un plan (DXF)</div>
+      <div style={styleLigne}>
+        <input
+          type="file"
+          accept=".dxf"
+          onChange={(evenement) => void surFichier(evenement.target.files?.[0])}
+        />
+      </div>
+      {calques && (
+        <div style={styleLigne}>
+          <label>
+            Calque
+            <select
+              value={calqueChoisi}
+              onChange={(evenement) => setCalqueChoisi(evenement.target.value)}
+              style={{ marginLeft: 4 }}
+            >
+              {Object.entries(calques).map(([nom, polylignes]) => (
+                <option key={nom} value={nom}>
+                  {nom} ({polylignes.length} tracé{polylignes.length > 1 ? 's' : ''})
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            1 unité du plan =
+            <select
+              value={echelle}
+              onChange={(evenement) => setEchelle(evenement.target.value)}
+              style={{ marginLeft: 4 }}
+            >
+              <option value="1">1 m</option>
+              <option value="0.001">1 mm</option>
+              <option value="0.01">1 cm</option>
+            </select>
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={recentrer}
+              onChange={(evenement) => setRecentrer(evenement.target.checked)}
+            />
+            recentrer sur l'origine
+          </label>
+          <button onClick={creerVoies} style={{ cursor: 'pointer', fontWeight: 600 }}>
+            Créer les voies
+          </button>
+        </div>
+      )}
+      {message && <em>{message}</em>}
+    </div>
   )
 }
 
@@ -93,6 +209,7 @@ export function EditeurSite({ projet }: { projet: Projet }) {
 
   return (
     <div>
+      <ImportDxf />
       <div style={styleTitre}>Voies</div>
       {projet.site.voies.map((voie, i) => (
         <div key={voie.id} style={styleLigne}>

@@ -5,10 +5,19 @@ import { useApplication } from './store.ts'
 // (pdf.js). Calage par deux points : cliquer deux repères sur l'aperçu, puis
 // donner leurs coordonnées en mètres dans le système du site.
 
-type ImageImportee = { dataUrl: string; largeurPx: number; hauteurPx: number }
+type ImageImportee = {
+  dataUrl: string
+  largeurPx: number
+  hauteurPx: number
+  // Renseigné pour un PDF : nombre total de pages du document.
+  nombrePages?: number
+}
+
+const estPdf = (fichier: File): boolean =>
+  fichier.type === 'application/pdf' || fichier.name.toLowerCase().endsWith('.pdf')
 
 async function lireFichier(fichier: File, page: number): Promise<ImageImportee> {
-  if (fichier.type === 'application/pdf' || fichier.name.toLowerCase().endsWith('.pdf')) {
+  if (estPdf(fichier)) {
     const pdfjs = await import('pdfjs-dist')
     pdfjs.GlobalWorkerOptions.workerSrc = new URL(
       'pdfjs-dist/build/pdf.worker.min.mjs',
@@ -23,7 +32,12 @@ async function lireFichier(fichier: File, page: number): Promise<ImageImportee> 
     const contexte = toile.getContext('2d')
     if (!contexte) throw new Error('canvas indisponible')
     await pageChoisie.render({ canvas: toile, canvasContext: contexte, viewport: vue }).promise
-    return { dataUrl: toile.toDataURL('image/jpeg', 0.9), largeurPx: toile.width, hauteurPx: toile.height }
+    return {
+      dataUrl: toile.toDataURL('image/jpeg', 0.9),
+      largeurPx: toile.width,
+      hauteurPx: toile.height,
+      nombrePages: document.numPages,
+    }
   }
   const dataUrl = await new Promise<string>((resoudre, rejeter) => {
     const lecteur = new FileReader()
@@ -51,18 +65,38 @@ export function PanneauOrthophoto() {
   const [points, setPoints] = useState<[number, number][]>([])
   const [monde, setMonde] = useState<[string, string, string, string]>(['0', '0', '100', '0'])
   const [message, setMessage] = useState('')
+  const [fichierCourant, setFichierCourant] = useState<File | null>(null)
   const apercuRef = useRef<HTMLImageElement>(null)
 
-  const surFichier = async (fichier: File | undefined) => {
-    if (!fichier) return
+  // Charge (ou recharge) l'aperçu : au choix du fichier, puis à chaque
+  // changement de page pour un PDF.
+  const chargerApercu = async (fichier: File, pageVoulue: number) => {
     try {
       setMessage('Lecture du fichier…')
-      setImage(await lireFichier(fichier, page))
+      const lue = await lireFichier(fichier, pageVoulue)
+      setImage(lue)
       setPoints([])
-      setMessage('Cliquez deux points de repère sur l’aperçu.')
+      setMessage(
+        lue.nombrePages && lue.nombrePages > 1
+          ? `Page ${Math.min(pageVoulue, lue.nombrePages)} sur ${lue.nombrePages}. Choisissez la page, puis cliquez deux points de repère.`
+          : 'Cliquez deux points de repère sur l’aperçu.',
+      )
     } catch (erreur) {
       setMessage(`Échec : ${(erreur as Error).message}`)
     }
+  }
+
+  const surFichier = async (fichier: File | undefined) => {
+    if (!fichier) return
+    setFichierCourant(fichier)
+    setPage(1)
+    await chargerApercu(fichier, 1)
+  }
+
+  const changerPage = async (pageVoulue: number) => {
+    const bornee = Math.min(Math.max(pageVoulue, 1), image?.nombrePages ?? 1)
+    setPage(bornee)
+    if (fichierCourant && estPdf(fichierCourant)) await chargerApercu(fichierCourant, bornee)
   }
 
   const surClicApercu = (evenement: React.MouseEvent<HTMLImageElement>) => {
@@ -121,16 +155,36 @@ export function PanneauOrthophoto() {
               onChange={(evenement) => void surFichier(evenement.target.files?.[0])}
             />
           </label>
-          <label>
-            Page du PDF :
-            <input
-              type="number"
-              min={1}
-              value={page}
-              onChange={(evenement) => setPage(Number(evenement.target.value))}
-              style={styleChamp}
-            />
-          </label>
+          {image?.nombrePages !== undefined && image.nombrePages > 1 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span>Page du PDF :</span>
+              <button
+                onClick={() => void changerPage(page - 1)}
+                disabled={page <= 1}
+                style={{ cursor: 'pointer' }}
+                aria-label="Page précédente"
+              >
+                ◀
+              </button>
+              <input
+                type="number"
+                min={1}
+                max={image.nombrePages}
+                value={page}
+                onChange={(evenement) => void changerPage(Number(evenement.target.value))}
+                style={styleChamp}
+              />
+              <span>/ {image.nombrePages}</span>
+              <button
+                onClick={() => void changerPage(page + 1)}
+                disabled={page >= image.nombrePages}
+                style={{ cursor: 'pointer' }}
+                aria-label="Page suivante"
+              >
+                ▶
+              </button>
+            </div>
+          )}
           {image && (
             <div style={{ position: 'relative' }}>
               <img
