@@ -24,12 +24,15 @@ type EtatApplication = {
   lecture: boolean
   // Vitesse de lecture : minutes de chantier par seconde réelle.
   vitesse: number
+  // 'libre' (souris) ou l'id d'une vue du fichier .cinef.
+  vueActive: string
   fixerT: (t: number) => void
   chargerTexte: (texte: string, nomFichier: string) => void
   fixerOrthophoto: (orthophoto: OrthophotoChargee | null) => void
   basculerLecture: () => void
   fixerVitesse: (vitesse: number) => void
   avancer: (deltaSecondes: number) => void
+  fixerVue: (vueActive: string) => void
 }
 
 const chargementInitial = chargerProjet(contenuOcp1Sud)
@@ -42,6 +45,7 @@ export const useApplication = create<EtatApplication>((set) => ({
   orthophoto: null,
   lecture: false,
   vitesse: 60,
+  vueActive: 'libre',
   fixerT: (t) => set({ t, lecture: false }),
   fixerOrthophoto: (orthophoto) => set({ orthophoto }),
   basculerLecture: () =>
@@ -52,6 +56,7 @@ export const useApplication = create<EtatApplication>((set) => ({
       return { lecture: !etat.lecture }
     }),
   fixerVitesse: (vitesse) => set({ vitesse }),
+  fixerVue: (vueActive) => set({ vueActive }),
   avancer: (deltaSecondes) =>
     set((etat) => {
       if (!etat.lecture || !etat.projet) return {}

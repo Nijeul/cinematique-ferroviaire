@@ -1,18 +1,19 @@
 import { useMemo } from 'react'
 import { Canvas } from '@react-three/fiber'
-import { Grid, OrbitControls } from '@react-three/drei'
+import { Grid } from '@react-three/drei'
 import { useApplication } from '../ui/store.ts'
 import { Appareils } from './Appareils.tsx'
-import { Lecture } from './Lecture.tsx'
-import { Orthophoto } from './Orthophoto.tsx'
+import { Cameras } from './Cameras.tsx'
 import { Engins } from './Engins.tsx'
-import { Stocks } from './Stocks.tsx'
+import { Lecture } from './Lecture.tsx'
 import { Lieux } from './Lieux.tsx'
+import { Orthophoto } from './Orthophoto.tsx'
+import { Stocks } from './Stocks.tsx'
 import { Voies } from './Voies.tsx'
 import { Zones } from './Zones.tsx'
 
-// Cadre la caméra sur l'emprise des voies du projet : vue inclinée du dessus,
-// site entier, comme le cadrage des synoptiques.
+// Emprise des voies du projet, pour cadrer les caméras : vue inclinée du
+// dessus, site entier, comme le cadrage des synoptiques.
 function cadrageDuSite(polylignes: [number, number][][]) {
   let xMin = 0
   let xMax = 100
@@ -40,14 +41,7 @@ export function Scene() {
   const [cx, cy] = cadrage.centre
 
   return (
-    <Canvas
-      camera={{
-        position: [cx, cadrage.etendue * 0.55, cy + cadrage.etendue * 0.65],
-        fov: 40,
-        near: 0.5,
-        far: 6000,
-      }}
-    >
+    <Canvas>
       <color attach="background" args={['#dfe7ee']} />
       <ambientLight intensity={0.85} />
       <directionalLight position={[cx + 150, 300, cy + 100]} intensity={1.15} />
@@ -76,12 +70,7 @@ export function Scene() {
       <Appareils />
       <Stocks />
       <Engins />
-
-      <OrbitControls
-        makeDefault
-        target={[cx, 0, cy]}
-        maxPolarAngle={Math.PI / 2 - 0.05}
-      />
+      <Cameras cadrage={cadrage} />
     </Canvas>
   )
 }
