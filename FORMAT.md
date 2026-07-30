@@ -245,6 +245,12 @@ Liste fermée. Chaque verbe sait quelle couche il modifie.
 | `circuler`, `acheminer` | position d'un engin, et sa charge |
 | `attendre`, `installer` | rien — mise en attente, plaque de protection, chemin de roule |
 
+### Opération optionnelle
+
+`"optionnelle": true` marque une opération conditionnelle (« selon avancement »). Le moteur la
+traite comme les autres ; l'affichage pourra la distinguer. Champ ajouté pour porter
+l'opération 49 du phasage de référence sans la traiter à part.
+
 ### `sens` et progression
 
 Une opération linéaire (`deballaster`, `poser_traverses`, `bourrer`…) affiche un **front qui

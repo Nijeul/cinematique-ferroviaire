@@ -1,0 +1,499 @@
+{
+  "meta": {
+    "chantier": "OCP RVB — phasage de référence anonymisé",
+    "document": "Synoptique OCP 1 Sud",
+    "indice": "A",
+    "date": "2026-07-30"
+  },
+  "temps": {
+    "t0": "2026-01-09T22:30:00",
+    "libelleT0": "Prise d'interception",
+    "dureeMinutes": 3360,
+    "libelleFin": "Restitution",
+    "pasCreneau": 30
+  },
+  "site": {
+    "voies": [
+      { "id": "v1", "nom": "V1", "polyligne": [[0, 4.5], [640, 4.5]], "pkOrigine": 100.0 },
+      { "id": "v2", "nom": "V2", "polyligne": [[0, 0], [640, 0]], "pkOrigine": 100.0 },
+      { "id": "vc", "nom": "VC", "polyligne": [[0, 9], [640, 9]], "pkOrigine": 100.0 },
+      { "id": "vt-n", "nom": "V tiroir Nord", "polyligne": [[0, 13.5], [240, 13.5]], "pkOrigine": 100.0 },
+      { "id": "vt-s", "nom": "V tiroir Sud", "polyligne": [[420, 13.5], [640, 13.5]], "pkOrigine": 100.42 }
+    ],
+    "appareils": [
+      {
+        "id": "bs-a", "nom": "BS A", "type": "branchement_simple", "tangente": 0.085,
+        "voieDirecte": "vc", "voiedeviee": "v1", "pkPointe": 100.1, "orientation": "talon",
+        "panneaux": ["pointe", "intermediaire", "talon"]
+      },
+      {
+        "id": "bs-b", "nom": "BS B", "type": "branchement_simple", "tangente": 0.0654,
+        "voieDirecte": "v1", "voiedeviee": "vt-n", "pkPointe": 100.21, "orientation": "pointe",
+        "panneaux": ["complet"]
+      },
+      {
+        "id": "bs-c", "nom": "BS C", "type": "branchement_simple", "tangente": 0.085,
+        "voieDirecte": "vc", "voiedeviee": "v1", "pkPointe": 100.335, "orientation": "talon",
+        "panneaux": ["pointe", "intermediaire", "talon"]
+      },
+      {
+        "id": "bs-d", "nom": "BS D", "type": "branchement_simple", "tangente": 0.085,
+        "voieDirecte": "v1", "voiedeviee": "vt-s", "pkPointe": 100.46, "orientation": "pointe",
+        "panneaux": ["pointe", "intermediaire", "talon"]
+      }
+    ],
+    "zones": [
+      { "id": "z-bs-a", "nom": "Zone BS A", "voie": "vc", "pkDebut": 100.084, "pkFin": 100.116, "longueur": 32 },
+      { "id": "z-rr14", "nom": "RR 14 m", "voie": "vc", "pkDebut": 100.116, "pkFin": 100.13, "longueur": 14 },
+      { "id": "z-rvb50", "nom": "RVB 50 m", "voie": "vc", "pkDebut": 100.13, "pkFin": 100.18, "longueur": 50 },
+      { "id": "z-bs-c", "nom": "Zone BS C", "voie": "vc", "pkDebut": 100.319, "pkFin": 100.351, "longueur": 32 },
+      { "id": "z-rvb54", "nom": "RVB 54 m", "voie": "v1", "pkDebut": 100.086, "pkFin": 100.14, "longueur": 54 },
+      { "id": "z-rvb55", "nom": "RVB 55 m", "voie": "v1", "pkDebut": 100.14, "pkFin": 100.195, "longueur": 55 },
+      { "id": "z-bs-b", "nom": "Zone BS B", "voie": "v1", "pkDebut": 100.195, "pkFin": 100.227, "longueur": 32 },
+      { "id": "z-rvb63", "nom": "RVB 63 m", "voie": "v1", "pkDebut": 100.24, "pkFin": 100.303, "longueur": 63 },
+      { "id": "z-rvb41", "nom": "RVB 41 m", "voie": "v1", "pkDebut": 100.31, "pkFin": 100.351, "longueur": 41 },
+      { "id": "z-rvb27", "nom": "RVB 27 m", "voie": "v1", "pkDebut": 100.39, "pkFin": 100.417, "longueur": 27 },
+      { "id": "z-bs-d", "nom": "Zone BS D", "voie": "v1", "pkDebut": 100.444, "pkFin": 100.476, "longueur": 32 },
+      { "id": "z-rvb15", "nom": "RVB 15 m", "voie": "v1", "pkDebut": 100.476, "pkFin": 100.491, "longueur": 15 },
+      { "id": "z-v2-ttx", "nom": "V2 — voie TTX", "voie": "v2", "pkDebut": 100.15, "pkFin": 100.4, "longueur": 250 }
+    ],
+    "lieux": [
+      { "id": "ba-sud", "nom": "Base arrière Sud", "type": "base_arriere", "contour": [[660, -20], [760, -20], [760, 30], [660, 30]] },
+      { "id": "st-tba-n", "nom": "Stockage vieilles TBA Nord", "type": "stockage", "contour": [[120, 6], [190, 6], [190, 8], [120, 8]] },
+      { "id": "st-tba-s", "nom": "Stockage vieilles TBA Sud", "type": "stockage", "contour": [[390, 15], [470, 15], [470, 17], [390, 17]] },
+      { "id": "st-tvn", "nom": "Stockage traverses neuves", "type": "stockage", "contour": [[500, 15], [580, 15], [580, 17], [500, 17]] },
+      { "id": "st-adv", "nom": "Stockage panneaux BS C et BS D", "type": "stockage", "contour": [[-60, 10], [-10, 10], [-10, 25], [-60, 25]] },
+      { "id": "zone-nord", "nom": "Zone Nord", "type": "acces", "contour": [[-80, -10], [-40, -10], [-40, 5], [-80, 5]] },
+      { "id": "pont", "nom": "Pont — plaque de protection", "type": "ouvrage", "contour": [[228, -2], [248, -2], [248, 16], [228, 16]] }
+    ]
+  },
+  "ressources": [
+    { "id": "p3", "numero": 3, "nom": "Pelle RR 3", "type": "pelle_rr", "modeInitial": "route", "lieuInitial": "ba-sud", "longueur": 9, "couleur": "E8A33D" },
+    { "id": "p4", "numero": 4, "nom": "Pelle RR 4", "type": "pelle_rr", "modeInitial": "route", "lieuInitial": "ba-sud", "longueur": 9, "couleur": "E8A33D" },
+    { "id": "p5", "numero": 5, "nom": "Pelle RR 5", "type": "pelle_rr", "modeInitial": "route", "lieuInitial": "ba-sud", "longueur": 9, "couleur": "E8A33D" },
+    { "id": "p6", "numero": 6, "nom": "Pelle RR 6", "type": "pelle_rr", "modeInitial": "route", "lieuInitial": "ba-sud", "longueur": 9, "couleur": "E8A33D" },
+    { "id": "ttx2", "nom": "TTX 2 — déblais", "type": "train_travaux", "lieuInitial": "ba-sud", "longueur": 180, "capacite": { "quoi": "ballast", "valeur": 12, "unite": "wagon" }, "couleur": "3E6FB0" },
+    { "id": "ttx3", "nom": "TTX 3 — sous-couche ballast", "type": "train_travaux", "lieuInitial": "ba-sud", "longueur": 180, "capacite": { "quoi": "sous_couche", "valeur": 12, "unite": "wagon" }, "couleur": "C9A227" },
+    { "id": "ttx4", "nom": "TTX 4 — évacuation", "type": "train_travaux", "lieuInitial": "ba-sud", "longueur": 180, "capacite": { "quoi": "traverses_anciennes", "valeur": 400, "unite": "traverse" }, "couleur": "6B8E23" },
+    { "id": "pemlem", "nom": "PEM LEM", "type": "portique", "lieuInitial": "ba-sud", "longueur": 30, "couleur": "7B4FA8" }
+  ],
+  "stocks": {
+    "st-tvn": [{ "quoi": "traverses_neuves", "quantite": 400 }],
+    "st-adv": [{ "quoi": "panneau_adv", "quantite": 7 }]
+  },
+  "operations": [
+    {
+      "id": "op-01a", "numero": 1, "libelle": "Enraillement de 4 pelles RR sur la base arrière",
+      "tDebut": 120, "tFin": 150, "ressources": ["p3", "p4", "p5", "p6"], "cibles": ["ba-sud"],
+      "effets": [{ "verbe": "enrailler", "vers": "rail" }]
+    },
+    {
+      "id": "op-01b", "numero": 1, "libelle": "Sécurisation du pont — plaque de protection",
+      "tDebut": 120, "tFin": 150, "cibles": ["pont"],
+      "effets": [{ "verbe": "installer", "objet": "plaque_protection" }],
+      "commentaire": "Prévient toute chute d'objet sur la chaussée située dessous."
+    },
+    {
+      "id": "op-02", "numero": 2, "libelle": "Dépose rails et traverses RVB 50 m VC",
+      "tDebut": 150, "tFin": 210, "ressources": ["p3", "p4"], "cibles": ["z-rvb50"],
+      "effets": [
+        { "verbe": "deposer_rails", "vers": "deposes_en_extremite" },
+        { "verbe": "deposer_traverses", "vers": "deposees" }
+      ],
+      "sens": "pk_croissant",
+      "flux": [{ "quoi": "traverses_anciennes", "de": "z-rvb50", "vers": "st-tba-n", "quantite": 83 }],
+      "commentaire": "Rails aux extrémités, traverses stockées entre VC et V1 pour rechargement en fin d'OCP."
+    },
+    {
+      "id": "op-03", "numero": 3, "libelle": "Dépose RVB 15 m V1",
+      "tDebut": 150, "tFin": 210, "ressources": ["p5", "p6"], "cibles": ["z-rvb15"],
+      "effets": [
+        { "verbe": "deposer_rails", "vers": "deposes_en_extremite" },
+        { "verbe": "deposer_traverses", "vers": "deposees" }
+      ],
+      "sens": "pk_croissant",
+      "flux": [{ "quoi": "traverses_anciennes", "de": "z-rvb15", "vers": "st-tba-s", "quantite": 25 }],
+      "commentaire": "Traverses stockées entre la VS et la clôture."
+    },
+    {
+      "id": "op-04", "numero": 4, "libelle": "Suite dépose rails et traverses RVB 50 m + RR 14 m VC",
+      "tDebut": 210, "tFin": 240, "ressources": ["p3", "p4"], "cibles": ["z-rvb50", "z-rr14"],
+      "effets": [
+        { "verbe": "deposer_rails", "vers": "deposes_en_extremite" },
+        { "verbe": "deposer_traverses", "vers": "deposees" }
+      ],
+      "sens": "pk_croissant"
+    },
+    {
+      "id": "op-05", "numero": 5, "libelle": "Dépose RVB 27 m",
+      "tDebut": 210, "tFin": 240, "ressources": ["p5", "p6"], "cibles": ["z-rvb27"],
+      "effets": [
+        { "verbe": "deposer_rails", "vers": "deposes_en_extremite" },
+        { "verbe": "deposer_traverses", "vers": "deposees" }
+      ],
+      "sens": "pk_croissant",
+      "flux": [{ "quoi": "traverses_anciennes", "de": "z-rvb27", "vers": "st-tba-s", "quantite": 45 }]
+    },
+    {
+      "id": "op-06", "numero": 6, "libelle": "Dépose BS A",
+      "tDebut": 210, "tFin": 270, "ressources": ["p3", "p4"], "cibles": ["bs-a"],
+      "effets": [{ "verbe": "deposer_adv", "decoupage": ["pointe", "intermediaire", "talon"] }]
+    },
+    {
+      "id": "op-07", "numero": 7, "libelle": "Acheminement des panneaux du BS A en base arrière",
+      "tDebut": 225, "tFin": 285, "ressources": ["p5", "p6"],
+      "effets": [{ "verbe": "acheminer" }],
+      "flux": [
+        { "quoi": "panneau_adv", "ref": "bs-a.pointe", "de": "bs-a", "vers": "ba-sud", "porteur": "p5" },
+        { "quoi": "panneau_adv", "ref": "bs-a.intermediaire", "de": "bs-a", "vers": "ba-sud", "porteur": "p6" },
+        { "quoi": "panneau_adv", "ref": "bs-a.talon", "de": "bs-a", "vers": "ba-sud", "porteur": "p5" }
+      ]
+    },
+    {
+      "id": "op-08", "numero": 8, "libelle": "Dépose RVB 55 m",
+      "tDebut": 240, "tFin": 300, "ressources": ["p3"], "cibles": ["z-rvb55"],
+      "effets": [
+        { "verbe": "deposer_rails", "vers": "deposes_en_extremite" },
+        { "verbe": "deposer_traverses", "vers": "deposees" }
+      ],
+      "sens": "pk_croissant",
+      "flux": [{ "quoi": "traverses_anciennes", "de": "z-rvb55", "vers": "st-tba-n", "quantite": 92 }],
+      "commentaire": "Vieilles TBA stockées entre V1 et VC pour chargement TTX."
+    },
+    {
+      "id": "op-09", "numero": 9, "libelle": "Arrivée du TTX 2 sur V2 depuis la base arrière Sud",
+      "tDebut": 240, "tFin": 270, "ressources": ["ttx2"],
+      "effets": [{ "verbe": "circuler", "voie": "v2", "pkArrivee": 100.3, "sens": "pk_decroissant" }]
+    },
+    {
+      "id": "op-10", "numero": 10, "libelle": "Déballastage RVB 50 m",
+      "tDebut": 270, "tFin": 330, "ressources": ["p4"], "cibles": ["z-rvb50"],
+      "effets": [{ "verbe": "deballaster", "vers": "deballaste" }],
+      "sens": "pk_croissant",
+      "flux": [{ "quoi": "ballast", "de": "z-rvb50", "vers": "ttx2" }],
+      "commentaire": "Dès la dépose du RVB 55 m terminée, la 2e pelle RR rejoint le déballastage."
+    },
+    {
+      "id": "op-11", "numero": 11, "libelle": "Dépose BS D et acheminement des panneaux en base arrière",
+      "tDebut": 270, "tFin": 330, "ressources": ["p5", "p6"], "cibles": ["bs-d"],
+      "effets": [{ "verbe": "deposer_adv", "decoupage": ["pointe", "intermediaire", "talon"] }],
+      "flux": [
+        { "quoi": "panneau_adv", "ref": "bs-d.pointe", "de": "bs-d", "vers": "st-adv", "porteur": "p5" },
+        { "quoi": "panneau_adv", "ref": "bs-d.intermediaire", "de": "bs-d", "vers": "st-adv", "porteur": "p6" },
+        { "quoi": "panneau_adv", "ref": "bs-d.talon", "de": "bs-d", "vers": "st-adv", "porteur": "p5" }
+      ]
+    },
+    {
+      "id": "op-12", "numero": 12, "libelle": "Dépose du BS B et acheminement des panneaux en base arrière",
+      "tDebut": 330, "tFin": 420, "ressources": ["p3", "p4"], "cibles": ["bs-b"],
+      "effets": [{ "verbe": "deposer_adv", "decoupage": ["complet"] }],
+      "flux": [{ "quoi": "panneau_adv", "ref": "bs-b.complet", "de": "bs-b", "vers": "ba-sud", "porteur": "p3" }]
+    },
+    {
+      "id": "op-13", "numero": 13, "libelle": "Déballastage RVB 55 m, ballast chargé dans le TTX 2",
+      "tDebut": 330, "tFin": 420, "ressources": ["p5", "p6"], "cibles": ["z-rvb55"],
+      "effets": [{ "verbe": "deballaster", "vers": "deballaste" }],
+      "sens": "pk_croissant",
+      "flux": [{ "quoi": "ballast", "de": "z-rvb55", "vers": "ttx2" }]
+    },
+    {
+      "id": "op-14", "numero": 14, "libelle": "Dépose RVB 63 m V1",
+      "tDebut": 420, "tFin": 480, "ressources": ["p3", "p4"], "cibles": ["z-rvb63"],
+      "effets": [
+        { "verbe": "deposer_rails", "vers": "deposes_en_extremite" },
+        { "verbe": "deposer_traverses", "vers": "deposees" }
+      ],
+      "sens": "pk_croissant",
+      "flux": [{ "quoi": "traverses_anciennes", "de": "z-rvb63", "vers": "st-tba-s", "quantite": 105 }],
+      "commentaire": "Traverses stockées entre VS et clôture."
+    },
+    {
+      "id": "op-15", "numero": 15, "libelle": "Déballastage BS A",
+      "tDebut": 420, "tFin": 480, "ressources": ["p5", "p6"], "cibles": ["z-bs-a"],
+      "effets": [{ "verbe": "deballaster", "vers": "deballaste" }],
+      "sens": "pk_croissant",
+      "flux": [{ "quoi": "ballast", "de": "z-bs-a", "vers": "ttx2" }]
+    },
+    {
+      "id": "op-16", "numero": 16, "libelle": "Dépose BS C et acheminement des panneaux en base arrière",
+      "tDebut": 480, "tFin": 540, "ressources": ["p3", "p4"], "cibles": ["bs-c"],
+      "effets": [{ "verbe": "deposer_adv", "decoupage": ["pointe", "intermediaire", "talon"] }],
+      "flux": [
+        { "quoi": "panneau_adv", "ref": "bs-c.pointe", "de": "bs-c", "vers": "st-adv", "porteur": "p3" },
+        { "quoi": "panneau_adv", "ref": "bs-c.intermediaire", "de": "bs-c", "vers": "st-adv", "porteur": "p4" },
+        { "quoi": "panneau_adv", "ref": "bs-c.talon", "de": "bs-c", "vers": "st-adv", "porteur": "p3" }
+      ]
+    },
+    {
+      "id": "op-17", "numero": 17, "libelle": "Déballastage BS B",
+      "tDebut": 480, "tFin": 540, "ressources": ["p5", "p6"], "cibles": ["z-bs-b"],
+      "effets": [{ "verbe": "deballaster", "vers": "deballaste" }],
+      "sens": "pk_croissant",
+      "flux": [{ "quoi": "ballast", "de": "z-bs-b", "vers": "ttx2" }]
+    },
+    {
+      "id": "op-18", "numero": 18, "libelle": "Acheminement de 2 pelles RR vers la zone Nord pour évacuer des panneaux",
+      "tDebut": 540, "tFin": 810, "ressources": ["p5", "p6"], "cibles": ["zone-nord"],
+      "effets": [{ "verbe": "acheminer" }],
+      "commentaire": "Évacuation de panneaux côté Nord, hors emprise du site."
+    },
+    {
+      "id": "op-19", "numero": 19, "libelle": "Déballastage des zones RVB 63 m, BS C, BS D, RVB 15 m",
+      "tDebut": 540, "tFin": 810, "ressources": ["p3", "p4"],
+      "cibles": ["z-rvb63", "z-bs-c", "z-bs-d", "z-rvb15"],
+      "effets": [{ "verbe": "deballaster", "vers": "deballaste" }],
+      "sens": "pk_croissant",
+      "flux": [
+        { "quoi": "ballast", "de": "z-rvb63", "vers": "ttx2" },
+        { "quoi": "ballast", "de": "z-bs-c", "vers": "ttx2" },
+        { "quoi": "ballast", "de": "z-bs-d", "vers": "ttx2" },
+        { "quoi": "ballast", "de": "z-rvb15", "vers": "ttx2" }
+      ]
+    },
+    {
+      "id": "op-20", "numero": 20, "libelle": "Évacuation du TTX 2 en direction du Sud",
+      "tDebut": 750, "tFin": 810, "ressources": ["ttx2"],
+      "effets": [{ "verbe": "circuler", "voie": "v2", "pkArrivee": 100.62, "sens": "pk_croissant" }]
+    },
+    {
+      "id": "op-21", "numero": 21, "libelle": "Évacuation du TTX 2 par V2 vers la base arrière Sud",
+      "tDebut": 810, "tFin": 840, "ressources": ["ttx2"], "cibles": ["ba-sud"],
+      "effets": [{ "verbe": "circuler" }]
+    },
+    {
+      "id": "op-22", "numero": 22, "libelle": "Arrivée du TTX 3 depuis la base arrière Sud sur V2",
+      "tDebut": 810, "tFin": 870, "ressources": ["ttx3"],
+      "effets": [{ "verbe": "circuler", "voie": "v2", "pkArrivee": 100.3, "sens": "pk_decroissant" }]
+    },
+    {
+      "id": "op-23", "numero": 23, "libelle": "Déchargement de sous-couche ballast",
+      "tDebut": 840, "tFin": 990, "ressources": ["p3"], "cibles": ["z-rvb50", "z-rvb55"],
+      "effets": [{ "verbe": "decharger_sous_couche", "vers": "deversee" }],
+      "sens": "pk_croissant",
+      "flux": [
+        { "quoi": "sous_couche", "de": "ttx3", "vers": "z-rvb50" },
+        { "quoi": "sous_couche", "de": "ttx3", "vers": "z-rvb55" }
+      ]
+    },
+    {
+      "id": "op-24", "numero": 24, "libelle": "Lissage de la sous-couche puis compactage",
+      "tDebut": 840, "tFin": 990, "ressources": ["p4"], "cibles": ["z-rvb50", "z-rvb55"],
+      "effets": [
+        { "verbe": "lisser", "vers": "lissee" },
+        { "verbe": "compacter", "vers": "compactee" }
+      ],
+      "sens": "pk_croissant",
+      "commentaire": "Lissage par pelle enraillée sur voie tiroir."
+    },
+    {
+      "id": "op-25", "numero": 25, "libelle": "Suite déchargement de sous-couche ballast",
+      "tDebut": 870, "tFin": 1050, "ressources": ["p3"],
+      "cibles": ["z-bs-a", "z-bs-b", "z-rvb63", "z-bs-c", "z-bs-d", "z-rvb15"],
+      "effets": [{ "verbe": "decharger_sous_couche", "vers": "deversee" }],
+      "sens": "pk_croissant",
+      "flux": [
+        { "quoi": "sous_couche", "de": "ttx3", "vers": "z-bs-a" },
+        { "quoi": "sous_couche", "de": "ttx3", "vers": "z-bs-b" },
+        { "quoi": "sous_couche", "de": "ttx3", "vers": "z-rvb63" },
+        { "quoi": "sous_couche", "de": "ttx3", "vers": "z-bs-c" },
+        { "quoi": "sous_couche", "de": "ttx3", "vers": "z-bs-d" },
+        { "quoi": "sous_couche", "de": "ttx3", "vers": "z-rvb15" }
+      ]
+    },
+    {
+      "id": "op-26", "numero": 26, "libelle": "Suite lissage de la sous-couche puis compactage",
+      "tDebut": 870, "tFin": 1050, "ressources": ["p4"], "cibles": ["z-bs-a", "z-bs-b", "z-rvb63"],
+      "effets": [
+        { "verbe": "lisser", "vers": "lissee" },
+        { "verbe": "compacter", "vers": "compactee" }
+      ],
+      "sens": "pk_croissant"
+    },
+    {
+      "id": "op-27", "numero": 27, "libelle": "Acheminement des traverses neuves des zones de stockage aux zones de pose",
+      "tDebut": 900, "tFin": 1170, "ressources": ["p5", "p6"],
+      "effets": [{ "verbe": "acheminer" }],
+      "flux": [
+        { "quoi": "traverses_neuves", "de": "st-tvn", "vers": "z-rvb15", "quantite": 25 },
+        { "quoi": "traverses_neuves", "de": "st-tvn", "vers": "z-rvb27", "quantite": 45 }
+      ]
+    },
+    {
+      "id": "op-28", "numero": 28, "libelle": "Mise en place des traverses neuves sur RVB 15 m en talon du BS D",
+      "tDebut": 990, "tFin": 1170, "ressources": ["p5", "p6"], "cibles": ["z-rvb15"],
+      "effets": [{ "verbe": "repartir_traverses", "vers": "neuves_reparties" }],
+      "sens": "pk_croissant"
+    },
+    {
+      "id": "op-29", "numero": 29, "libelle": "Mise en attente du TTX 3 au Sud",
+      "tDebut": 990, "tFin": 1050, "ressources": ["ttx3"],
+      "effets": [{ "verbe": "attendre" }]
+    },
+    {
+      "id": "op-30", "numero": 30, "libelle": "Suite lissage de la sous-couche puis compactage",
+      "tDebut": 990, "tFin": 1170, "ressources": ["p4"], "cibles": ["z-bs-c", "z-bs-d", "z-rvb15"],
+      "effets": [
+        { "verbe": "lisser", "vers": "lissee" },
+        { "verbe": "compacter", "vers": "compactee" }
+      ],
+      "sens": "pk_croissant"
+    },
+    {
+      "id": "op-31", "numero": 31, "libelle": "Acheminement des traverses des zones de stockage aux zones de pose",
+      "tDebut": 990, "tFin": 1170, "ressources": ["p5"],
+      "effets": [{ "verbe": "acheminer" }],
+      "flux": [
+        { "quoi": "traverses_neuves", "de": "st-tvn", "vers": "z-rvb63", "quantite": 105 },
+        { "quoi": "traverses_neuves", "de": "st-tvn", "vers": "z-rvb54", "quantite": 90 }
+      ]
+    },
+    {
+      "id": "op-32", "numero": 32, "libelle": "Mise en place des traverses neuves sur RVB 15 m en talon du BS D",
+      "tDebut": 1050, "tFin": 1170, "ressources": ["p6"], "cibles": ["z-rvb15"],
+      "effets": [{ "verbe": "poser_traverses", "vers": "neuves_posees" }],
+      "sens": "pk_croissant"
+    },
+    {
+      "id": "op-33", "numero": 33, "libelle": "Acheminement du BS C — passage mode route puis dépose du panneau sur la voie",
+      "tDebut": 1110, "tFin": 1170, "ressources": ["p4", "p5"],
+      "effets": [
+        { "verbe": "derailler", "vers": "route" },
+        { "verbe": "acheminer" }
+      ],
+      "flux": [{ "quoi": "panneau_adv", "ref": "bs-c.pointe", "de": "st-adv", "vers": "bs-c", "porteur": "p4" }]
+    },
+    {
+      "id": "op-34", "numero": 34, "libelle": "Acheminement du BS C — passage mode rail à route, panneau posé sur la voie",
+      "tDebut": 1170, "tFin": 1260, "ressources": ["p4", "p5"],
+      "effets": [{ "verbe": "acheminer" }],
+      "flux": [
+        { "quoi": "panneau_adv", "ref": "bs-c.intermediaire", "de": "st-adv", "vers": "bs-c", "porteur": "p5" },
+        { "quoi": "panneau_adv", "ref": "bs-c.talon", "de": "st-adv", "vers": "bs-c", "porteur": "p4" }
+      ]
+    },
+    {
+      "id": "op-35", "numero": 35, "libelle": "Pose du BS C en 3 parties à la pelle sur pneu",
+      "tDebut": 1260, "tFin": 1380, "ressources": ["p4", "p5"], "cibles": ["bs-c"],
+      "effets": [{ "verbe": "poser_adv", "decoupage": ["pointe", "intermediaire", "talon"] }]
+    },
+    {
+      "id": "op-36", "numero": 36, "libelle": "Acheminement du BS D, méthode identique au BS C",
+      "tDebut": 1320, "tFin": 1500, "ressources": ["p4", "p5"],
+      "effets": [{ "verbe": "acheminer" }],
+      "flux": [
+        { "quoi": "panneau_adv", "ref": "bs-d.pointe", "de": "st-adv", "vers": "bs-d", "porteur": "p4" },
+        { "quoi": "panneau_adv", "ref": "bs-d.intermediaire", "de": "st-adv", "vers": "bs-d", "porteur": "p5" },
+        { "quoi": "panneau_adv", "ref": "bs-d.talon", "de": "st-adv", "vers": "bs-d", "porteur": "p4" }
+      ]
+    },
+    {
+      "id": "op-37", "numero": 37, "libelle": "Pose BS D + RVB 15 m, panneau talon direct du BS D",
+      "tDebut": 1500, "tFin": 1620, "ressources": ["p3", "p6"], "cibles": ["bs-d", "z-rvb15"],
+      "effets": [
+        { "verbe": "poser_adv", "decoupage": ["pointe", "intermediaire", "talon"] },
+        { "verbe": "poser_rails", "vers": "neufs_poses" }
+      ],
+      "sens": "pk_croissant"
+    },
+    {
+      "id": "op-38", "numero": 38, "libelle": "Pose RVB 27 m entre BS C et BS D",
+      "tDebut": 1320, "tFin": 1500, "ressources": ["p3", "p6"], "cibles": ["z-rvb27"],
+      "effets": [
+        { "verbe": "poser_traverses", "vers": "neuves_posees" },
+        { "verbe": "poser_rails", "vers": "neufs_poses" }
+      ],
+      "sens": "pk_croissant"
+    },
+    {
+      "id": "op-39", "numero": 39, "libelle": "Pose RVB 63 m en talon du BS C",
+      "tDebut": 1500, "tFin": 1620, "ressources": ["p3", "p6"], "cibles": ["z-rvb63"],
+      "effets": [
+        { "verbe": "poser_traverses", "vers": "neuves_posees" },
+        { "verbe": "poser_rails", "vers": "neufs_poses" }
+      ],
+      "sens": "pk_croissant"
+    },
+    {
+      "id": "op-40", "numero": 40, "libelle": "Pose du chemin de roule sur la zone du BS B",
+      "tDebut": 1590, "tFin": 1680, "ressources": ["p4"], "cibles": ["z-bs-b"],
+      "effets": [{ "verbe": "installer", "objet": "chemin_de_roule" }]
+    },
+    {
+      "id": "op-41", "numero": 41, "libelle": "Acheminement du BS B au PEM LEM des VS vers la V1 en passant par le BS C",
+      "tDebut": 1620, "tFin": 1710, "ressources": ["pemlem"],
+      "effets": [{ "verbe": "acheminer" }],
+      "flux": [{ "quoi": "panneau_adv", "ref": "bs-b.complet", "de": "st-adv", "vers": "bs-b", "porteur": "pemlem" }]
+    },
+    {
+      "id": "op-42", "numero": 42, "libelle": "Sortie des LEM et dépose du chemin de roule",
+      "tDebut": 1710, "tFin": 1800, "ressources": ["p3", "p4"], "cibles": ["z-bs-b"],
+      "effets": [{ "verbe": "installer", "objet": "chemin_de_roule" }],
+      "commentaire": "Retrait du chemin de roule posé en opération 40."
+    },
+    {
+      "id": "op-43", "numero": 43, "libelle": "Pose du BS B avec les PEM",
+      "tDebut": 1710, "tFin": 1980, "ressources": ["pemlem", "p4", "p5"], "cibles": ["bs-b"],
+      "effets": [{ "verbe": "poser_adv", "decoupage": ["complet"] }]
+    },
+    {
+      "id": "op-44", "numero": 44, "libelle": "Lissage de la sous-couche et compactage sur V2, voie du TTX",
+      "tDebut": 1710, "tFin": 1980, "ressources": ["p3"], "cibles": ["z-v2-ttx"],
+      "effets": [
+        { "verbe": "lisser", "vers": "lissee" },
+        { "verbe": "compacter", "vers": "compactee" }
+      ],
+      "sens": "pk_croissant"
+    },
+    {
+      "id": "op-45", "numero": 45, "libelle": "Suite pose BS B",
+      "tDebut": 1980, "tFin": 2130, "ressources": ["p3", "p4"], "cibles": ["bs-b"],
+      "effets": [{ "verbe": "poser_adv", "decoupage": ["complet"] }]
+    },
+    {
+      "id": "op-46", "numero": 46, "libelle": "Pose RVB 54 m en talon du BS B",
+      "tDebut": 1980, "tFin": 2130, "ressources": ["p5", "p6"], "cibles": ["z-rvb54"],
+      "effets": [
+        { "verbe": "poser_traverses", "vers": "neuves_posees" },
+        { "verbe": "poser_rails", "vers": "neufs_poses" }
+      ],
+      "sens": "pk_croissant"
+    },
+    {
+      "id": "op-47", "numero": 47, "libelle": "Calage des rampes et reprise des gauches sur toute la zone",
+      "tDebut": 2070, "tFin": 2250, "ressources": ["p3", "p4"],
+      "cibles": ["z-rvb50", "z-rr14", "z-rvb15", "z-rvb27", "z-rvb54", "z-rvb55", "z-rvb63"],
+      "effets": [{ "verbe": "caler", "vers": "calee" }],
+      "sens": "pk_croissant"
+    },
+    {
+      "id": "op-49", "numero": 49, "libelle": "Pose RVB 50 m + RR 14 m sur VC",
+      "tDebut": 2130, "tFin": 2250, "ressources": ["p5", "p6"], "cibles": ["z-rvb50", "z-rr14"],
+      "effets": [
+        { "verbe": "poser_traverses", "vers": "neuves_posees" },
+        { "verbe": "poser_rails", "vers": "neufs_poses" }
+      ],
+      "sens": "pk_croissant",
+      "optionnelle": true,
+      "commentaire": "Optionnel selon avancement."
+    },
+    {
+      "id": "op-50", "numero": 50, "libelle": "Acheminement du TTX 4 depuis la base arrière Sud",
+      "tDebut": 2250, "tFin": 2340, "ressources": ["ttx4"],
+      "effets": [{ "verbe": "circuler", "voie": "v2", "pkArrivee": 100.3, "sens": "pk_decroissant" }]
+    },
+    {
+      "id": "op-51", "numero": 51, "libelle": "Chargement des vieilles traverses TBA",
+      "tDebut": 2340, "tFin": 2610, "ressources": ["p3", "p4", "p5", "p6"],
+      "effets": [{ "verbe": "acheminer" }],
+      "flux": [
+        { "quoi": "traverses_anciennes", "de": "st-tba-n", "vers": "ttx4", "quantite": 175 },
+        { "quoi": "traverses_anciennes", "de": "st-tba-s", "vers": "ttx4", "quantite": 175 }
+      ]
+    }
+  ],
+  "vues": [
+    { "id": "generale", "type": "orthographique_inclinee", "cible": "site", "angle": 35 },
+    { "id": "sud", "type": "cadree", "zone": [280, -30, 640, 40], "angle": 40 },
+    { "id": "suivi-p4", "type": "suivi", "ressource": "p4", "recul": 45 }
+  ]
+}
