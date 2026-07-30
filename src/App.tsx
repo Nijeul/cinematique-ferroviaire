@@ -1,4 +1,5 @@
 import { Scene } from './render/Scene.tsx'
+import { CurseurTemps } from './ui/CurseurTemps.tsx'
 import { PanneauProjet } from './ui/PanneauProjet.tsx'
 
 export default function App() {
@@ -6,6 +7,7 @@ export default function App() {
     <>
       <Scene />
       <PanneauProjet />
+      <CurseurTemps />
     </>
   )
 }

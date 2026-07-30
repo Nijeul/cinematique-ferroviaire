@@ -3,6 +3,7 @@ import { Canvas } from '@react-three/fiber'
 import { Grid, OrbitControls } from '@react-three/drei'
 import { useApplication } from '../ui/store.ts'
 import { Voies } from './Voies.tsx'
+import { Zones } from './Zones.tsx'
 
 // Cadre la caméra sur l'emprise des voies du projet : vue inclinée du dessus,
 // site entier, comme le cadrage des synoptiques.
@@ -62,6 +63,7 @@ export function Scene() {
       />
 
       <Voies />
+      <Zones />
 
       <OrbitControls
         makeDefault
