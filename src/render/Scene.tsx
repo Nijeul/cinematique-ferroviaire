@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { Grid, OrbitControls } from '@react-three/drei'
 import { useApplication } from '../ui/store.ts'
+import { Appareils } from './Appareils.tsx'
 import { Engins } from './Engins.tsx'
 import { Stocks } from './Stocks.tsx'
 import { Lieux } from './Lieux.tsx'
@@ -68,6 +69,7 @@ export function Scene() {
       <Lieux />
       <Voies />
       <Zones />
+      <Appareils />
       <Stocks />
       <Engins />
 
