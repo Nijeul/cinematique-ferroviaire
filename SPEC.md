@@ -64,7 +64,7 @@ par des tests.
 | Export PDF | jsPDF |
 | Export PPTX | pptxgenjs |
 | Stockage | fichier `.cinef` local, autosave IndexedDB |
-| Déploiement | GitHub Pages via GitHub Actions |
+| Déploiement | Vercel, à chaque fusion sur `main` ; vérifications (lint, tests, build) via GitHub Actions |
 
 Pas de backend. Le projet est un fichier que l'utilisateur enregistre et transmet.
 
@@ -108,7 +108,7 @@ Un lot = une branche = une PR. Chaque lot doit produire quelque chose de visible
 
 | Lot | Contenu | Critère de fin |
 |---|---|---|
-| 0 | Socle Vite + React + r3f, scène vide, **déploiement GitHub Pages automatique** | une adresse web affiche une scène 3D vide |
+| 0 | Socle Vite + React + r3f, scène vide, **déploiement automatique (Vercel)** | une adresse web affiche une scène 3D vide |
 | 1 | Types et schéma Zod du format, chargement et validation de `ocp1-sud.cinef` | le fichier réel se charge, les erreurs sont explicites |
 | 2 | `etatAt(t)` : opérations, effets, composition, fronts, stocks | tests verts sur les 51 opérations de l'OCP 1 Sud |
 | 3 | Géométrie de voie, `pose()`, rendu voie instancié | 600 m de voies affichés à 60 fps |
