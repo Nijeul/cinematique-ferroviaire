@@ -3,6 +3,7 @@ import { Canvas } from '@react-three/fiber'
 import { Grid, OrbitControls } from '@react-three/drei'
 import { useApplication } from '../ui/store.ts'
 import { Appareils } from './Appareils.tsx'
+import { Lecture } from './Lecture.tsx'
 import { Orthophoto } from './Orthophoto.tsx'
 import { Engins } from './Engins.tsx'
 import { Stocks } from './Stocks.tsx'
@@ -67,6 +68,7 @@ export function Scene() {
         followCamera={false}
       />
 
+      <Lecture />
       <Orthophoto />
       <Lieux />
       <Voies />

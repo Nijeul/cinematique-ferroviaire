@@ -21,9 +21,15 @@ type EtatApplication = {
   nomFichier: string
   t: number
   orthophoto: OrthophotoChargee | null
+  lecture: boolean
+  // Vitesse de lecture : minutes de chantier par seconde réelle.
+  vitesse: number
   fixerT: (t: number) => void
   chargerTexte: (texte: string, nomFichier: string) => void
   fixerOrthophoto: (orthophoto: OrthophotoChargee | null) => void
+  basculerLecture: () => void
+  fixerVitesse: (vitesse: number) => void
+  avancer: (deltaSecondes: number) => void
 }
 
 const chargementInitial = chargerProjet(contenuOcp1Sud)
@@ -34,8 +40,26 @@ export const useApplication = create<EtatApplication>((set) => ({
   nomFichier: 'ocp1-sud.cinef',
   t: 0,
   orthophoto: null,
-  fixerT: (t) => set({ t }),
+  lecture: false,
+  vitesse: 60,
+  fixerT: (t) => set({ t, lecture: false }),
   fixerOrthophoto: (orthophoto) => set({ orthophoto }),
+  basculerLecture: () =>
+    set((etat) => {
+      // Relancer depuis la fin repart du début.
+      const duree = etat.projet?.temps.dureeMinutes ?? 0
+      if (!etat.lecture && etat.t >= duree) return { lecture: true, t: 0 }
+      return { lecture: !etat.lecture }
+    }),
+  fixerVitesse: (vitesse) => set({ vitesse }),
+  avancer: (deltaSecondes) =>
+    set((etat) => {
+      if (!etat.lecture || !etat.projet) return {}
+      const duree = etat.projet.temps.dureeMinutes
+      const suivant = etat.t + deltaSecondes * etat.vitesse
+      if (suivant >= duree) return { t: duree, lecture: false }
+      return { t: suivant }
+    }),
   chargerTexte: (texte, nomFichier) => {
     const resultat = chargerProjet(texte)
     if (resultat.ok) set({ projet: resultat.projet, erreurs: [], nomFichier, t: 0 })
