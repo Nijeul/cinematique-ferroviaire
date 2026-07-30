@@ -3,6 +3,7 @@ import { Canvas } from '@react-three/fiber'
 import { Grid, OrbitControls } from '@react-three/drei'
 import { useApplication } from '../ui/store.ts'
 import { Engins } from './Engins.tsx'
+import { Stocks } from './Stocks.tsx'
 import { Lieux } from './Lieux.tsx'
 import { Voies } from './Voies.tsx'
 import { Zones } from './Zones.tsx'
@@ -67,6 +68,7 @@ export function Scene() {
       <Lieux />
       <Voies />
       <Zones />
+      <Stocks />
       <Engins />
 
       <OrbitControls

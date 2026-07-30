@@ -84,19 +84,27 @@ function TrainTravaux({
     return [0, 1, 2].map((i) => ({ x: centre.x + i * 13.5, y: centre.y, angle: 0 }))
   }, [etat.position, projet, ressource])
 
+  // Remplissage visible : la charge portée rapportée à la capacité déclarée.
+  const chargeTotale = etat.charge.reduce((somme, c) => somme + Math.max(c.quantite, 0), 0)
+  const remplissage = Math.min(chargeTotale / (ressource.capacite?.valeur ?? 12), 1)
+
   if (wagons.length === 0) return null
   const tete = wagons[0]
   return (
     <group>
       {wagons.map((wagon, i) => (
-        <mesh
-          key={i}
-          position={[wagon.x, 1.3, wagon.y]}
-          rotation={[0, -wagon.angle, 0]}
-        >
-          <boxGeometry args={[12.4, i === 0 ? 2.6 : 1.8, 2.7]} />
-          <meshLambertMaterial color={i === 0 ? '#39424d' : couleur} />
-        </mesh>
+        <group key={i} position={[wagon.x, 0, wagon.y]} rotation={[0, -wagon.angle, 0]}>
+          <mesh position={[0, 1.3, 0]}>
+            <boxGeometry args={[12.4, i === 0 ? 2.6 : 1.8, 2.7]} />
+            <meshLambertMaterial color={i === 0 ? '#39424d' : couleur} />
+          </mesh>
+          {i > 0 && remplissage > 0.03 && (
+            <mesh position={[0, 2.2 + remplissage * 0.5, 0]}>
+              <boxGeometry args={[11.6, Math.max(remplissage * 1.1, 0.15), 2.3]} />
+              <meshLambertMaterial color="#9b8a72" />
+            </mesh>
+          )}
+        </group>
       ))}
       <group position={[tete.x, 0, tete.y]}>
         <Pastille texte={ressource.nom.split('—')[0].trim()} hauteur={6.5} couleur={couleur} />
