@@ -1,9 +1,10 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// `base` doit valoir /<nom-du-depot>/ pour GitHub Pages, sinon la page
-// déployée est blanche (assets en 404). Voir CLAUDE.md, « Pièges connus ».
+// Déploiement sur Vercel : le site est servi à la racine du domaine,
+// `base` doit donc valoir '/'. (Un retour à GitHub Pages exigerait
+// base = '/cinematique-ferroviaire/', sinon page blanche — voir CLAUDE.md.)
 export default defineConfig({
-  base: '/cinematique-ferroviaire/',
+  base: '/',
   plugins: [react()],
 })

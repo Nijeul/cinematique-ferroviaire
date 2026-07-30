@@ -9,9 +9,10 @@ PowerPoint produits à la main pour la maîtrise d'œuvre.
 
 ## Site déployé
 
-https://nijeul.github.io/cinematique-ferroviaire/
+https://cinematique-six.vercel.app
 
-Le déploiement est automatique à chaque fusion sur `main` (GitHub Actions → GitHub Pages).
+Le déploiement est automatique à chaque fusion sur `main` (Vercel). Chaque pull request
+dispose en plus d'une adresse de prévisualisation, indiquée par Vercel en commentaire de la PR.
 
 ## Développement
 

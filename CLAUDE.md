@@ -117,8 +117,9 @@ Si une règle métier se retrouve dans `render/`, elle est au mauvais endroit.
 
 ## Pièges connus
 
-- **Vite + GitHub Pages** : `base` doit valoir `/<nom-du-depot>/` dans `vite.config.ts`, sinon
-  la page déployée est blanche et les assets renvoient 404.
+- **`base` dans `vite.config.ts`** : le site est déployé sur Vercel, qui sert à la racine du
+  domaine : `base` doit valoir `/`. (Un retour à GitHub Pages exigerait `/<nom-du-depot>/`.)
+  Une mauvaise valeur rend la page déployée blanche, avec les assets en 404.
 - **WebCodecs** n'existe ni sur Safari ni sur Firefox. Détecter et prévenir clairement ;
   fallback WebM via MediaRecorder.
 - **Traverses** : 200 m de voie à 0,60 m = 333 traverses par voie. `InstancedMesh` obligatoire
