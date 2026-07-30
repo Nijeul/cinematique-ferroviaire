@@ -28,6 +28,22 @@ export function etatAt(projet: Projet, t: number): EtatScene {
   }
 }
 
+// Cache à une entrée pour le rendu : plusieurs composants demandent l'état du
+// même instant dans la même image. etatAt reste pure ; ceci n'est qu'un
+// mémoïseur au-dessus.
+let cacheProjet: Projet | null = null
+let cacheT: number | null = null
+let cacheEtat: EtatScene | null = null
+
+export function etatAtMemoise(projet: Projet, t: number): EtatScene {
+  if (cacheProjet !== projet || cacheT !== t || cacheEtat === null) {
+    cacheEtat = etatAt(projet, t)
+    cacheProjet = projet
+    cacheT = t
+  }
+  return cacheEtat
+}
+
 const avancement = (op: Operation, t: number): number =>
   t >= op.tFin ? 1 : t <= op.tDebut ? 0 : (t - op.tDebut) / (op.tFin - op.tDebut)
 

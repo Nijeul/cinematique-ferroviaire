@@ -2,6 +2,8 @@ import { useMemo } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { Grid, OrbitControls } from '@react-three/drei'
 import { useApplication } from '../ui/store.ts'
+import { Engins } from './Engins.tsx'
+import { Lieux } from './Lieux.tsx'
 import { Voies } from './Voies.tsx'
 import { Zones } from './Zones.tsx'
 
@@ -62,8 +64,10 @@ export function Scene() {
         followCamera={false}
       />
 
+      <Lieux />
       <Voies />
       <Zones />
+      <Engins />
 
       <OrbitControls
         makeDefault

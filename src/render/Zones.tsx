@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { Text } from '@react-three/drei'
 import type { Voie, Zone } from '../domain/projet.ts'
 import { abscisseSurVoie, pose } from '../geometry/referencement.ts'
-import { etatAt } from '../state/etatAt.ts'
+import { etatAtMemoise } from '../state/etatAt.ts'
 import type { EtatZoneScene } from '../state/etatScene.ts'
 import { segmentsDeCouche } from '../state/segments.ts'
 import { useApplication } from '../ui/store.ts'
@@ -23,7 +23,7 @@ import {
 export function Zones() {
   const projet = useApplication((etat) => etat.projet)
   const t = useApplication((etat) => etat.t)
-  const etatScene = useMemo(() => (projet ? etatAt(projet, t) : null), [projet, t])
+  const etatScene = useMemo(() => (projet ? etatAtMemoise(projet, t) : null), [projet, t])
   if (!projet || !etatScene) return null
   const voies = new Map(projet.site.voies.map((v) => [v.id, v]))
   return (
