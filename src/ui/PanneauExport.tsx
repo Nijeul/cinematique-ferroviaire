@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { capturerPlanches, exporterPDF, exporterPPTX } from '../export/planches.ts'
 import { exporterMP4, exporterWebM, supporteWebCodecs } from '../export/video.ts'
 import { useApplication } from './store.ts'
 
@@ -13,6 +14,7 @@ export function PanneauExport({
   const fixerT = useApplication((etat) => etat.fixerT)
   const [ouvert, setOuvert] = useState(false)
   const [minutesParSeconde, setMinutesParSeconde] = useState(60)
+  const [decoupage, setDecoupage] = useState<'creneau' | 'operations'>('creneau')
   const [enCours, setEnCours] = useState(false)
   const [progression, setProgression] = useState(0)
   const [message, setMessage] = useState('')
@@ -37,6 +39,33 @@ export function PanneauExport({
       if (mp4Possible) await exporterMP4(options)
       else await exporterWebM(options)
       setMessage(annulation.current.demandee ? 'Export annulé.' : 'Export terminé, fichier téléchargé.')
+    } catch (erreur) {
+      setMessage(`Échec de l'export : ${(erreur as Error).message}`)
+    } finally {
+      setEnCours(false)
+    }
+  }
+
+  const lancerPlanches = async (format: 'pdf' | 'pptx') => {
+    annulation.current = { demandee: false }
+    setEnCours(true)
+    setMessage('Capture des planches…')
+    try {
+      const planches = await capturerPlanches({
+        projet,
+        decoupage,
+        fixerT,
+        surProgression: setProgression,
+        annulation: annulation.current,
+      })
+      if (!annulation.current.demandee) {
+        setMessage(format === 'pdf' ? 'Assemblage du PDF…' : 'Assemblage du PPTX…')
+        if (format === 'pdf') await exporterPDF(planches)
+        else await exporterPPTX(planches, projet)
+        setMessage('Planches exportées, fichier téléchargé.')
+      } else {
+        setMessage('Export annulé.')
+      }
     } catch (erreur) {
       setMessage(`Échec de l'export : ${(erreur as Error).message}`)
     } finally {
@@ -92,9 +121,33 @@ export function PanneauExport({
               </button>
             </div>
           ) : (
-            <button onClick={() => void lancer()} style={{ cursor: 'pointer', fontWeight: 700 }}>
-              Exporter la vidéo ({mp4Possible ? 'MP4' : 'WebM'})
-            </button>
+            <>
+              <button onClick={() => void lancer()} style={{ cursor: 'pointer', fontWeight: 700 }}>
+                Exporter la vidéo ({mp4Possible ? 'MP4' : 'WebM'})
+              </button>
+              <hr style={{ width: '100%', border: 'none', borderTop: '1px solid #d5dade' }} />
+              <label>
+                Planches :
+                <select
+                  value={decoupage}
+                  onChange={(evenement) =>
+                    setDecoupage(evenement.target.value as 'creneau' | 'operations')
+                  }
+                  style={{ marginLeft: 6 }}
+                >
+                  <option value="creneau">une par créneau de {projet.temps.pasCreneau} min</option>
+                  <option value="operations">une par changement d'opération</option>
+                </select>
+              </label>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={() => void lancerPlanches('pdf')} style={{ cursor: 'pointer' }}>
+                  Exporter en PDF
+                </button>
+                <button onClick={() => void lancerPlanches('pptx')} style={{ cursor: 'pointer' }}>
+                  Exporter en PPTX
+                </button>
+              </div>
+            </>
           )}
           {boutonsSupplementaires}
           {message && <em>{message}</em>}

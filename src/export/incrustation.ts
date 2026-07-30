@@ -6,6 +6,41 @@ import { formaterInstant } from '../ui/temps.ts'
 // dessinés au canvas 2D par-dessus l'image de la scène — les mêmes
 // informations que les panneaux de l'application, mais dans l'image.
 
+// Cartouche des planches : chantier, document, indice, horaire, numéro.
+export function dessinerCartouche(
+  contexte: CanvasRenderingContext2D,
+  projet: Projet,
+  t: number,
+  numero: number,
+  total: number,
+): void {
+  const { width: largeur, height: hauteur } = contexte.canvas
+  const echelle = Math.max(largeur / 1600, 0.7)
+  const taille = Math.round(18 * echelle)
+  const hauteurCartouche = taille * 3.6
+  const y = hauteur - hauteurCartouche - 16
+  const largeurCartouche = Math.min(430 * echelle, largeur * 0.4)
+  contexte.fillStyle = 'rgba(255,255,255,0.94)'
+  contexte.fillRect(16, y, largeurCartouche, hauteurCartouche)
+  contexte.strokeStyle = '#b9c0c8'
+  contexte.strokeRect(16, y, largeurCartouche, hauteurCartouche)
+  contexte.fillStyle = '#1c2430'
+  contexte.textBaseline = 'middle'
+  contexte.font = `bold ${taille}px system-ui, sans-serif`
+  contexte.fillText(projet.meta.chantier, 26, y + taille, largeurCartouche - 20)
+  contexte.font = `${taille}px system-ui, sans-serif`
+  const sousTitre = [projet.meta.document, projet.meta.indice ? `indice ${projet.meta.indice}` : '']
+    .filter(Boolean)
+    .join(' — ')
+  contexte.fillText(sousTitre || '—', 26, y + taille * 2.1, largeurCartouche - 20)
+  contexte.fillText(
+    `${formaterInstant(projet.temps.t0, t)} · planche ${numero}/${total}`,
+    26,
+    y + taille * 3.1,
+    largeurCartouche - 20,
+  )
+}
+
 export function dessinerIncrustations(
   contexte: CanvasRenderingContext2D,
   projet: Projet,
