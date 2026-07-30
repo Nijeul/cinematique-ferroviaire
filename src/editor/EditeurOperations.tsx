@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { FLUX_QUOI, NOMS_VERBES, VERBES } from '../domain/etats.ts'
 import type { Effet, Flux, Operation, Projet } from '../domain/projet.ts'
 import { useApplication } from '../ui/store.ts'
+import { MODES_OPERATOIRES, operationsDuMode } from './modesOperatoires.ts'
 import { idUnique, modifierProjet } from './outils.ts'
 
 // Éditeur du phasage : la table des opérations, avec la liste fermée des
@@ -533,6 +534,66 @@ function EditeurRessources({ projet }: { projet: Projet }) {
   )
 }
 
+// Bibliothèque de modes opératoires : une séquence type s'applique à une
+// cible en un clic, puis se retouche comme n'importe quelles opérations.
+function BibliothequeModes({ projet }: { projet: Projet }) {
+  const [modeId, setModeId] = useState(MODES_OPERATOIRES[0].id)
+  const [cible, setCible] = useState('')
+  const [tDebut, setTDebut] = useState(0)
+  const mode = MODES_OPERATOIRES.find((m) => m.id === modeId) ?? MODES_OPERATOIRES[0]
+  const cibles =
+    mode.cible === 'zone'
+      ? projet.site.zones.map((z) => ({ id: z.id, nom: z.nom }))
+      : projet.site.appareils.map((a) => ({ id: a.id, nom: a.nom }))
+
+  return (
+    <div style={{ ...styleBloc, background: '#f4f6f2' }}>
+      <div style={{ fontWeight: 700, marginBottom: 4 }}>Modes opératoires</div>
+      <div style={styleLigne}>
+        <select value={modeId} onChange={(e) => setModeId(e.target.value)}>
+          {MODES_OPERATOIRES.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.nom}
+            </option>
+          ))}
+        </select>
+        <select value={cible} onChange={(e) => setCible(e.target.value)}>
+          <option value="">cible…</option>
+          {cibles.map((option) => (
+            <option key={option.id} value={option.id}>
+              {option.nom}
+            </option>
+          ))}
+        </select>
+        <label>
+          à t =
+          <input
+            type="number"
+            value={tDebut}
+            onChange={(e) => setTDebut(Number(e.target.value))}
+            style={{ width: 68, marginLeft: 4 }}
+          />
+        </label>
+        <button
+          disabled={!cible}
+          onClick={() =>
+            modifierProjet((p) => {
+              const nomCible = cibles.find((option) => option.id === cible)?.nom
+              p.operations.push(
+                ...operationsDuMode(p, mode, { cible, tDebut, ressources: [], nomCible }),
+              )
+            })
+          }
+          style={{ cursor: 'pointer' }}
+        >
+          Ajouter la séquence
+        </button>
+      </div>
+      <em>{mode.description}</em>
+    </div>
+  )
+}
+
 export function EditeurOperations() {
   const projet = useApplication((etat) => etat.projet)
   const [ouvertes, setOuvertes] = useState<Set<string>>(new Set())
@@ -553,6 +614,7 @@ export function EditeurOperations() {
   return (
     <div>
       <EditeurRessources projet={projet} />
+      <BibliothequeModes projet={projet} />
       <div style={{ fontWeight: 700, margin: '6px 0' }}>
         Opérations ({projet.operations.length})
       </div>

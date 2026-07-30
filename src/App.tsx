@@ -3,6 +3,7 @@ import { PanneauEdition } from './editor/PanneauEdition.tsx'
 import { Scene } from './render/Scene.tsx'
 import { CurseurTemps } from './ui/CurseurTemps.tsx'
 import { EncartPhasage } from './ui/EncartPhasage.tsx'
+import { Legende } from './ui/Legende.tsx'
 import { PanneauExport } from './ui/PanneauExport.tsx'
 import { PanneauOrthophoto } from './ui/PanneauOrthophoto.tsx'
 import { PanneauProjet } from './ui/PanneauProjet.tsx'
@@ -20,6 +21,7 @@ export default function App() {
       <PanneauExport />
       <SelecteurVues />
       <EncartPhasage />
+      <Legende />
       <CurseurTemps />
     </>
   )
