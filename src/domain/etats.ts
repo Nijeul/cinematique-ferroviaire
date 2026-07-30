@@ -59,6 +59,29 @@ export const VERBES: Record<string, { couches: readonly Couche[]; vers: readonly
 
 export const NOMS_VERBES = Object.keys(VERBES) as [string, ...string[]]
 
+// Couche effectivement modifiée par chaque verbe d'état, et valeur atteinte
+// quand l'effet ne précise pas de champ `vers`. Les verbes absents de cette
+// table (deposer_adv, circuler, attendre…) ne modifient pas de couche.
+export const CIBLE_VERBE: Partial<Record<string, { couche: Couche; defaut: string }>> = {
+  tronconner: { couche: 'rails', defaut: 'tronconnes' },
+  desclisser: { couche: 'rails', defaut: 'desclisses' },
+  deposer_rails: { couche: 'rails', defaut: 'deposes_en_extremite' },
+  poser_rails: { couche: 'rails', defaut: 'neufs_poses' },
+  deposer_traverses: { couche: 'traverses', defaut: 'deposees' },
+  repartir_traverses: { couche: 'traverses', defaut: 'neuves_reparties' },
+  poser_traverses: { couche: 'traverses', defaut: 'neuves_posees' },
+  deballaster: { couche: 'ballast', defaut: 'deballaste' },
+  ballaster: { couche: 'ballast', defaut: 'neuf_repandu' },
+  ecreter: { couche: 'plateforme', defaut: 'ecretee' },
+  decharger_sous_couche: { couche: 'sousCouche', defaut: 'deversee' },
+  lisser: { couche: 'sousCouche', defaut: 'lissee' },
+  compacter: { couche: 'sousCouche', defaut: 'compactee' },
+  caler: { couche: 'geometrie', defaut: 'calee' },
+  bourrer: { couche: 'geometrie', defaut: 'bourree' },
+  regler: { couche: 'geometrie', defaut: 'reglee' },
+  souder: { couche: 'geometrie', defaut: 'soudee' },
+}
+
 // Natures de matériaux transportables par un flux (FORMAT.md §5).
 export const FLUX_QUOI = [
   'traverses_anciennes',
