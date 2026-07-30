@@ -1,12 +1,11 @@
-import { useMemo } from 'react'
-import { chargerProjet } from '../domain/chargement.ts'
-import contenuOcp1Sud from '../../fixtures/ocp1-sud.cinef?raw'
+import { useApplication } from './store.ts'
 
-// Preuve visible du lot 1 : le fichier .cinef de référence est chargé et
-// validé au démarrage, et le résultat est affiché. En cas de fichier
-// invalide, les erreurs apparaissent en clair au même endroit.
+// Affiche le fichier chargé et son état de validation. En cas de fichier
+// invalide, les erreurs — déjà en français — sont listées telles quelles.
 export function PanneauProjet() {
-  const resultat = useMemo(() => chargerProjet(contenuOcp1Sud), [])
+  const projet = useApplication((etat) => etat.projet)
+  const erreurs = useApplication((etat) => etat.erreurs)
+  const nomFichier = useApplication((etat) => etat.nomFichier)
 
   return (
     <div
@@ -24,25 +23,25 @@ export function PanneauProjet() {
         lineHeight: 1.45,
       }}
     >
-      {resultat.ok ? (
+      {erreurs.length > 0 ? (
         <>
-          <strong>{resultat.projet.meta.chantier}</strong>
-          <div>
-            Fichier .cinef valide — {resultat.projet.operations.length} opérations,{' '}
-            {resultat.projet.site.zones.length} zones, {resultat.projet.site.appareils.length}{' '}
-            appareils, {resultat.projet.ressources.length} ressources.
-          </div>
-        </>
-      ) : (
-        <>
-          <strong style={{ color: '#a4282d' }}>Fichier .cinef invalide</strong>
+          <strong style={{ color: '#a4282d' }}>Fichier .cinef invalide — {nomFichier}</strong>
           <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
-            {resultat.erreurs.map((erreur) => (
+            {erreurs.map((erreur) => (
               <li key={erreur}>{erreur}</li>
             ))}
           </ul>
         </>
-      )}
+      ) : projet ? (
+        <>
+          <strong>{projet.meta.chantier}</strong>
+          <div>
+            {nomFichier} — {projet.operations.length} opérations,{' '}
+            {projet.site.zones.length} zones, {projet.site.appareils.length} appareils,{' '}
+            {projet.ressources.length} ressources.
+          </div>
+        </>
+      ) : null}
     </div>
   )
 }

@@ -84,8 +84,9 @@ function decrireChemin(chemin: PropertyKey[], brut: unknown): string {
 
 // Vérifie que tout identifiant cité existe : voies des zones et des appareils,
 // ressources et cibles des opérations, origine, destination et porteur des
-// flux, panneaux référencés, lieux des stocks…
-function verifierReferences(projet: Projet): string[] {
+// flux, panneaux référencés, lieux des stocks… Exportée pour l'éditeur, qui
+// affiche ces messages en avertissements pendant la saisie.
+export function verifierReferences(projet: Projet): string[] {
   const erreurs: string[] = []
 
   const voies = new Map(projet.site.voies.map((v) => [v.id, v]))
