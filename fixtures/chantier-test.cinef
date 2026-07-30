@@ -1,0 +1,103 @@
+{
+  "meta": {
+    "chantier": "Chantier test — halte de Val-Fictif",
+    "document": "Cinématique de contrôle",
+    "indice": "0",
+    "date": "2026-07-30"
+  },
+  "temps": {
+    "t0": "2027-03-06T21:00:00",
+    "libelleT0": "Début d'interception",
+    "dureeMinutes": 480,
+    "libelleFin": "Fin d'interception",
+    "pasCreneau": 15
+  },
+  "site": {
+    "voies": [
+      { "id": "va", "nom": "Voie A", "polyligne": [[0, 0], [150, 0], [300, 12]], "pkOrigine": 12.0 },
+      { "id": "vb", "nom": "Voie B", "polyligne": [[0, 5], [300, 5]], "pkOrigine": 12.0 }
+    ],
+    "appareils": [
+      {
+        "id": "bs-t1", "nom": "BS T1", "type": "branchement_simple", "tangente": 0.11,
+        "voieDirecte": "va", "voiedeviee": "vb", "pkPointe": 12.05, "orientation": "pointe",
+        "panneaux": ["complet"]
+      }
+    ],
+    "zones": [
+      { "id": "z-test-a", "nom": "RVB 80 m", "voie": "va", "pkDebut": 12.1, "pkFin": 12.18, "longueur": 80 },
+      {
+        "id": "z-test-b", "nom": "RR 30 m", "voie": "vb", "pkDebut": 12.06, "pkFin": 12.09, "longueur": 30,
+        "etatInitial": {
+          "plateforme": "existante", "sousCouche": "absente", "ballast": "ancien",
+          "traverses": "anciennes", "rails": "poses", "geometrie": "nc"
+        }
+      }
+    ],
+    "lieux": [
+      { "id": "base-test", "nom": "Plateforme logistique", "type": "base_arriere", "contour": [[-50, -30], [10, -30], [10, 10], [-50, 10]] },
+      { "id": "st-test", "nom": "Dépôt provisoire", "type": "stockage", "contour": [[200, 10], [260, 10], [260, 14], [200, 14]] }
+    ]
+  },
+  "ressources": [
+    { "id": "pt1", "numero": 1, "nom": "Pelle RR 1", "type": "pelle_rr", "modeInitial": "route", "lieuInitial": "base-test", "longueur": 8, "couleur": "4C9F70" },
+    { "id": "ttx-t", "nom": "TTX T — déblais", "type": "train_travaux", "lieuInitial": "base-test", "longueur": 120, "capacite": { "quoi": "ballast", "valeur": 8, "unite": "wagon" }, "couleur": "8A5A44" }
+  ],
+  "stocks": {
+    "st-test": [{ "quoi": "traverses_neuves", "quantite": 140 }]
+  },
+  "operations": [
+    {
+      "id": "t-op-01", "numero": 1, "libelle": "Enraillement de la pelle RR 1",
+      "tDebut": 0, "tFin": 30, "ressources": ["pt1"], "cibles": ["base-test"],
+      "effets": [{ "verbe": "enrailler", "vers": "rail" }]
+    },
+    {
+      "id": "t-op-02", "numero": 2, "libelle": "Tronçonnage des rails RVB 80 m",
+      "tDebut": 30, "tFin": 90, "ressources": ["pt1"], "cibles": ["z-test-a"],
+      "effets": [{ "verbe": "tronconner", "vers": "tronconnes" }],
+      "sens": "pk_decroissant"
+    },
+    {
+      "id": "t-op-03", "numero": 3, "libelle": "Dépose rails et traverses RVB 80 m",
+      "tDebut": 90, "tFin": 180, "ressources": ["pt1"], "cibles": ["z-test-a"],
+      "effets": [
+        { "verbe": "deposer_rails", "vers": "deposes_en_extremite" },
+        { "verbe": "deposer_traverses", "vers": "deposees" }
+      ],
+      "sens": "pk_decroissant",
+      "flux": [{ "quoi": "traverses_anciennes", "de": "z-test-a", "vers": "st-test", "quantite": 133 }]
+    },
+    {
+      "id": "t-op-04", "numero": 4, "libelle": "Arrivée du TTX T sur Voie B",
+      "tDebut": 120, "tFin": 180, "ressources": ["ttx-t"],
+      "effets": [{ "verbe": "circuler", "voie": "vb", "pkArrivee": 12.15, "sens": "pk_croissant" }]
+    },
+    {
+      "id": "t-op-05", "numero": 5, "libelle": "Déballastage RVB 80 m",
+      "tDebut": 180, "tFin": 300, "ressources": ["pt1"], "cibles": ["z-test-a"],
+      "effets": [{ "verbe": "deballaster", "vers": "deballaste" }],
+      "sens": "pk_decroissant",
+      "flux": [{ "quoi": "ballast", "de": "z-test-a", "vers": "ttx-t" }]
+    },
+    {
+      "id": "t-op-06", "numero": 6, "libelle": "Mise en attente du TTX T",
+      "tDebut": 300, "tFin": 360, "ressources": ["ttx-t"],
+      "effets": [{ "verbe": "attendre" }]
+    },
+    {
+      "id": "t-op-07", "numero": 7, "libelle": "Dépose du BS T1 et acheminement au dépôt",
+      "tDebut": 300, "tFin": 420, "ressources": ["pt1"], "cibles": ["bs-t1"],
+      "effets": [{ "verbe": "deposer_adv", "decoupage": ["complet"] }],
+      "flux": [{ "quoi": "panneau_adv", "ref": "bs-t1.complet", "de": "bs-t1", "vers": "st-test", "porteur": "pt1" }]
+    },
+    {
+      "id": "t-op-08", "numero": 8, "libelle": "Déraillement de la pelle RR 1",
+      "tDebut": 420, "tFin": 480, "ressources": ["pt1"], "cibles": ["base-test"],
+      "effets": [{ "verbe": "derailler", "vers": "route" }]
+    }
+  ],
+  "vues": [
+    { "id": "vue-test", "type": "orthographique_inclinee", "cible": "site", "angle": 30 }
+  ]
+}
