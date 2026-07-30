@@ -16,8 +16,6 @@ CLAUDE.md
 SPEC.md
 FORMAT.md
 DEMARRAGE.md
-sources/RAVI_CHATELLERAULT_SYNOPTIQUE_OCP_1_SUD.pptx
-sources/RAVI_CHATELLERAULT_2025__Planning_minuté_OCP_1_-_indice_D.xlsx
 ```
 
 Le dossier `sources/` compte autant que les autres fichiers. Claude Code sait ouvrir un PPTX et
