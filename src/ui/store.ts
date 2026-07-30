@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { chargerProjet } from '../domain/chargement.ts'
+import { chargerProjet, verifierReferences } from '../domain/chargement.ts'
 import type { Projet } from '../domain/projet.ts'
 import type { Ancrage } from '../geometry/ancrage.ts'
 import contenuOcp1Sud from '../../fixtures/ocp1-sud.cinef?raw'
@@ -26,6 +26,12 @@ type EtatApplication = {
   vitesse: number
   // 'libre' (souris) ou l'id d'une vue du fichier .cinef.
   vueActive: string
+  // Édition : avertissements de cohérence pendant la saisie, et outil de
+  // tracé à la souris avec ses points en cours.
+  editionOuverte: boolean
+  avertissements: string[]
+  outilTrace: 'aucun' | 'voie' | 'lieu' | 'zone' | 'appareil'
+  pointsSaisie: [number, number][]
   fixerT: (t: number) => void
   chargerTexte: (texte: string, nomFichier: string) => void
   fixerOrthophoto: (orthophoto: OrthophotoChargee | null) => void
@@ -33,6 +39,11 @@ type EtatApplication = {
   fixerVitesse: (vitesse: number) => void
   avancer: (deltaSecondes: number) => void
   fixerVue: (vueActive: string) => void
+  basculerEdition: () => void
+  remplacerProjet: (projet: Projet) => void
+  choisirOutil: (outil: EtatApplication['outilTrace']) => void
+  ajouterPointSaisie: (point: [number, number]) => void
+  viderSaisie: () => void
 }
 
 const chargementInitial = chargerProjet(contenuOcp1Sud)
@@ -57,6 +68,17 @@ export const useApplication = create<EtatApplication>((set) => ({
     }),
   fixerVitesse: (vitesse) => set({ vitesse }),
   fixerVue: (vueActive) => set({ vueActive }),
+  editionOuverte: false,
+  avertissements: [],
+  outilTrace: 'aucun',
+  pointsSaisie: [],
+  basculerEdition: () =>
+    set((etat) => ({ editionOuverte: !etat.editionOuverte, outilTrace: 'aucun', pointsSaisie: [] })),
+  remplacerProjet: (projet) => set({ projet, avertissements: verifierReferences(projet) }),
+  choisirOutil: (outilTrace) => set({ outilTrace, pointsSaisie: [] }),
+  ajouterPointSaisie: (point) =>
+    set((etat) => ({ pointsSaisie: [...etat.pointsSaisie, point] })),
+  viderSaisie: () => set({ outilTrace: 'aucun', pointsSaisie: [] }),
   avancer: (deltaSecondes) =>
     set((etat) => {
       if (!etat.lecture || !etat.projet) return {}

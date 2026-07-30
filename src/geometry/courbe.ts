@@ -28,6 +28,32 @@ export function creerCourbe(polyligne: Point2[]): Courbe {
   return { points: polyligne, abscisses, longueur: abscisses[abscisses.length - 1] }
 }
 
+// Projection d'un point du plan sur la courbe : abscisse du point le plus
+// proche et distance à la voie. Sert à la saisie à la souris (cliquer une
+// voie pour obtenir un PK).
+export function projeterSurCourbe(courbe: Courbe, point: Point2): { s: number; distance: number } {
+  let meilleur = { s: 0, distance: Number.POSITIVE_INFINITY }
+  const [px, py] = point
+  for (let i = 1; i < courbe.points.length; i++) {
+    const [x0, y0] = courbe.points[i - 1]
+    const [x1, y1] = courbe.points[i]
+    const dx = x1 - x0
+    const dy = y1 - y0
+    const longueurCarree = dx * dx + dy * dy
+    const fraction =
+      longueurCarree === 0
+        ? 0
+        : Math.min(Math.max(((px - x0) * dx + (py - y0) * dy) / longueurCarree, 0), 1)
+    const qx = x0 + dx * fraction
+    const qy = y0 + dy * fraction
+    const distance = Math.hypot(px - qx, py - qy)
+    if (distance < meilleur.distance) {
+      meilleur = { s: courbe.abscisses[i - 1] + Math.sqrt(longueurCarree) * fraction, distance }
+    }
+  }
+  return meilleur
+}
+
 // Position et cap à l'abscisse s (m), décalée de `offset` (m) perpendiculairement
 // à la voie, à gauche dans le sens des abscisses croissantes.
 // s est borné à la courbe : pas d'extrapolation.

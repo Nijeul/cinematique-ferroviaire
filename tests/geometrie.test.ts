@@ -97,3 +97,16 @@ describe('rubans et poses régulières', () => {
     expect(poses[1].x - poses[0].x).toBeCloseTo(0.6)
   })
 })
+
+describe('projeterSurCourbe', async () => {
+  const { projeterSurCourbe } = await import('../src/geometry/courbe.ts')
+  const { creerCourbe } = await import('../src/geometry/courbe.ts')
+
+  it('projette un point sur la voie la plus proche', () => {
+    const courbe = creerCourbe([[0, 0], [100, 0], [100, 50]])
+    expect(projeterSurCourbe(courbe, [40, 7])).toEqual({ s: 40, distance: 7 })
+    expect(projeterSurCourbe(courbe, [110, 20])).toEqual({ s: 120, distance: 10 })
+    // Avant l'origine : borné au début.
+    expect(projeterSurCourbe(courbe, [-10, 0])).toEqual({ s: 0, distance: 10 })
+  })
+})

@@ -8,6 +8,7 @@ import { Engins } from './Engins.tsx'
 import { Lecture } from './Lecture.tsx'
 import { Lieux } from './Lieux.tsx'
 import { Orthophoto } from './Orthophoto.tsx'
+import { PlanSaisie } from './PlanSaisie.tsx'
 import { Stocks } from './Stocks.tsx'
 import { Voies } from './Voies.tsx'
 import { Zones } from './Zones.tsx'
@@ -63,6 +64,7 @@ export function Scene() {
       />
 
       <Lecture />
+      <PlanSaisie />
       <Orthophoto />
       <Lieux />
       <Voies />
