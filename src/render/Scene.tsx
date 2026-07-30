@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { Grid } from '@react-three/drei'
+import { cibleCapture } from '../export/capture.ts'
 import { useApplication } from '../ui/store.ts'
 import { Appareils } from './Appareils.tsx'
 import { Cameras } from './Cameras.tsx'
@@ -42,7 +43,12 @@ export function Scene() {
   const [cx, cy] = cadrage.centre
 
   return (
-    <Canvas>
+    <Canvas
+      gl={{ preserveDrawingBuffer: true }}
+      onCreated={({ gl }) => {
+        cibleCapture.canvas = gl.domElement
+      }}
+    >
       <color attach="background" args={['#dfe7ee']} />
       <ambientLight intensity={0.85} />
       <directionalLight position={[cx + 150, 300, cy + 100]} intensity={1.15} />
