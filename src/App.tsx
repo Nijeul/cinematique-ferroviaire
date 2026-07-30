@@ -1,3 +1,4 @@
+import { EditeurOperations } from './editor/EditeurOperations.tsx'
 import { PanneauEdition } from './editor/PanneauEdition.tsx'
 import { Scene } from './render/Scene.tsx'
 import { CurseurTemps } from './ui/CurseurTemps.tsx'
@@ -11,7 +12,9 @@ export default function App() {
     <>
       <Scene />
       <PanneauProjet />
-      <PanneauEdition />
+      <PanneauEdition
+        ongletsSupplementaires={[{ titre: 'Opérations', contenu: <EditeurOperations /> }]}
+      />
       <PanneauOrthophoto />
       <SelecteurVues />
       <EncartPhasage />
