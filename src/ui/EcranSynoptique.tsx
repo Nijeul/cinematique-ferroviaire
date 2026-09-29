@@ -99,7 +99,13 @@ const VIGNETTE = { largeur: 168, hauteur: 94 }
 function Vignettes(props: { synoptique: Synoptique; index: number; choisir: (i: number) => void }) {
   const { synoptique: s, index, choisir } = props
   const choisie = useRef<HTMLButtonElement>(null)
-  useEffect(() => choisie.current?.scrollIntoView({ block: 'nearest', inline: 'nearest' }), [index])
+  // Corps en accolades : un effet ne doit rien renvoyer d'autre qu'une fonction
+  // de nettoyage. Les Chrome / Edge récents font renvoyer une promesse à
+  // scrollIntoView ; renvoyée par l'effet, React tentait de l'appeler au
+  // changement d'image (« l is not a function », page blanche).
+  useEffect(() => {
+    choisie.current?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+  }, [index])
   return (
     <ol
       aria-label="Images du synoptique"

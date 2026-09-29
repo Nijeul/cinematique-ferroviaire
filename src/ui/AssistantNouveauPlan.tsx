@@ -33,7 +33,9 @@ export function AssistantNouveauPlan(props: { nomPropose: string; creer: (projet
   useEffect(() => {
     pdfOuvert.current = pdf
   }, [pdf])
-  useEffect(() => () => fermerPdf(pdfOuvert.current), [])
+  useEffect(() => {
+    return () => fermerPdf(pdfOuvert.current)
+  }, [])
 
   const importer = async (fichier: File) => {
     setOccupe('Lecture du fond de plan…')

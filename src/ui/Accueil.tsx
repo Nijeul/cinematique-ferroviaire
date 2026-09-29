@@ -57,7 +57,9 @@ export function Accueil(props: { aller: (route: Route) => void; messageInitial: 
 
   // Le message du lancement (reprise de l'ancienne sauvegarde) ne s'affiche qu'une fois.
   const { messageLu } = props
-  useEffect(() => messageLu(), [messageLu])
+  useEffect(() => {
+    messageLu()
+  }, [messageLu])
 
   useEffect(() => {
     // Lecture asynchrone : la liste arrive après le premier affichage.
