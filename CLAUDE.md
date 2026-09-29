@@ -51,8 +51,9 @@ Le commanditaire fait le contrôle visuel — c'est le cœur de la méthode.
 
 ```
 src/
-  plan/       modèle du projet, fichier, vue (zoom), géométrie du tracé, annuler
-              (ni React ni DOM, testé)
+  plan/       modèle du projet, lecture du fichier, vue (zoom), géométrie du tracé
+              et le long des voies, zones / appareils / cadres / textes, détection
+              sous le pointeur, annuler (ni React ni DOM, testé)
   ui/         composants React (plan de travail SVG, panneau Calques) et accès au
               navigateur (pdf.js, sauvegarde automatique, téléchargement)
 fixtures/     jeux de données d'exemple, anonymisés

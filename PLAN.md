@@ -16,8 +16,8 @@ plat, dans le style des synoptiques existants ; on passe d'une planche à la sui
 **Le fond, c'est le plan du commanditaire.** Il importe son propre plan (image ou PDF, au
 choix de la page) et trace les voies par-dessus, à la main, comme sur un calque. Le style
 des voies (double filet, nom en gras) est celui de l'aperçu validé à l'étape 1 ; couleurs,
-noms et épaisseurs se personnalisent voie par voie. Les engins, zones et appareils se
-placeront de la même façon, au calque, aux étapes suivantes.
+noms et épaisseurs se personnalisent voie par voie. Zones, appareils, cadres et textes se
+placent de la même façon, au calque ; les engins suivront.
 
 ## Méthode
 
@@ -29,18 +29,66 @@ Jamais deux étapes d'avance. Chaque étape est une PR courte qui dit quoi regar
 | # | Contenu | Validation attendue | État |
 |---|---|---|---|
 | 1 | Style de planche : aperçu SVG (voies en double filet, noms, zones, BS, stockages, cartouche) | « C'est le style de mes synoptiques » | **validé** |
-| 2 | Fond de plan importé (image ou PDF, choix de la page) ; tracé des voies à la main au calque ; nom, couleur et épaisseur par voie ; enregistrer / ouvrir | le commanditaire trace les voies de son site sur son propre plan | **en cours** |
-| 3 | Zones, appareils (BS), stockages et textes tracés au calque, style personnalisable | le plan de base d'une planche est complet | à faire |
-| 4 | Bibliothèque d'engins à placer (locomotive, wagon, bourreuse, pelle RR, TTX, PEM LEM… liste à confirmer avec le commanditaire), couleurs et numéros | les engins se posent et se reconnaissent | à faire |
-| 5 | Image par image : planches successives ◀ ▶ (fonctionnement exact à préciser avec le commanditaire) | on feuillette comme un PowerPoint | à faire |
-| 6 | Horloge, encart phasage, légende | une planche se lit comme une planche actuelle | à faire |
-| 7 | Exports PowerPoint et PDF des planches | un jeu de planches équivalent à l'actuel | à faire |
+| 2 | Fond de plan importé (image ou PDF, choix de la page) ; tracé des voies à la main au calque ; nom, couleur et épaisseur par voie ; enregistrer / ouvrir | le commanditaire trace les voies de son site sur son propre plan | **validé** |
+| 3 | Éléments du plan au calque : zones de travaux, appareils (BS et communications), cadres, textes, extrémités du plan (détail ci-dessous) | le plan de base d'une planche est complet | **en cours** |
+| 4 | Organisation : accueil et chantiers, plusieurs plans par chantier, synoptiques et images (détail ci-dessous) | on crée un synoptique à partir d'un plan et on feuillette ses images | à faire |
+| 5 | Bibliothèque d'engins à placer (locomotive, wagon, bourreuse, pelle RR, TTX, PEM LEM… liste à confirmer avec le commanditaire), couleurs et numéros | les engins se posent et se reconnaissent | à faire |
+| 6 | Contenu de chaque image : couleurs de zones qui changent d'une image à l'autre, engins déplacés, encart phasage, horloge, légende | une image se lit comme une planche actuelle | à faire |
+| 7 | Exports PowerPoint et PDF des images d'un synoptique | un jeu de planches équivalent à l'actuel | à faire |
 
 Les besoins au-delà (vidéo, orthophoto calée, import DXF, 3D en option) seront rediscutés une
 fois l'étape 7 validée — pas avant.
+
+### Étape 3 — éléments du plan au calque
+
+Tout se dessine au calque sur le plan, se choisit, se déplace, se supprime (Suppr),
+s'annule / se rétablit, s'enregistre et revient au rechargement, comme les voies.
+
+- **Zones de travaux** (outil Zone, Z) : un clic sur une voie au début, un clic sur la même
+  voie à la fin. La zone est rattachée à la voie (position le long du tracé) : si l'on
+  déplace les points de la voie, la zone suit. Bande colorée qui épouse la voie, coudes
+  compris ; nom au-dessus, ou au-dessous si le nom voisin le gênerait. Nom et couleur
+  modifiables ; poignées aux deux bouts, glissables le long de la voie.
+- **Appareil (BS)** (B) : premier clic à la pointe, sur la voie directe ; second clic côté
+  talon, sur la voie déviée. Biais de voie, petit triangle plein à la pointe, nom en gras.
+  Le panneau affiche « pointe côté … » et propose « Inverser le sens ».
+- **Communication** (C) : un clic sur chaque voie ; crée deux BS talon contre talon, liés
+  (« BS 1a » / « BS 1b »), chacun avec son nom et son sens. Supprimer l'un supprime les deux.
+- **Extrémités du plan** : deux noms (« Nord » à gauche, « Sud » à droite par défaut,
+  renommables en « Paris » / « Poitiers »…), affichés en haut du plan et utilisés pour le
+  sens des appareils.
+- **Cadres** (R) : rectangle tracé en glissant (stockage, base arrière, pont, zone
+  d'étanchéité…) ; nom centré, couleur, pointillés ou trait plein, remplissage léger ou non ;
+  poignées d'angle.
+- **Textes libres** (X) : un clic sur le plan, puis la frappe ; taille, couleur, gras.
+- **Calques** : Fond, Cadres, Voies, Zones, Appareils, Textes (dans cet ordre d'affichage),
+  chacun visible / masqué et verrouillé. Supprimer une voie supprime ce qui est posé dessus,
+  avec un message ; un seul Annuler rétablit tout.
+- Les fichiers et sauvegardes de l'étape 2 s'ouvrent toujours.
+
+### Étape 4 — organisation (décisions prises, à détailler au moment de l'étape)
+
+- **Page d'accueil** avec la liste des chantiers. Les chantiers sont gardés dans le
+  navigateur ; export et import d'un chantier en fichier pour le transmettre.
+- **Plusieurs plans par chantier** : un par phase (définitive, provisoire, transitoire…).
+- **« Nouveau synoptique »** depuis un plan : **copie figée** du plan (modifier le plan
+  ensuite ne change pas les synoptiques déjà créés), avec **cadrage sur une partie du plan**
+  (zoom sur un secteur), un nom, une heure de début et une heure de fin.
+- Un synoptique est une **suite d'images**, chacune avec son heure de début et de fin ;
+  **une nouvelle image est la copie de la précédente** ; défilement ◀ ▶.
+
+## Décisions du commanditaire
+
+- Appareils de voie : **seulement le BS et la communication** pour l'instant, pas d'autres ADV.
+- Longueur des zones : **tapée dans le nom** (« RVB 50 m ») ; pas de calage d'échelle pour
+  l'instant.
+- Sens d'un appareil : fixé par l'ordre des clics (pointe d'abord), repère triangle à la
+  pointe, bouton « Inverser le sens ».
+- **Plan et synoptiques sont indépendants après création** : un synoptique est une copie
+  figée du plan.
 
 ## Synoptiques réels
 
 Plus bloquant : le commanditaire importe directement ses propres plans (PDF ou images) dans
 l'application. Un ou deux synoptiques PowerPoint réels déposés dans `sources/` resteront
-utiles pour caler le style des étapes 3 à 6 (engins, légende, encart phasage).
+utiles pour caler le style des étapes 5 et 6 (engins, légende, encart phasage).

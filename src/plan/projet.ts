@@ -1,6 +1,7 @@
-// Le projet : un fond de plan (image ou page de PDF) et les voies tracées
-// dessus au calque. Coordonnées en pixels de l'image de fond, origine en haut
-// à gauche. Ni React ni DOM ici : tout est testable sans navigateur.
+// Le projet : un fond de plan (image ou page de PDF) et ce qui est tracé
+// dessus au calque — cadres, voies, zones de travaux, appareils de voie,
+// textes. Coordonnées en pixels de l'image de fond, origine en haut à gauche.
+// Ni React ni DOM ici : tout est testable sans navigateur.
 
 export type Point = { x: number; y: number }
 
@@ -15,6 +16,57 @@ export type Voie = {
   points: Point[]
 }
 
+// Un endroit sur une voie : sa distance depuis le premier point de la voie,
+// mesurée le long du tracé (abscisse curviligne, en pixels du plan). Ce qui
+// est posé sur une voie suit donc la voie quand on en déplace les points.
+export type Ancrage = { voieId: string; abscisse: number }
+
+// Zone de travaux : une portion de voie, de l'abscisse `debut` à `fin`
+// (debut ≤ fin). La longueur réelle est tapée dans le nom (« RVB 50 m »).
+export type Zone = {
+  id: string
+  nom: string
+  couleur: string
+  voieId: string
+  debut: number
+  fin: number
+}
+
+// Branchement simple (BS) : la pointe sur la voie directe, le talon sur la
+// voie déviée. Deux BS talon contre talon forment une communication : ils
+// portent alors le même identifiant de communication.
+export type Appareil = {
+  id: string
+  nom: string
+  pointe: Ancrage
+  talon: Ancrage
+  communication: string | null
+}
+
+// Cadre : rectangle libre (stockage, base arrière, pont, zone d'étanchéité…).
+export type Cadre = {
+  id: string
+  nom: string
+  couleur: string
+  x: number
+  y: number
+  largeur: number
+  hauteur: number
+  pointille: boolean
+  rempli: boolean
+}
+
+// Texte libre, posé où l'on veut. (x, y) = début de la ligne de base.
+export type Texte = {
+  id: string
+  texte: string
+  x: number
+  y: number
+  taille: number
+  couleur: string
+  gras: boolean
+}
+
 export type Fond = {
   // Image en data URL. Vide quand le fond n'a pas pu être restauré de la
   // sauvegarde automatique (trop lourd) : il faut alors le réimporter.
@@ -27,8 +79,20 @@ export type Fond = {
   nombrePages: number | null
 }
 
+// Noms des deux bouts du plan : Nord à gauche, Sud à droite par défaut (repère
+// du commanditaire), renommables (« Paris » / « Poitiers »…).
+export type Extremites = { gauche: string; droite: string }
+
 export type CalqueFond = { visible: boolean; opacite: number; verrouille: boolean }
-export type CalqueVoies = { visible: boolean }
+// Calque verrouillé : ses éléments ne se choisissent plus sur le plan et ne se
+// modifient plus, pour ne pas les bouger par mégarde.
+export type Calque = { visible: boolean; verrouille: boolean }
+
+// Calques dans l'ordre d'affichage, du dessous vers le dessus.
+export const CALQUES_ELEMENTS = ['cadres', 'voies', 'zones', 'appareils', 'textes'] as const
+export type NomCalque = (typeof CALQUES_ELEMENTS)[number]
+
+export type Calques = { fond: CalqueFond } & Record<NomCalque, Calque>
 
 export type Projet = {
   nom: string
@@ -36,19 +100,45 @@ export type Projet = {
   largeur: number
   hauteur: number
   fond: Fond | null
-  calques: { fond: CalqueFond; voies: CalqueVoies }
+  extremites: Extremites
+  calques: Calques
+  cadres: Cadre[]
   voies: Voie[]
+  zones: Zone[]
+  appareils: Appareil[]
+  textes: Texte[]
 }
 
 // Marque et version du fichier enregistré, pour reconnaître nos projets.
+// Version 2 : fond et voies (étape 2). Version 3 : zones, appareils, cadres,
+// textes et extrémités (étape 3).
 export const FORMAT_FICHIER = 'cinematique-ferroviaire/projet'
-export const VERSION_FICHIER = 2
+export const VERSION_FICHIER = 3
 export const EXTENSION_FICHIER = '.cinematique.json'
 
 export const TOILE_PAR_DEFAUT = { largeur: 1600, hauteur: 900 } as const
 export const COULEUR_VOIE_PAR_DEFAUT = '#454f59'
+// Couleurs de l'aperçu validé à l'étape 1 : zone bleu ardoise, stockage vert
+// olive, texte presque noir.
+export const COULEUR_ZONE_PAR_DEFAUT = '#33506b'
+export const COULEUR_CADRE_PAR_DEFAUT = '#7a8a63'
+export const COULEUR_TEXTE_PAR_DEFAUT = '#1c2430'
+export const EXTREMITES_PAR_DEFAUT: Extremites = { gauche: 'Nord', droite: 'Sud' }
 export const EPAISSEUR_MIN = 1
 export const EPAISSEUR_MAX = 200
+export const TAILLE_TEXTE_MIN = 4
+export const TAILLE_TEXTE_MAX = 400
+
+export function creerCalques(): Calques {
+  return {
+    fond: { visible: true, opacite: 1, verrouille: false },
+    cadres: { visible: true, verrouille: false },
+    voies: { visible: true, verrouille: false },
+    zones: { visible: true, verrouille: false },
+    appareils: { visible: true, verrouille: false },
+    textes: { visible: true, verrouille: false },
+  }
+}
 
 export function creerProjet(nom = 'Nouveau projet'): Projet {
   return {
@@ -56,11 +146,13 @@ export function creerProjet(nom = 'Nouveau projet'): Projet {
     largeur: TOILE_PAR_DEFAUT.largeur,
     hauteur: TOILE_PAR_DEFAUT.hauteur,
     fond: null,
-    calques: {
-      fond: { visible: true, opacite: 1, verrouille: false },
-      voies: { visible: true },
-    },
+    extremites: { ...EXTREMITES_PAR_DEFAUT },
+    calques: creerCalques(),
+    cadres: [],
     voies: [],
+    zones: [],
+    appareils: [],
+    textes: [],
   }
 }
 
@@ -79,135 +171,4 @@ export function serialiserProjet(projet: Projet): string {
 export function nomDeFichier(nomProjet: string): string {
   const propre = nomProjet.replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, ' ').trim()
   return (propre || 'projet') + EXTENSION_FICHIER
-}
-
-export type ResultatLecture = { ok: true; projet: Projet } | { ok: false; erreurs: string[] }
-
-const estObjet = (v: unknown): v is Record<string, unknown> =>
-  typeof v === 'object' && v !== null && !Array.isArray(v)
-const estNombre = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v)
-const estPositif = (v: unknown): v is number => estNombre(v) && v > 0
-const estCouleur = (v: unknown): v is string => typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v)
-
-// Lit et vérifie un projet enregistré. Les erreurs sont en français, prêtes
-// à afficher ; aucune exception ne sort d'ici.
-export function lireProjet(texte: string): ResultatLecture {
-  let brut: unknown
-  try {
-    brut = JSON.parse(texte)
-  } catch {
-    return { ok: false, erreurs: ["Le fichier n'est pas lisible : ce n'est pas un projet enregistré par l'application."] }
-  }
-  if (!estObjet(brut)) {
-    return { ok: false, erreurs: ["Le fichier ne contient pas de projet."] }
-  }
-  if (brut.format !== FORMAT_FICHIER) {
-    const ancien = 'site' in brut || 'phasage' in brut
-    return {
-      ok: false,
-      erreurs: [
-        ancien
-          ? "Ce fichier vient de l'ancienne version 3D (format .cinef) : il ne s'ouvre plus dans cette version."
-          : "Ce fichier n'est pas un projet de l'application (marque de format absente).",
-      ],
-    }
-  }
-  if (!estNombre(brut.version) || brut.version > VERSION_FICHIER) {
-    return {
-      ok: false,
-      erreurs: ["Ce projet a été enregistré par une version plus récente de l'application : mettez la page à jour."],
-    }
-  }
-
-  const erreurs: string[] = []
-  const defaut = creerProjet()
-
-  const nom = typeof brut.nom === 'string' ? brut.nom : defaut.nom
-  if (!estPositif(brut.largeur) || !estPositif(brut.hauteur)) {
-    erreurs.push('La taille du plan (largeur et hauteur) doit être un nombre positif.')
-  }
-
-  let fond: Fond | null = null
-  if (brut.fond !== null && brut.fond !== undefined) {
-    const f = brut.fond
-    if (
-      !estObjet(f) ||
-      typeof f.image !== 'string' ||
-      (f.image !== '' && !f.image.startsWith('data:image/')) ||
-      !estPositif(f.largeur) ||
-      !estPositif(f.hauteur)
-    ) {
-      erreurs.push('Le fond de plan est illisible (image ou dimensions manquantes).')
-    } else {
-      fond = {
-        image: f.image,
-        largeur: f.largeur,
-        hauteur: f.hauteur,
-        nomFichier: typeof f.nomFichier === 'string' ? f.nomFichier : 'fond',
-        page: estPositif(f.page) ? Math.round(f.page) : null,
-        nombrePages: estPositif(f.nombrePages) ? Math.round(f.nombrePages) : null,
-      }
-    }
-  }
-
-  const calques = defaut.calques
-  if (estObjet(brut.calques)) {
-    const cf = brut.calques.fond
-    if (estObjet(cf)) {
-      if (typeof cf.visible === 'boolean') calques.fond.visible = cf.visible
-      if (typeof cf.verrouille === 'boolean') calques.fond.verrouille = cf.verrouille
-      if (cf.opacite !== undefined) {
-        if (estNombre(cf.opacite) && cf.opacite >= 0 && cf.opacite <= 1) calques.fond.opacite = cf.opacite
-        else erreurs.push("L'opacité du fond doit être comprise entre 0 et 1.")
-      }
-    }
-    const cv = brut.calques.voies
-    if (estObjet(cv) && typeof cv.visible === 'boolean') calques.voies.visible = cv.visible
-  }
-
-  const voies: Voie[] = []
-  if (!Array.isArray(brut.voies)) {
-    erreurs.push('La liste des voies est absente.')
-  } else {
-    const ids = new Set<string>()
-    brut.voies.forEach((v: unknown, i: number) => {
-      const libelle = estObjet(v) && typeof v.nom === 'string' && v.nom ? `Voie n°${i + 1} (« ${v.nom} »)` : `Voie n°${i + 1}`
-      if (!estObjet(v)) {
-        erreurs.push(`${libelle} : description illisible.`)
-        return
-      }
-      const avant = erreurs.length
-      if (typeof v.id !== 'string' || v.id === '') erreurs.push(`${libelle} : identifiant manquant.`)
-      else if (ids.has(v.id)) erreurs.push(`${libelle} : identifiant « ${v.id} » en double.`)
-      else ids.add(v.id)
-      if (typeof v.nom !== 'string') erreurs.push(`${libelle} : nom manquant.`)
-      if (!estCouleur(v.couleur)) {
-        erreurs.push(`${libelle} : la couleur « ${String(v.couleur)} » n'est pas valide (format #rrggbb attendu).`)
-      }
-      if (!estNombre(v.epaisseur) || v.epaisseur < EPAISSEUR_MIN || v.epaisseur > EPAISSEUR_MAX) {
-        erreurs.push(`${libelle} : l'épaisseur doit être comprise entre ${EPAISSEUR_MIN} et ${EPAISSEUR_MAX}.`)
-      }
-      const points = Array.isArray(v.points) ? v.points : null
-      if (!points || points.length < 2) {
-        erreurs.push(`${libelle} : il faut au moins deux points.`)
-      } else if (!points.every((p: unknown) => estObjet(p) && estNombre(p.x) && estNombre(p.y))) {
-        erreurs.push(`${libelle} : un point n'a pas de coordonnées x et y valides.`)
-      }
-      if (erreurs.length === avant) {
-        voies.push({
-          id: v.id as string,
-          nom: v.nom as string,
-          couleur: (v.couleur as string).toLowerCase(),
-          epaisseur: v.epaisseur as number,
-          points: (points as Point[]).map((p) => ({ x: p.x, y: p.y })),
-        })
-      }
-    })
-  }
-
-  if (erreurs.length > 0) return { ok: false, erreurs }
-  return {
-    ok: true,
-    projet: { nom, largeur: brut.largeur as number, hauteur: brut.hauteur as number, fond, calques, voies },
-  }
 }

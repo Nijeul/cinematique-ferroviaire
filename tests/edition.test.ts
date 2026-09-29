@@ -12,7 +12,8 @@ import {
   supprimerPoint,
   supprimerVoie,
 } from '../src/plan/edition.ts'
-import { creerProjet, EPAISSEUR_MAX, lireProjet, type Projet } from '../src/plan/projet.ts'
+import { lireProjet } from '../src/plan/lecture.ts'
+import { creerProjet, EPAISSEUR_MAX, type Projet } from '../src/plan/projet.ts'
 
 const exemple = (): Projet => {
   const lu = lireProjet(readFileSync(new URL('../fixtures/projet-exemple.json', import.meta.url), 'utf-8'))
@@ -35,7 +36,7 @@ describe('ajout de voie', () => {
   })
 
   it('réaffiche le calque des voies s’il était masqué', () => {
-    const projet = { ...creerProjet(), calques: { ...creerProjet().calques, voies: { visible: false } } }
+    const projet = { ...creerProjet(), calques: { ...creerProjet().calques, voies: { visible: false, verrouille: false } } }
     expect(ajouterVoie(projet, [{ x: 0, y: 0 }, { x: 1, y: 1 }]).projet.calques.voies.visible).toBe(true)
   })
 

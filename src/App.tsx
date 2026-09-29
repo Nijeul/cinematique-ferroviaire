@@ -2,15 +2,16 @@ import { useRef, type CSSProperties, type ReactNode } from 'react'
 import { COULEURS } from './ui/couleurs.ts'
 import { PanneauCalques } from './ui/PanneauCalques.tsx'
 import { PlanDeTravail } from './ui/PlanDeTravail.tsx'
-import { useEditeur, type Editeur, type Outil } from './ui/useEditeur.ts'
+import { TOUCHES, useEditeur, type Editeur, type Outil } from './ui/useEditeur.ts'
 
-// Étape 2 du PLAN.md : fond de plan importé (image ou PDF) et tracé des voies
-// au calque, dans le style de l'aperçu validé à l'étape 1.
+// Étapes 2 et 3 du PLAN.md : fond de plan importé (image ou PDF) et, au
+// calque par-dessus, voies, zones de travaux, appareils de voie, cadres et
+// textes, dans le style de l'aperçu validé à l'étape 1.
 
 const styleBouton = (actif = false): CSSProperties => ({
   font: 'inherit',
   fontSize: 13,
-  padding: '6px 11px',
+  padding: '5px 8px',
   borderRadius: 5,
   border: `1px solid ${actif ? COULEURS.selection : COULEURS.bordure}`,
   background: actif ? COULEURS.selection : '#ffffff',
@@ -26,16 +27,47 @@ function Groupe({ children }: { children: ReactNode }) {
 
 const Separateur = () => <div style={{ width: 1, alignSelf: 'stretch', background: COULEURS.bordure }} />
 
-const OUTILS: { outil: Outil; libelle: string; touche: string }[] = [
-  { outil: 'selection', libelle: 'Sélection', touche: 'S' },
-  { outil: 'tracer', libelle: 'Tracer une voie', touche: 'T' },
-  { outil: 'main', libelle: 'Main', touche: 'M' },
+const OUTILS: { outil: Outil; libelle: string; titre: string }[] = [
+  { outil: 'selection', libelle: 'Sélection', titre: 'Choisir, déplacer, supprimer' },
+  { outil: 'voie', libelle: 'Voie', titre: 'Tracer une voie point par point' },
+  { outil: 'zone', libelle: 'Zone', titre: 'Zone de travaux sur une voie' },
+  { outil: 'bs', libelle: 'Appareil (BS)', titre: 'Branchement simple : pointe puis talon' },
+  { outil: 'communication', libelle: 'Communication', titre: 'Deux BS talon contre talon entre deux voies' },
+  { outil: 'cadre', libelle: 'Cadre', titre: 'Rectangle : stockage, base arrière, pont…' },
+  { outil: 'texte', libelle: 'Texte', titre: 'Texte libre sur le plan' },
+  { outil: 'main', libelle: 'Main', titre: 'Déplacer la vue' },
 ]
 
-const CONSIGNES: Record<Outil, string> = {
-  tracer: 'Cliquez pour poser les points de la voie · double-clic ou Entrée pour terminer · Maj : horizontal, vertical, 45° · Échap : annuler',
-  selection: 'Cliquez sur une voie pour la choisir, puis glissez ses points · Suppr : supprimer',
-  main: 'Glissez pour déplacer la vue · molette : zoom',
+// Consigne en bas du plan : ce qu'il faut faire avec l'outil en cours, y
+// compris après le premier clic d'une zone, d'un BS ou d'une communication.
+function consigne(editeur: Editeur): string {
+  const { outil, pose, projet } = editeur
+  const voie = pose && projet.voies.find((v) => v.id === pose.voieId)
+  const annuler = ' · Échap : annuler'
+  switch (outil) {
+    case 'voie':
+      return 'Cliquez pour poser les points de la voie · double-clic ou Entrée pour terminer · Maj : horizontal, vertical, 45° · Échap : annuler'
+    case 'zone':
+      return voie
+        ? `Cliquez la fin de la zone sur la même voie (« ${voie.nom} »)${annuler}`
+        : 'Cliquez sur une voie au début de la zone'
+    case 'bs':
+      return voie
+        ? `Cliquez sur la voie déviée, côté talon (pointe posée sur « ${voie.nom} »)${annuler}`
+        : 'Cliquez sur la voie directe, à la pointe du BS'
+    case 'communication':
+      return voie
+        ? `Cliquez sur la seconde voie, à la pointe du second BS (premier posé sur « ${voie.nom} »)${annuler}`
+        : 'Cliquez sur la première voie, à la pointe du premier BS'
+    case 'cadre':
+      return 'Glissez pour tracer le cadre, dans n\'importe quel sens'
+    case 'texte':
+      return 'Cliquez où poser le texte, puis tapez-le dans le panneau à droite · clic sur un texte : le modifier'
+    case 'selection':
+      return 'Cliquez un élément pour le choisir, puis glissez-le ou ses poignées · Suppr : supprimer'
+    case 'main':
+      return 'Glissez pour déplacer la vue · molette : zoom'
+  }
 }
 
 function BarreOutils({ editeur }: { editeur: Editeur }) {
@@ -47,14 +79,14 @@ function BarreOutils({ editeur }: { editeur: Editeur }) {
       style={{
         display: 'flex',
         flexWrap: 'wrap',
-        gap: 10,
+        gap: 8,
         alignItems: 'center',
         padding: '8px 12px',
         background: '#ffffff',
         borderBottom: `1px solid ${COULEURS.bordure}`,
       }}
     >
-      <strong style={{ fontSize: 15, marginRight: 4 }}>Cinématique ferroviaire</strong>
+      <strong style={{ fontSize: 14, marginRight: 2 }}>Cinématique ferroviaire</strong>
       <Separateur />
       <Groupe>
         <button style={styleBouton()} onClick={() => choixProjet.current?.click()}>
@@ -101,11 +133,11 @@ function BarreOutils({ editeur }: { editeur: Editeur }) {
       </Groupe>
       <Separateur />
       <Groupe>
-        {OUTILS.map(({ outil, libelle, touche }) => (
+        {OUTILS.map(({ outil, libelle, titre }) => (
           <button
             key={outil}
             style={styleBouton(editeur.outil === outil)}
-            title={`Raccourci : ${touche}`}
+            title={`${titre} — raccourci : ${TOUCHES[outil]}`}
             aria-pressed={editeur.outil === outil}
             onClick={() => editeur.choisirOutil(outil)}
           >
@@ -183,7 +215,7 @@ function Bandeau({ editeur }: { editeur: Editeur }) {
 export default function App() {
   const editeur = useEditeur()
   const { projet } = editeur
-  const vide = !projet.fond && projet.voies.length === 0 && !editeur.trace
+  const vide = !projet.fond && projet.voies.length + projet.cadres.length + projet.textes.length === 0 && !editeur.trace
   return (
     <div
       style={{
@@ -212,7 +244,7 @@ export default function App() {
             >
               <p style={{ maxWidth: 440, textAlign: 'center', fontSize: 15, lineHeight: 1.5, color: COULEURS.discret }}>
                 Importez votre plan (image ou PDF) avec <strong>Importer un fond…</strong>, puis tracez les voies
-                par-dessus avec <strong>Tracer une voie</strong>.
+                par-dessus avec l'outil <strong>Voie</strong>.
               </p>
             </div>
           )}
@@ -231,7 +263,7 @@ export default function App() {
               pointerEvents: 'none',
             }}
           >
-            {CONSIGNES[editeur.outil]}
+            {consigne(editeur)}
           </p>
         </main>
         <PanneauCalques editeur={editeur} />

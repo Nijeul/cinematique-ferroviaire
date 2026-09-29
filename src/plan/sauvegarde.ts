@@ -1,4 +1,5 @@
-import { lireProjet, serialiserProjet, type Projet } from './projet.ts'
+import { lireProjet } from './lecture.ts'
+import { serialiserProjet, type Projet } from './projet.ts'
 
 // Sauvegarde automatique dans le navigateur, en deux morceaux : le projet
 // sans l'image (léger, réécrit à chaque modification) et l'image du fond

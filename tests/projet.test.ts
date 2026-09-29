@@ -1,10 +1,10 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
+import { lireProjet } from '../src/plan/lecture.ts'
 import {
   creerProjet,
   epaisseurParDefaut,
   EXTENSION_FICHIER,
-  lireProjet,
   nomDeFichier,
   serialiserProjet,
   type Projet,
@@ -111,6 +111,101 @@ describe('lecture du projet', () => {
     delete brut.calques
     const lu = lireProjet(JSON.stringify(brut))
     expect(lu.ok && lu.projet.calques).toEqual(creerProjet().calques)
+  })
+})
+
+describe('fichiers de l’étape 2 (version 2)', () => {
+  const etape2 = () => {
+    const brut = brutExemple()
+    for (const cle of ['zones', 'appareils', 'cadres', 'textes', 'extremites']) delete brut[cle]
+    brut.version = 2
+    brut.calques = { fond: { visible: true, opacite: 0.5, verrouille: false }, voies: { visible: false } }
+    return brut
+  }
+
+  it('s’ouvrent toujours : listes vides, Nord à gauche et Sud à droite', () => {
+    const lu = lireProjet(JSON.stringify(etape2()))
+    expect(lu.ok).toBe(true)
+    if (!lu.ok) return
+    expect(lu.projet.voies).toHaveLength(4)
+    expect([lu.projet.zones, lu.projet.appareils, lu.projet.cadres, lu.projet.textes]).toEqual([[], [], [], []])
+    expect(lu.projet.extremites).toEqual({ gauche: 'Nord', droite: 'Sud' })
+  })
+
+  it('gardent les réglages de calques existants et complètent les autres', () => {
+    const lu = lireProjet(JSON.stringify(etape2()))
+    expect(lu.ok && lu.projet.calques).toEqual({
+      ...creerProjet().calques,
+      fond: { visible: true, opacite: 0.5, verrouille: false },
+      voies: { visible: false, verrouille: false },
+    })
+  })
+
+  it('sont réenregistrés au format actuel', () => {
+    const lu = lireProjet(JSON.stringify(etape2()))
+    if (!lu.ok) throw new Error()
+    expect(JSON.parse(serialiserProjet(lu.projet)).version).toBe(3)
+  })
+})
+
+describe('vérification des zones, appareils, cadres et textes', () => {
+  it('ouvre l’exemple avec ses zones, son BS, sa communication, son cadre et son texte', () => {
+    const projet = exemple()
+    expect(projet.zones).toHaveLength(4)
+    expect(projet.appareils.map((a) => a.communication)).toEqual([null, 'com-1', 'com-1'])
+    expect(projet.cadres[0]).toMatchObject({ nom: 'Stockage vieilles TBA', pointille: true })
+    expect(projet.textes).toHaveLength(1)
+  })
+
+  it('refuse une zone sur une voie qui n’existe pas', () => {
+    const brut = brutExemple()
+    brut.zones[0].voieId = 'voie-99'
+    expect(erreursDe(brut)).toContain('Zone n°1 (« RVB 50 m ») : la voie « voie-99 » n\'existe pas')
+  })
+
+  it('refuse une zone qui sort de sa voie ou dont le début est après la fin', () => {
+    const brut = brutExemple()
+    brut.zones[0].fin = 5000
+    brut.zones[1].debut = 460
+    const erreurs = erreursDe(brut)
+    expect(erreurs).toContain('hors de la voie « V1 »')
+    expect(erreurs).toContain('le début est après la fin')
+  })
+
+  it('refuse un appareil dont la pointe et le talon sont sur la même voie', () => {
+    const brut = brutExemple()
+    brut.appareils[0].talon.voieId = brut.appareils[0].pointe.voieId
+    expect(erreursDe(brut)).toContain('même voie')
+  })
+
+  it('refuse un appareil sans talon', () => {
+    const brut = brutExemple()
+    delete brut.appareils[0].talon
+    expect(erreursDe(brut)).toContain('le talon est absent')
+  })
+
+  it('refuse une communication incomplète ou dont les BS ne sont pas talon contre talon', () => {
+    const incomplete = brutExemple()
+    incomplete.appareils.pop()
+    expect(erreursDe(incomplete)).toContain('exactement deux BS')
+    const decalee = brutExemple()
+    decalee.appareils[2].talon.abscisse = 650
+    expect(erreursDe(decalee)).toContain('pas talon contre talon')
+  })
+
+  it('refuse un cadre sans largeur et un texte de taille impossible', () => {
+    const brut = brutExemple()
+    brut.cadres[0].largeur = -4
+    brut.textes[0].taille = 0
+    const erreurs = erreursDe(brut)
+    expect(erreurs).toContain('Cadre n°1 (« Stockage vieilles TBA ») : largeur et hauteur doivent être positives')
+    expect(erreurs).toContain('Texte n°1 (« Accès base arrière ») : la taille')
+  })
+
+  it('refuse deux zones de même identifiant', () => {
+    const brut = brutExemple()
+    brut.zones[1].id = brut.zones[0].id
+    expect(erreursDe(brut)).toContain('en double')
   })
 })
 
