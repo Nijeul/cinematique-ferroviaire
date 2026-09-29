@@ -17,8 +17,9 @@ plat, dans le style des synoptiques existants ; on passe d'une planche à la sui
 choix de la page) et trace les voies par-dessus, à la main, comme sur un calque. Le style
 des voies (double filet, nom en gras) est celui de l'aperçu validé à l'étape 1 ; couleurs,
 noms et épaisseurs se personnalisent voie par voie. Zones, appareils, cadres et textes se
-placent de la même façon, au calque. Chaque plan a une échelle, calée à sa création : les
-engins et les trains s'y posent à leur vraie longueur.
+placent de la même façon, au calque. Chaque plan a une échelle, calée à sa création ; le
+plan reste « juste un plan », sans aucun engin. Les engins et les trains se posent dans les
+images des synoptiques, à leur vraie longueur, et avancent d'une image à l'autre.
 
 ## Méthode
 
@@ -33,8 +34,8 @@ Jamais deux étapes d'avance. Chaque étape est une PR courte qui dit quoi regar
 | 2 | Fond de plan importé (image ou PDF, choix de la page) ; tracé des voies à la main au calque ; nom, couleur et épaisseur par voie ; enregistrer / ouvrir | le commanditaire trace les voies de son site sur son propre plan | **validé** |
 | 3 | Éléments du plan au calque : zones de travaux, appareils (BS et communications), cadres, textes, extrémités du plan (détail ci-dessous) | le plan de base d'une planche est complet | **validé** |
 | 4 | Organisation : accueil et chantiers, plusieurs plans par chantier, synoptiques et images (détail ci-dessous) | on crée un synoptique à partir d'un plan et on feuillette ses images | **validé** |
-| 5 | Échelle du plan, obligatoire à la création ; catalogue d'engins par chantier ; engins et rames posés à l'échelle, couleurs et numéros (détail ci-dessous) | les engins se posent à la bonne taille et se reconnaissent | **en cours** |
-| 6 | Contenu de chaque image : couleurs de zones qui changent d'une image à l'autre, engins déplacés, encart phasage, horloge, légende | une image se lit comme une planche actuelle | à faire |
+| 5 | Échelle du plan, obligatoire à la création ; catalogue d'engins par chantier ; engins et rames posés à l'échelle **dans les images des synoptiques** (pas sur le plan), couleurs et numéros ; « Nouvelle image » emporte les engins (détail ci-dessous) | les engins se posent à la bonne taille dans une image, se reconnaissent et avancent d'une image à l'autre | **en cours** (corrigée) |
+| 6 | Contenu de chaque image, suite : couleurs de zones qui changent d'une image à l'autre, encart phasage, horloge, légende | une image se lit comme une planche actuelle | à faire |
 | 7 | Exports PowerPoint et PDF des images d'un synoptique | un jeu de planches équivalent à l'actuel | à faire |
 
 Les besoins au-delà (vidéo, orthophoto calée, import DXF, 3D en option) seront rediscutés une
@@ -86,7 +87,8 @@ s'annule / se rétablit, s'enregistre et revient au rechargement, comme les voie
   copie l'image courante juste après (elle commence à sa fin et dure autant, sans dépasser la
   fin du synoptique). Horaires de l'image, suppression (jamais la dernière), nom, horaires et
   cadrage du synoptique ; Annuler / Rétablir sur tout.
-- Le contenu des images ne se modifie pas encore : c'est l'étape 6.
+- Le contenu des images ne se modifie pas encore à cette étape (engins : étape 5 ; couleurs
+  de zones : étape 6).
 - Adresse par écran (le bouton Précédent et le rechargement de la page fonctionnent).
 - Au premier lancement, la sauvegarde automatique des étapes 2 et 3 devient le
   « Chantier récupéré ».
@@ -104,45 +106,60 @@ Questions ouvertes de l'étape 4 (réponses attendues du commanditaire) :
 - Heures de nuit (avant 6 h) écrites « Ve/Sa 01h30 », y compris en fin de plage
   (« Ve 22h30 → Ve/Sa 01h30 ») : ce format convient-il ?
 
-### Étape 5 — échelle du plan et engins à l'échelle
+### Étape 5 — échelle du plan et engins à l'échelle dans les synoptiques
 
 Demande du commanditaire : « Je veux que les engins et autres soient à l'échelle. […] dans la
 création de plan on doive mettre l'échelle. Comme ça quand on ajoute un engin, il est à la
 bonne taille. Notamment pour les trains. »
+
+Correction du commanditaire après la première version (engins posés sur le plan) : « J'ai
+mal expliqué. Sur le plan je ne veux pas d'engin, c'est vraiment juste un plan. C'est sur le
+synoptique qu'on ajoute les engins. »
 
 - **Échelle obligatoire à la création d'un plan** : « Nouveau plan » ouvre un assistant en
   trois étapes (nom, fond, échelle) ; le plan n'est créé qu'une fois l'échelle calée. Calage en
   deux clics sur deux repères dont on connaît l'écart réel (deux poteaux, deux PK), puis la
   distance en mètres ; sans fond, la longueur réelle représentée par la largeur de la toile
   (400 m par défaut). La copie d'un plan garde son échelle.
-- **Outil « Échelle… »** (L) dans l'éditeur, pour recaler : les engins gardent leur longueur
-  en mètres et prennent la nouvelle taille. Annuler rétablit l'ancienne échelle.
+- **Outil « Échelle… »** (L) dans l'éditeur du plan, pour recaler ; Annuler rétablit
+  l'ancienne échelle. Les synoptiques déjà créés gardent la leur (copies figées).
 - **Échelle graphique** « 0 — 50 m » (longueur ronde adaptée au zoom) en bas à droite du plan,
   et dans chaque image d'un synoptique.
+- **Le plan ne contient aucun engin** : ni outil Engin ou Rame, ni calque « Engins ». Un plan
+  enregistré avec des engins (première version de cette étape) s'ouvre toujours : ses engins
+  en sont retirés, avec un message une seule fois (« Les engins ne se posent plus sur le plan
+  mais dans les synoptiques : 3 engins et 1 rame retirés du plan « … » »).
 - **Plans sans échelle** (Chantier récupéré, plans importés des étapes 2 et 3, plans de
-  l'étape 4) : bandeau « Échelle non définie » avec « Caler l'échelle… » ; outils Engin et Rame
-  grisés avec une infobulle qui explique. Les chantiers et fichiers des étapes précédentes
-  s'ouvrent toujours.
+  l'étape 4) : bandeau « Échelle non définie : calez-la pour que les engins des synoptiques
+  issus de ce plan soient à la bonne taille », avec « Caler l'échelle… ».
 - **Catalogue d'engins par chantier**, dans la page du chantier : catégorie, modèle, longueur,
   largeur, couleur ; modifier, ajouter, supprimer. Initialisé avec la liste du commanditaire
-  (Pelle RR comprise) ; il voyage dans l'export du chantier. Modifier un type met à jour les
-  engins déjà posés sur les plans du chantier (pas les synoptiques, figés).
-- **Outil Engin** (E) : on choisit le type dans le panneau. Clic près d'une voie : l'engin se
-  pose le long de la voie, suit les courbes et glisse le long d'elle. Clic loin des voies :
-  engin libre (pelle RR sur route, en base arrière), tourné avec sa poignée ronde ou le champ
-  « Angle ».
-- **Outil Rame** (W) : composition dans le panneau (« BB 61000 + 10 × R39 » : ajout, retrait,
-  ordre, nombre), puis clic sur une voie. Véhicules bout à bout, chacun à sa place le long de
-  la voie ; longueur totale affichée (« Rame 1 — 213,5 m »), sens réglable (« Inverser le
-  sens »), glisse d'un bloc. Une rame qui dépasse le bout de la voie est signalée, jamais
-  tronquée.
-- **Numéro** (« 3 », « P4 ») dans une pastille ronde au-dessus de l'engin ou de la tête de la
-  rame ; couleur modifiable par engin, celle de la catégorie par défaut.
-- Calque « Engins » (entre Appareils et Textes) : visible / verrouillé, liste des engins et
-  rames, sélection, Suppr, Annuler / Rétablir. Supprimer une voie supprime les engins et rames
-  posés dessus (message, un seul Annuler).
-- Synoptique : échelle, engins et rames copiés à la création et affichés dans chaque image.
-  Les déplacer image par image, c'est l'étape 6.
+  (Pelle RR comprise) ; il voyage dans l'export du chantier. Modifier un type vaut pour les
+  prochains engins posés : ceux déjà posés dans les synoptiques gardent leurs valeurs (copie
+  figée, comme le reste du synoptique).
+- **Synoptique** : créé depuis un plan, il en copie le contenu **et l'échelle**, sans engin.
+  L'écran du synoptique permet de modifier l'**image courante** avec les outils Sélection,
+  Main, **Engin (E)** et **Rame (W)** :
+  - Engin : on choisit le type dans le panneau. Clic près d'une voie : l'engin se pose le long
+    de la voie, suit les courbes et glisse le long d'elle. Clic loin des voies : engin libre
+    (pelle RR sur route, en base arrière), tourné avec sa poignée ronde ou le champ « Angle » ;
+  - Rame : composition dans le panneau (« BB 61000 + 10 × R39 » : ajout, retrait, ordre,
+    nombre), puis clic sur une voie. Véhicules bout à bout, chacun à sa place le long de la
+    voie ; longueur totale affichée (« Rame 1 — 213,5 m »), sens réglable (« Inverser le
+    sens »), glisse d'un bloc. Une rame qui dépasse le bout de la voie est signalée, jamais
+    tronquée ;
+  - numéro (« 3 », « P4 ») dans une pastille ronde au-dessus de l'engin ou de la tête de la
+    rame ; couleur modifiable par engin, celle de la catégorie par défaut ;
+  - panneau « Engins de l'image n » : visible / verrouillé, liste des engins et des rames de
+    l'image avec leurs propriétés, sélection, Suppr, Annuler / Rétablir ; molette pour zoomer.
+- **Chaque image a ses propres engins** : poser, déplacer ou retirer un engin ne change que
+  l'image courante. **« Nouvelle image » duplique l'image courante, engins compris** : il ne
+  reste qu'à déplacer ce qui bouge. Les vignettes et ◀ ▶ montrent les engins de chaque image.
+- **Synoptique sans échelle** (étape 4, ou plan sans échelle) : bandeau clair, outils Engin
+  et Rame grisés avec une infobulle qui explique ; l'échelle se cale **dans le synoptique**
+  (même outil, deux repères et leur distance), le plan d'origine ne change pas.
+- Les synoptiques créés pendant la première version de cette étape gardent dans leurs images
+  les engins copiés depuis le plan.
 
 Questions ouvertes de l'étape 5 (choix provisoires en place) :
 
@@ -155,14 +172,12 @@ Questions ouvertes de l'étape 5 (choix provisoires en place) :
 - Ballastière et Wagon ont la même couleur orange dans le tableau : les garder identiques ?
 - Dans une rame, chaque véhicule garde la couleur de sa catégorie (loco verte, wagons
   orange) ; la couleur réglable de la rame est celle de sa pastille. Est-ce ce qu'il faut ?
-- Une rame se pose centrée sur le point cliqué, la tête côté gauche du plan (Nord) ; « Inverser
-  le sens » la retourne sur place. Préférez-vous cliquer l'emplacement de la tête ?
+- Une rame se pose centrée sur le point cliqué, la tête côté gauche (Nord) ; « Inverser le
+  sens » la retourne sur place. Préférez-vous cliquer l'emplacement de la tête ?
 - Vu de loin, à l'échelle réelle, un wagon fait quelques pixels : le modèle n'est écrit dans
   le rectangle que s'il tient. Faut-il une étiquette à côté quand il ne tient pas ?
-- Un engin posé sur une voie reste sur cette voie (et un engin libre reste libre) : pour
-  changer, on le supprime et on le repose. Suffisant ?
-- Modifier la longueur d'un type dans le catalogue change aussi les engins déjà posés sur les
-  plans du chantier. Est-ce voulu, ou faut-il que seuls les nouveaux engins changent ?
+- **Propagation aux images suivantes** : poser ou déplacer un engin ne change que l'image
+  courante. Faut-il pouvoir propager un ajout ou un déplacement aux images suivantes ?
 
 ## Décisions du commanditaire
 
@@ -171,6 +186,8 @@ Questions ouvertes de l'étape 5 (choix provisoires en place) :
   échelle, un calcul automatique pourrait être proposé plus tard, s'il est demandé.
 - **Échelle obligatoire à la création d'un plan** ; les engins sont **à l'échelle**, trains
   compris (on voit les longueurs des wagons et des locomotives).
+- **Le plan ne contient aucun engin** : « c'est vraiment juste un plan ». Les engins et les
+  rames se posent dans les images des synoptiques.
 - Liste des engins : Loco (BB 61000 14,5 m, V211 12,3 m), Ballastière (D12 14 m, Ex 100
   15,64 m, C12 9,64 m), Bigrue (Type DGS82BG 32,6 m, Socofer 19,9 m), BML (Type 08-32U 31 m,
   Type 08 GV 31,5 m, Type 108-32 U 32,8 m), Stabilisateur (Type DGS82 32,8 m), Wagon (R39
