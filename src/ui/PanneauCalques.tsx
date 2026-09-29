@@ -8,7 +8,7 @@ import { EPAISSEUR_MAX, EPAISSEUR_MIN, TAILLE_TEXTE_MAX, TAILLE_TEXTE_MIN, type 
 import { COULEURS } from './couleurs.ts'
 import { TOUCHES, type Editeur } from './useEditeur.ts'
 
-// Panneau latéral : le projet (nom, extrémités du plan), un calque par type
+// Panneau latéral : le plan (nom, extrémités du plan), un calque par type
 // d'élément — Fond, Cadres, Voies, Zones, Appareils, Textes — chacun avec
 // sa liste et les propriétés de ses éléments, et l'aide des raccourcis.
 
@@ -606,11 +606,11 @@ export function PanneauCalques({ editeur }: { editeur: Editeur }) {
         borderLeft: `1px solid ${COULEURS.bordure}`,
       }}
     >
-      <Section titre="Projet">
+      <Section titre="Plan">
         <input
           type="text"
           value={projet.nom}
-          aria-label="Nom du projet"
+          aria-label="Nom du plan"
           style={{ ...styles.champ, width: '100%', boxSizing: 'border-box', fontWeight: 600 }}
           onChange={(e) => {
             const nom = e.target.value

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { bornerPage, COTE_MAX_RENDU, echelleRendu, typeDeFond } from '../src/plan/fond.ts'
-import { decouper, recomposer } from '../src/plan/sauvegarde.ts'
-import { creerProjet, type Projet } from '../src/plan/projet.ts'
+import { recomposer } from '../src/plan/sauvegarde.ts'
+import { creerProjet, serialiserProjet, type Projet } from '../src/plan/projet.ts'
 import { ajouterVoie, remplacerFond } from '../src/plan/edition.ts'
 
 describe('fichier de fond', () => {
@@ -42,7 +42,7 @@ describe('résolution du rendu PDF', () => {
   })
 })
 
-describe('sauvegarde automatique', () => {
+describe('reprise de la sauvegarde automatique des étapes 2 et 3', () => {
   const avecFond = (): Projet =>
     ajouterVoie(
       remplacerFond(creerProjet(), {
@@ -56,17 +56,18 @@ describe('sauvegarde automatique', () => {
       [{ x: 10, y: 10 }, { x: 900, y: 10 }],
     ).projet
 
-  it('sépare l’image (lourde) du reste du projet, puis recompose à l’identique', () => {
+  // Telle que l'étape 3 la rangeait : le projet sans l'image, l'image à part.
+  const sansImage = (projet: Projet): string =>
+    serialiserProjet(projet.fond ? { ...projet, fond: { ...projet.fond, image: '' } } : projet)
+
+  it('recompose le projet et son image à l’identique', () => {
     const projet = avecFond()
-    const morceaux = decouper(projet)
-    expect(morceaux.projet).not.toContain('base64')
-    expect(morceaux.image).toBe(projet.fond!.image)
-    expect(recomposer(morceaux.projet, morceaux.image)).toEqual({ ok: true, projet, fondManquant: false })
+    expect(recomposer(sansImage(projet), projet.fond!.image)).toEqual({ ok: true, projet, fondManquant: false })
   })
 
-  it('rend les voies même quand l’image n’a pas pu être sauvée, et le signale', () => {
+  it('rend les voies même quand l’image n’avait pas pu être sauvée, et le signale', () => {
     const projet = avecFond()
-    const restauration = recomposer(decouper(projet).projet, null)
+    const restauration = recomposer(sansImage(projet), null)
     expect(restauration.ok).toBe(true)
     if (!restauration.ok) return
     expect(restauration.fondManquant).toBe(true)
@@ -76,9 +77,11 @@ describe('sauvegarde automatique', () => {
   })
 
   it('ne signale rien pour un projet sans fond', () => {
-    const morceaux = decouper(creerProjet())
-    expect(morceaux.image).toBeNull()
-    const restauration = recomposer(morceaux.projet, null)
+    const restauration = recomposer(sansImage(creerProjet()), null)
     expect(restauration.ok && restauration.fondManquant).toBe(false)
+  })
+
+  it('ignore une sauvegarde abîmée', () => {
+    expect(recomposer('{ abîmé', null).ok).toBe(false)
   })
 })

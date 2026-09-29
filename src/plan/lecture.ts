@@ -256,7 +256,13 @@ export function lireProjet(texte: string): ResultatLecture {
       erreurs: ["Ce projet a été enregistré par une version plus récente de l'application : mettez la page à jour."],
     }
   }
+  return lireCorpsProjet(brut)
+}
 
+// Le contenu d'un plan, sans l'en-tête du fichier (marque et version) : sert
+// aussi pour les plans et les images rangés dans un fichier de chantier.
+export function lireCorpsProjet(brut: unknown): ResultatLecture {
+  if (!estObjet(brut)) return { ok: false, erreurs: ['Le plan est illisible.'] }
   const erreurs: string[] = []
   const defaut = creerProjet()
 

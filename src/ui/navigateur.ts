@@ -1,55 +1,32 @@
-import type { Projet } from '../plan/projet.ts'
-import { decouper, recomposer, type Restauration } from '../plan/sauvegarde.ts'
+import { recomposer, type Restauration } from '../plan/sauvegarde.ts'
 
-// Ce qui touche au navigateur : sauvegarde automatique (localStorage) et
-// téléchargement du fichier projet. Le stockage peut être plein ou interdit
-// (navigation privée) : rien ici ne doit faire planter l'application.
+// Ce qui touche au navigateur hors des chantiers : la sauvegarde automatique
+// des étapes 2 et 3 (localStorage), lue une seule fois pour être reprise, et
+// le téléchargement d'un fichier. Rien ici ne doit faire planter l'application.
 
 const CLE_PROJET = 'cinematique-ferroviaire/projet'
 const CLE_FOND = 'cinematique-ferroviaire/fond'
 
-// Image actuellement stockée, et dernière image refusée faute de place (pour
-// ne pas retenter d'écrire plusieurs mégaoctets à chaque modification).
-let imageEnPlace: string | null = null
-let imageRefusee: string | null = null
-
-export function chargerSauvegarde(): Extract<Restauration, { ok: true }> | null {
+export function lireAncienneSauvegarde(): Extract<Restauration, { ok: true }> | null {
   try {
     const texte = localStorage.getItem(CLE_PROJET)
     if (!texte) return null
-    const image = localStorage.getItem(CLE_FOND)
-    const restauration = recomposer(texte, image)
-    if (!restauration.ok) return null
-    imageEnPlace = image
-    return restauration
+    const restauration = recomposer(texte, localStorage.getItem(CLE_FOND))
+    return restauration.ok ? restauration : null
   } catch {
     return null
   }
 }
 
-// 'sansFond' : les voies sont sauvées mais pas l'image, trop lourde.
-export type EtatSauvegarde = 'ok' | 'sansFond' | 'impossible'
-
-export function sauvegarder(projet: Projet): EtatSauvegarde {
-  const morceaux = decouper(projet)
+// Une fois le plan rangé dans le « Chantier récupéré », l'ancienne sauvegarde
+// est effacée : elle ne serait plus à jour, et elle occupe de la place.
+export function oublierAncienneSauvegarde(): void {
   try {
-    localStorage.setItem(CLE_PROJET, morceaux.projet)
+    localStorage.removeItem(CLE_PROJET)
+    localStorage.removeItem(CLE_FOND)
   } catch {
-    return 'impossible'
+    // Stockage interdit : rien à effacer.
   }
-  if (morceaux.image !== imageEnPlace && morceaux.image !== imageRefusee) {
-    try {
-      // L'ancienne image d'abord, pour libérer sa place.
-      localStorage.removeItem(CLE_FOND)
-      imageEnPlace = null
-      if (morceaux.image !== null) localStorage.setItem(CLE_FOND, morceaux.image)
-      imageEnPlace = morceaux.image
-      imageRefusee = null
-    } catch {
-      imageRefusee = morceaux.image
-    }
-  }
-  return morceaux.image !== null && morceaux.image === imageRefusee ? 'sansFond' : 'ok'
 }
 
 export function telecharger(nomFichier: string, contenu: string): void {
@@ -61,4 +38,13 @@ export function telecharger(nomFichier: string, contenu: string): void {
   lien.click()
   lien.remove()
   setTimeout(() => URL.revokeObjectURL(url), 1000)
+}
+
+// Lit un fichier texte choisi par l'utilisateur ; null s'il est illisible.
+export async function lireFichierTexte(fichier: File): Promise<string | null> {
+  try {
+    return await fichier.text()
+  } catch {
+    return null
+  }
 }

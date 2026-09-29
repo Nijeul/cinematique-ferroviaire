@@ -17,6 +17,9 @@ export const tailleNomAppareil = (epaisseur: number): number => Math.round(taill
 export const largeurTexteEstimee = (texte: string, taille: number, gras = false): number =>
   Math.max(1, texte.length) * taille * (gras ? 0.64 : 0.6)
 
+// Liste de points au format attendu par <polyline points="…"> en SVG.
+export const enPoints = (points: Point[]): string => points.map((p) => `${p.x},${p.y}`).join(' ')
+
 export type Cote = 'dessus' | 'dessous'
 
 // Étiquettes des zones d'une même voie : au-dessus, sauf si elle chevaucherait
