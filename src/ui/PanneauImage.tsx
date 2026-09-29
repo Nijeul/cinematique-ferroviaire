@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import type { CoteDepart } from '../plan/etatsZones.ts'
+import { entreesLegende, masquerLigneLegende, modifierAfficherLegende, texteEntree, type ListesChantier } from '../plan/legende.ts'
 import {
   ajouterEtape,
   deplacerEtape,
@@ -15,9 +16,10 @@ import { ApercuEtat } from './DessinEtats.tsx'
 import { styleChamp, stylesPanneau as styles } from './styles.ts'
 import type { EditeurImage } from './useEditeurImage.ts'
 
-// Panneaux de l'image courante d'un synoptique, en plus des engins : l'état
-// de la zone choisie (palette des états, avancement partiel), le créneau
-// horaire (titre, heures affichées) et l'encart PHASAGE (étapes numérotées).
+// Panneaux de l'image courante d'un synoptique, en plus des engins et des
+// flèches : l'état de la zone choisie (palette des états, avancement
+// partiel), le créneau horaire (titre, heures affichées), l'encart PHASAGE
+// (étapes numérotées) et la légende (affichée ou non, lignes masquées).
 
 function Section({ titre, children, testid }: { titre: ReactNode; children: ReactNode; testid?: string }) {
   return (
@@ -291,6 +293,53 @@ export function PanneauPhasage({ synoptique: s, index, modifier }: { synoptique:
       >
         + Étape {propose}
       </button>
+    </Section>
+  )
+}
+
+// ——— Légende ———
+
+const GENRES_LEGENDE = { engin: 'Engin', rame: 'Rame', etat: 'État', fleche: 'Flèche' } as const
+
+export function PanneauLegende(props: { synoptique: Synoptique; index: number; listes: ListesChantier; modifier: Modifier }) {
+  const { synoptique: s, index, modifier } = props
+  const image = s.images[index]
+  const entrees = entreesLegende(s, index, props.listes)
+  const masquees = new Set(image.legendeMasquee)
+  return (
+    <Section titre={`Légende de l'image ${index + 1}`} testid="panneau-legende">
+      <label style={{ ...styles.ligne, fontWeight: 600 }}>
+        <input
+          type="checkbox"
+          checked={s.afficherLegende}
+          aria-label="Afficher la légende"
+          onChange={(e) => modifier(modifierAfficherLegende(s, e.target.checked))}
+        />
+        Afficher la légende <span style={{ fontWeight: 400, color: COULEURS.discret, fontSize: 12 }}>(sur toutes les images)</span>
+      </label>
+      <p style={styles.discret}>
+        Construite d'après ce que montre l'image : engins numérotés et leur description, rames, états de la voie, flèches. Décochez une
+        ligne pour la masquer sur cette image seulement.
+      </p>
+      {entrees.length === 0 && <p style={styles.discret}>Rien à légender sur cette image : la légende ne s'affiche pas.</p>}
+      <fieldset disabled={!s.afficherLegende} style={{ border: 'none', margin: 0, padding: 0, minWidth: 0, opacity: s.afficherLegende ? 1 : 0.5 }}>
+        <ul style={{ listStyle: 'none', margin: 0, padding: 0 }} data-testid="lignes-legende">
+          {entrees.map((e) => (
+            <li key={e.cle} style={{ margin: '3px 0' }}>
+              <label style={{ display: 'flex', alignItems: 'baseline', gap: 6, fontSize: 13 }} data-testid="ligne-panneau-legende">
+                <input
+                  type="checkbox"
+                  checked={!masquees.has(e.cle)}
+                  aria-label={`Afficher « ${texteEntree(e)} » dans la légende`}
+                  onChange={(ev) => modifier(masquerLigneLegende(s, index, e.cle, !ev.target.checked))}
+                />
+                <span style={{ color: COULEURS.discret, fontSize: 11, width: 36, flexShrink: 0 }}>{GENRES_LEGENDE[e.genre]}</span>
+                <span style={{ flex: 1, minWidth: 0, textDecoration: masquees.has(e.cle) ? 'line-through' : undefined }}>{texteEntree(e)}</span>
+              </label>
+            </li>
+          ))}
+        </ul>
+      </fieldset>
     </Section>
   )
 }

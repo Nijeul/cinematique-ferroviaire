@@ -90,6 +90,23 @@ function BoutonSupprimer({ editeur, refEngin, nom }: { editeur: EditeurImage; re
   )
 }
 
+// « Description (légende) » : écrite après le nom dans la légende de l'image.
+function ChampDescription(props: { valeur: string; nom: string; changer: (description: string) => void }) {
+  return (
+    <label style={{ ...styles.sousLigne, flexWrap: 'nowrap' }} onClick={(e) => e.stopPropagation()}>
+      <span style={{ flexShrink: 0 }}>Description (légende)</span>
+      <input
+        type="text"
+        value={props.valeur}
+        placeholder="facultative (« déblais »…)"
+        aria-label={`Description de ${props.nom} dans la légende`}
+        style={{ ...styles.champ, flex: 1, fontSize: 12 }}
+        onChange={(e) => props.changer(e.target.value)}
+      />
+    </label>
+  )
+}
+
 function Pastille({ couleur }: { couleur: string }) {
   return <span style={{ display: 'inline-block', width: 12, height: 12, borderRadius: 2, background: couleur, border: `1px solid ${COULEURS.texte}`, flexShrink: 0 }} />
 }
@@ -300,6 +317,11 @@ function LigneEngin({ editeur, engin }: { editeur: EditeurImage; engin: Engin })
           {formaterMetres(engin.type.longueur).replace(/ m$/, '')} × {formaterMetres(engin.type.largeur)}
         </span>
       </div>
+      <ChampDescription
+        valeur={engin.description}
+        nom={engin.type.modele}
+        changer={(description) => modifier((p) => modifierEngin(p, engin.id, { description }), `description:${engin.id}`)}
+      />
       <div style={styles.sousLigne}>
         {engin.position.genre === 'voie' ? (
           <span>sur « {voie?.nom} »</span>
@@ -376,6 +398,11 @@ function LigneRame({ editeur, rame }: { editeur: EditeurImage; rame: Rame }) {
           · {rame.vehicules.length} véhicules
         </span>
       </div>
+      <ChampDescription
+        valeur={rame.description}
+        nom={rame.nom}
+        changer={(description) => modifier((p) => modifierRame(p, rame.id, { description }), `description:${rame.id}`)}
+      />
       <div style={styles.sousLigne}>sur « {voie?.nom} »</div>
       <div style={styles.sousLigne}>{texteComposition(rame.vehicules)}</div>
       <AvertissementDepassement texte={avertissementDepassement(`La rame « ${rame.nom} »`, voie, s?.depassement ?? 0)} />

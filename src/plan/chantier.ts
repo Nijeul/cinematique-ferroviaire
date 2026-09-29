@@ -12,9 +12,19 @@ import {
   type EtatVoie,
 } from './etatsVoie.ts'
 import { imagesAvecEtat, remplacerEtat } from './etatsZones.ts'
+import {
+  ajouterTypeFleche,
+  creerTypesFleches,
+  deplacerTypeFleche,
+  imagesAvecTypeFleche,
+  modifierTypeFleche,
+  retirerFlechesDuType,
+  type ChampsTypeFleche,
+  type TypeFleche,
+} from './fleches.ts'
 import { avisEnginsRetires, compterEnginsDuPlan } from './lecture.ts'
 import { CALQUES_ELEMENTS, creerCalques, creerProjet, type Echelle, type Fond, type Projet } from './projet.ts'
-import { CALQUE_ENGINS_PAR_DEFAUT, creerSynoptique, type DemandeValide, type Synoptique } from './synoptique.ts'
+import { CALQUE_ENGINS_PAR_DEFAUT, CALQUE_FLECHES_PAR_DEFAUT, creerSynoptique, type DemandeValide, type Synoptique } from './synoptique.ts'
 
 // Un chantier : plusieurs plans (un par phase : définitive, provisoire,
 // transitoire…) et les synoptiques créés à partir de ces plans. Chaque
@@ -35,10 +45,22 @@ export type Chantier = {
   // Les états que prennent les zones de travaux dans les images des
   // synoptiques (Avant travaux, Déposée…), dans l'ordre des travaux.
   etatsVoie: EtatVoie[]
+  // Les types de flèches qu'on trace dans les images (sens de travail,
+  // chemin de roule…), dans l'ordre de la légende.
+  typesFleches: TypeFleche[]
 }
 
 export function creerChantier(id: string, nom: string, maintenant: string): Chantier {
-  return { id, nom, modifieLe: maintenant, plans: [], synoptiques: [], catalogue: creerCatalogue(), etatsVoie: creerEtatsVoie() }
+  return {
+    id,
+    nom,
+    modifieLe: maintenant,
+    plans: [],
+    synoptiques: [],
+    catalogue: creerCatalogue(),
+    etatsVoie: creerEtatsVoie(),
+    typesFleches: creerTypesFleches(),
+  }
 }
 
 // « Nouveau chantier », puis « Nouveau chantier 2 »… sans reprendre un nom pris.
@@ -171,6 +193,37 @@ export function supprimerEtatChantier(c: Chantier, id: string): Resultat<{ chant
   }
 }
 
+// ——— Types de flèches ———
+//
+// Comme les états : les flèches des images désignent un type de la liste,
+// changer la couleur d'un type change toutes les images qui l'utilisent.
+
+export function ajouterTypeFlecheChantier(c: Chantier, nom: string): Resultat<{ chantier: Chantier; id: string }> {
+  const r = ajouterTypeFleche(c.typesFleches, nom)
+  return r.ok ? { ok: true, valeur: { id: r.valeur.id, chantier: { ...c, typesFleches: r.valeur.liste } } } : r
+}
+
+export function modifierTypeFlecheChantier(c: Chantier, id: string, champs: ChampsTypeFleche): Resultat<Chantier> {
+  const r = modifierTypeFleche(c.typesFleches, id, champs)
+  return r.ok ? { ok: true, valeur: { ...c, typesFleches: r.valeur } } : r
+}
+
+export const deplacerTypeFlecheChantier = (c: Chantier, id: string, vers: -1 | 1): Chantier => ({
+  ...c,
+  typesFleches: deplacerTypeFleche(c.typesFleches, id, vers),
+})
+
+// Nombre d'images du chantier qui ont une flèche de ce type (pour la
+// confirmation avant de le supprimer).
+export const imagesDuTypeFleche = (c: Chantier, id: string): number => imagesAvecTypeFleche(c.synoptiques, id)
+
+// Supprime un type de la liste, et les flèches de ce type dans toutes les images.
+export const supprimerTypeFlecheChantier = (c: Chantier, id: string): Chantier => ({
+  ...c,
+  typesFleches: c.typesFleches.filter((t) => t.id !== id),
+  synoptiques: c.synoptiques.map((s) => retirerFlechesDuType(s, id)),
+})
+
 // ——— Synoptiques ———
 
 export function ajouterSynoptique(
@@ -242,7 +295,10 @@ export function chantierRecupere(id: string, projet: Projet, maintenant: string)
 // et synoptiques sans échelle, images sans engins), sans rien changer
 // d'autre. Avant l'étape 6, il n'a ni états de la voie, ni bandeau, ni
 // créneau, ni encart PHASAGE : il reçoit la liste d'états par défaut, et
-// toutes ses zones sont avant travaux. Un chantier rangé avant la correction de l'étape 5 peut avoir des
+// toutes ses zones sont avant travaux. Avant l'étape 7, il n'a ni types de
+// flèches, ni flèches, ni description d'engins, ni réglages de légende : il
+// reçoit la liste de flèches par défaut, ses images n'ont pas de flèche et
+// leur légende s'affiche en entier. Un chantier rangé avant la correction de l'étape 5 peut avoir des
 // engins sur ses plans : ils en sont retirés, avec un avis par plan à montrer
 // une fois (le chantier corrigé est aussitôt réenregistré). Les engins de ses
 // synoptiques restent dans leurs images.
@@ -267,25 +323,36 @@ function migrerPlan(p: Souple, avis: string[]): Souple {
 export function migrerChantier(brut: Chantier): { chantier: Chantier; avis: string[] } {
   const c = brut as unknown as Souple & {
     plans: { projet: Souple }[]
-    synoptiques: (Souple & { images: (Souple & { contenu: Souple })[] })[]
+    synoptiques: (Souple & { images: (Souple & { contenu: Souple & { engins?: Souple[]; rames?: Souple[] } })[] })[]
   }
   const avis: string[] = []
   const chantier = {
     ...c,
     catalogue: c.catalogue ?? creerCatalogue(),
     etatsVoie: c.etatsVoie ?? creerEtatsVoie(),
+    typesFleches: c.typesFleches ?? creerTypesFleches(),
     plans: c.plans.map((p) => ({ ...p, projet: migrerPlan(p.projet, avis) })),
     synoptiques: c.synoptiques.map((s) => ({
       echelle: null,
       calqueEngins: { ...CALQUE_ENGINS_PAR_DEFAUT },
+      calqueFleches: { ...CALQUE_FLECHES_PAR_DEFAUT },
+      afficherLegende: true,
       bandeau: '',
       ...s,
       images: s.images.map((im) => ({
         titre: '',
         heures: 'plage',
         phasage: [],
+        legendeMasquee: [],
         ...im,
-        contenu: { engins: [], rames: [], etatsZones: {}, ...im.contenu, calques: calquesDe(im.contenu.calques) },
+        contenu: {
+          etatsZones: {},
+          fleches: [],
+          ...im.contenu,
+          engins: (im.contenu.engins ?? []).map((e) => ({ description: '', ...e })),
+          rames: (im.contenu.rames ?? []).map((r) => ({ description: '', ...r })),
+          calques: calquesDe(im.contenu.calques),
+        },
       })),
     })),
   } as unknown as Chantier

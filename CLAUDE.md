@@ -52,28 +52,36 @@ Le commanditaire fait le contrôle visuel — c'est le cœur de la méthode.
 ```
 src/
   plan/       modèle du plan (sans aucun engin), du chantier et du synoptique, lecture des
-              fichiers (plan, chantier) et migrations (engins retirés des plans enregistrés
-              avant la correction de l'étape 5 ; chantiers et synoptiques des étapes 4 et 5
-              complétés), temps (minutes depuis T0 → « Ve/Sa 01h30 »), adresses des écrans,
-              vue et cadrage, géométrie du tracé et le long des voies, zones / appareils /
-              cadres / textes, échelle, catalogue d'engins (liste par défaut dans
-              catalogue.ts), engins et rames à l'échelle posés dans les images d'un synoptique
-              (engins.ts, synoptique.ts), états de la voie d'un chantier (liste par défaut et
-              texture ballast dans etatsVoie.ts), état et avancement partiel de chaque zone
-              dans une image (etatsZones.ts), mise en page d'une image en planche : bandeau de
-              titre, créneau horaire, encart PHASAGE et ses étapes (planche.ts), détection sous
-              le pointeur, annuler (ni React ni DOM, testé)
-  ui/         écrans React (accueil, chantier avec ses états de la voie et son catalogue,
-              assistant « Nouveau plan », plan, synoptique), calage de l'échelle (plan et
-              synoptique), dessin SVG du plan, des engins, des zones selon leur état
-              (DessinEtats) et de la planche entière (Planche), panneau Calques du plan,
-              édition de l'image courante d'un synoptique (useEditeurImage, ImageDeTravail,
-              PanneauEngins, PanneauImage : zone choisie, créneau, phasage), et accès au
-              navigateur (IndexedDB pour les chantiers, pdf.js, téléchargement)
+              fichiers (plan, chantier — version 4) et migrations (engins retirés des plans
+              enregistrés avant la correction de l'étape 5 ; chantiers et synoptiques des
+              étapes 4 à 6 complétés), temps (minutes depuis T0 → « Ve/Sa 01h30 »), adresses
+              des écrans, vue et cadrage, géométrie du tracé et le long des voies (dont le
+              tracé parallèle, trace.ts), zones / appareils / cadres / textes, échelle,
+              catalogue d'engins (liste par défaut dans catalogue.ts), engins et rames à
+              l'échelle posés dans les images d'un synoptique, avec leur description pour la
+              légende (engins.ts, synoptique.ts), états de la voie d'un chantier (liste par
+              défaut et texture ballast dans etatsVoie.ts), état et avancement partiel de
+              chaque zone dans une image (etatsZones.ts), types de flèches d'un chantier (liste
+              par défaut) et flèches des images : pointes, double trait, contrainte Maj,
+              sélection (fleches.ts), légende de chaque image construite d'après ce qu'elle
+              montre (legende.ts), mise en page d'une image en planche : bandeau de titre,
+              créneau horaire, encart PHASAGE et ses étapes, cadre LÉGENDE en colonnes
+              (planche.ts), détection sous le pointeur, annuler (ni React ni DOM, testé)
+  ui/         écrans React (accueil, chantier avec ses états de la voie, ses types de flèches
+              (TypesFleches) et son catalogue, assistant « Nouveau plan », plan, synoptique),
+              calage de l'échelle (plan et synoptique), dessin SVG du plan, des engins, des
+              zones selon leur état (DessinEtats), des flèches (DessinFleches) et de la
+              planche entière avec sa légende (Planche), panneau Calques du plan, édition de
+              l'image courante d'un synoptique (useEditeurImage, ImageDeTravail,
+              PanneauEngins, PanneauFleches, PanneauImage : zone choisie, créneau, phasage,
+              légende), et accès au navigateur (IndexedDB pour les chantiers, pdf.js,
+              téléchargement)
 fixtures/     jeux de données d'exemple, anonymisés (dont un plan des étapes 2-3 et un
               chantier avec plans à l'échelle sans engins, un synoptique dont les images
-              portent des engins et une rame à des positions différentes, et un synoptique de
-              4 images qui raconte les états d'une zone avec bandeau, créneaux et phasage)
+              portent des engins et une rame à des positions différentes, un synoptique de
+              4 images qui raconte les états d'une zone avec bandeau, créneaux et phasage, et
+              un synoptique de 2 images avec des flèches de chaque type, des engins numérotés
+              avec description et une rame « TTX 1 »)
 sources/      synoptiques réels fournis par le commanditaire (facultatif, jamais versionnés :
               données réelles ; il importe ses propres plans dans l'application)
 ```

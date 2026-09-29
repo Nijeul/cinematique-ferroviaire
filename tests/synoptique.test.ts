@@ -73,8 +73,11 @@ describe('création : copie figée du plan', () => {
     expect(s.images).toHaveLength(1)
     expect(s.images[0]).toMatchObject({ debut: 0, fin: 3360 })
     // Le plan, et une image sans engins : ils se posent ensuite dans l'image.
-    expect({ ...projetDeImage(s, s.images[0]), nom: plan.nom }).toEqual({ ...plan, engins: [], rames: [], etatsZones: {} })
+    expect({ ...projetDeImage(s, s.images[0]), nom: plan.nom }).toEqual({ ...plan, engins: [], rames: [], etatsZones: {}, fleches: [] })
     expect(s.calqueEngins).toEqual({ visible: true, verrouille: false })
+    expect(s.calqueFleches).toEqual({ visible: true, verrouille: false })
+    expect(s.afficherLegende).toBe(true)
+    expect(s.images[0].legendeMasquee).toEqual([])
   })
 
   it('reste intacte quand on modifie le plan ensuite (voie déplacée, zone renommée)', () => {
