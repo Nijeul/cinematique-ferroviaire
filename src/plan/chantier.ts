@@ -1,6 +1,17 @@
 import { ajouterType, creerCatalogue, modifierType, supprimerType, type ChampsType, type DimensionsEngin, type TypeEngin } from './catalogue.ts'
 import type { Resultat } from './echelle.ts'
 import { nomParDefaut, nouvelIdentifiant, remplacerFond } from './edition.ts'
+import {
+  ajouterEtat,
+  creerEtatsVoie,
+  deplacerEtat,
+  etatPrecedent,
+  modifierEtat,
+  peutSupprimerEtat,
+  type ChampsEtat,
+  type EtatVoie,
+} from './etatsVoie.ts'
+import { imagesAvecEtat, remplacerEtat } from './etatsZones.ts'
 import { avisEnginsRetires, compterEnginsDuPlan } from './lecture.ts'
 import { CALQUES_ELEMENTS, creerCalques, creerProjet, type Echelle, type Fond, type Projet } from './projet.ts'
 import { CALQUE_ENGINS_PAR_DEFAUT, creerSynoptique, type DemandeValide, type Synoptique } from './synoptique.ts'
@@ -21,10 +32,13 @@ export type Chantier = {
   synoptiques: Synoptique[]
   // Les types d'engins qu'on pose dans les synoptiques de ce chantier.
   catalogue: TypeEngin[]
+  // Les états que prennent les zones de travaux dans les images des
+  // synoptiques (Avant travaux, Déposée…), dans l'ordre des travaux.
+  etatsVoie: EtatVoie[]
 }
 
 export function creerChantier(id: string, nom: string, maintenant: string): Chantier {
-  return { id, nom, modifieLe: maintenant, plans: [], synoptiques: [], catalogue: creerCatalogue() }
+  return { id, nom, modifieLe: maintenant, plans: [], synoptiques: [], catalogue: creerCatalogue(), etatsVoie: creerEtatsVoie() }
 }
 
 // « Nouveau chantier », puis « Nouveau chantier 2 »… sans reprendre un nom pris.
@@ -114,6 +128,49 @@ export const synoptiquesDuType = (c: Chantier, id: string): number =>
     s.images.some((im) => im.contenu.engins.some((e) => e.typeId === id) || im.contenu.rames.some((r) => r.vehicules.some((v) => v.typeId === id))),
   ).length
 
+// ——— États de la voie ———
+//
+// Contrairement aux engins (copies figées), les zones des images désignent un
+// état de la liste : changer la couleur d'un état change toutes les images
+// qui l'utilisent.
+
+export function ajouterEtatChantier(c: Chantier, nom: string): Resultat<{ chantier: Chantier; id: string }> {
+  const r = ajouterEtat(c.etatsVoie, nom)
+  return r.ok ? { ok: true, valeur: { id: r.valeur.id, chantier: { ...c, etatsVoie: r.valeur.liste } } } : r
+}
+
+export function modifierEtatChantier(c: Chantier, id: string, champs: ChampsEtat): Resultat<Chantier> {
+  const r = modifierEtat(c.etatsVoie, id, champs)
+  return r.ok ? { ok: true, valeur: { ...c, etatsVoie: r.valeur } } : r
+}
+
+export const deplacerEtatChantier = (c: Chantier, id: string, vers: -1 | 1): Chantier => ({ ...c, etatsVoie: deplacerEtat(c.etatsVoie, id, vers) })
+
+// Nombre d'images du chantier où une zone est dans cet état (pour la
+// confirmation avant de le supprimer).
+export const imagesDeLEtat = (c: Chantier, id: string): number => imagesAvecEtat(c.synoptiques, id)
+
+// Supprime un état de la liste : les zones qui y étaient reviennent à l'état
+// précédent de la liste. Le premier état (Avant travaux) ne se supprime pas.
+export function supprimerEtatChantier(c: Chantier, id: string): Resultat<{ chantier: Chantier; repli: EtatVoie }> {
+  const etat = c.etatsVoie.find((e) => e.id === id)
+  if (!etat || !peutSupprimerEtat(c.etatsVoie, id)) {
+    return { ok: false, erreur: `Le premier état (« ${c.etatsVoie[0]?.nom ?? ''} ») ne peut pas être supprimé : c'est celui des zones non touchées.` }
+  }
+  const repli = etatPrecedent(c.etatsVoie, id)!
+  return {
+    ok: true,
+    valeur: {
+      repli,
+      chantier: {
+        ...c,
+        etatsVoie: c.etatsVoie.filter((e) => e.id !== id),
+        synoptiques: c.synoptiques.map((s) => remplacerEtat(s, id, repli.id)),
+      },
+    },
+  }
+}
+
 // ——— Synoptiques ———
 
 export function ajouterSynoptique(
@@ -183,7 +240,9 @@ export function chantierRecupere(id: string, projet: Projet, maintenant: string)
 // Un chantier rangé dans le navigateur avant l'étape 5 n'a ni catalogue, ni
 // échelle, ni engins : on complète ce qui manque (catalogue par défaut, plans
 // et synoptiques sans échelle, images sans engins), sans rien changer
-// d'autre. Un chantier rangé avant la correction de l'étape 5 peut avoir des
+// d'autre. Avant l'étape 6, il n'a ni états de la voie, ni bandeau, ni
+// créneau, ni encart PHASAGE : il reçoit la liste d'états par défaut, et
+// toutes ses zones sont avant travaux. Un chantier rangé avant la correction de l'étape 5 peut avoir des
 // engins sur ses plans : ils en sont retirés, avec un avis par plan à montrer
 // une fois (le chantier corrigé est aussitôt réenregistré). Les engins de ses
 // synoptiques restent dans leurs images.
@@ -214,14 +273,19 @@ export function migrerChantier(brut: Chantier): { chantier: Chantier; avis: stri
   const chantier = {
     ...c,
     catalogue: c.catalogue ?? creerCatalogue(),
+    etatsVoie: c.etatsVoie ?? creerEtatsVoie(),
     plans: c.plans.map((p) => ({ ...p, projet: migrerPlan(p.projet, avis) })),
     synoptiques: c.synoptiques.map((s) => ({
       echelle: null,
       calqueEngins: { ...CALQUE_ENGINS_PAR_DEFAUT },
+      bandeau: '',
       ...s,
       images: s.images.map((im) => ({
+        titre: '',
+        heures: 'plage',
+        phasage: [],
         ...im,
-        contenu: { engins: [], rames: [], ...im.contenu, calques: calquesDe(im.contenu.calques) },
+        contenu: { engins: [], rames: [], etatsZones: {}, ...im.contenu, calques: calquesDe(im.contenu.calques) },
       })),
     })),
   } as unknown as Chantier

@@ -60,6 +60,23 @@ export function dansPolygone(polygone: Point[], p: Point, marge = 0): boolean {
   return dedans || (marge > 0 && distancePointPolyligne(p, [...polygone, polygone[0]]) <= marge)
 }
 
+// Zone de travaux sous le pointeur : la plus proche, si le pointeur est dans
+// sa bande (à la tolérance près). À distance égale, la dernière dessinée.
+export function zoneSousPointeur(projet: Pick<Projet, 'zones' | 'voies'>, p: Point, tolerance: number): string | null {
+  let trouve: string | null = null
+  let meilleur = Infinity
+  for (const zone of projet.zones) {
+    const voie = projet.voies.find((v) => v.id === zone.voieId)
+    if (!voie) continue
+    const d = distancePointPolyligne(p, sousPolyligne(voie.points, zone.debut, zone.fin)) - largeurBandeZone(voie) / 2
+    if (d <= tolerance && d <= meilleur) {
+      meilleur = d
+      trouve = zone.id
+    }
+  }
+  return trouve
+}
+
 // Élément sous le pointeur, en commençant par le calque du dessus : textes,
 // appareils, zones, voies, cadres.
 export function elementSousPointeur(projet: Projet, p: Point, tolerance: number): Reference | null {
@@ -88,17 +105,7 @@ export function elementSousPointeur(projet: Projet, p: Point, tolerance: number)
   }
 
   if (calqueActif(projet, 'zone')) {
-    let trouve: string | null = null
-    let meilleur = Infinity
-    for (const zone of projet.zones) {
-      const voie = projet.voies.find((v) => v.id === zone.voieId)
-      if (!voie) continue
-      const d = distancePointPolyligne(p, sousPolyligne(voie.points, zone.debut, zone.fin)) - largeurBandeZone(voie) / 2
-      if (d <= tolerance && d <= meilleur) {
-        meilleur = d
-        trouve = zone.id
-      }
-    }
+    const trouve = zoneSousPointeur(projet, p, tolerance)
     if (trouve) return { genre: 'zone', id: trouve }
   }
 

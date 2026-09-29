@@ -16,7 +16,7 @@ const entete: CSSProperties = { ...cellule, textAlign: 'left', fontSize: 12, col
 
 // Champ texte validé en quittant le champ (ou Entrée) ; Échap revient à la
 // valeur enregistrée. Une valeur refusée garde le champ en rouge.
-function Champ(props: { valeur: string; libelle: string; largeur: number; nombre?: boolean; valider: (texte: string) => boolean }) {
+export function Champ(props: { valeur: string; libelle: string; largeur: number; nombre?: boolean; valider: (texte: string) => boolean }) {
   const [texte, setTexte] = useState(props.valeur)
   const [precedente, setPrecedente] = useState(props.valeur)
   const [refuse, setRefuse] = useState(false)

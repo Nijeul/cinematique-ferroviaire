@@ -334,7 +334,7 @@ describe('export et import du chantier', () => {
     expect(relu).toEqual({ ok: true, chantier: c, avis: [] })
     expect(relu.ok && relu.chantier.catalogue.map((t) => t.modele)).toContain('Essai')
     expect(relu.ok && relu.chantier.synoptiques[0].images.map((im) => im.contenu.rames.length)).toEqual([1, 1, 0])
-    expect(JSON.parse(serialiserChantier(c)).version).toBe(2)
+    expect(JSON.parse(serialiserChantier(c)).version).toBe(3)
   })
 
   it('un catalogue abîmé est refusé, avec le type fautif', () => {

@@ -1,19 +1,19 @@
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { ecrireAdresse } from '../plan/adresse.ts'
 import { remplacerSynoptique, texteImages, type Chantier } from '../plan/chantier.ts'
 import type { Rectangle } from '../plan/elements.ts'
 import { annuler, creerHistorique, enregistrer, peutAnnuler, peutRetablir, retablir } from '../plan/historique.ts'
 import { descriptionEchelle } from '../plan/echelle.ts'
 import type { Echelle } from '../plan/projet.ts'
+import type { EtatVoie } from '../plan/etatsVoie.ts'
+import { miseEnPage } from '../plan/planche.ts'
 import {
-  avertissementsImages,
   calerEchelleSynoptique,
   modifierDebut,
   modifierFin,
   modifierHorairesImage,
   nouvelleImage,
   projetDeImage,
-  rectangleAffiche,
   supprimerImage,
   type Synoptique,
 } from '../plan/synoptique.ts'
@@ -23,20 +23,22 @@ import { FenetreEchelle } from './CalageEchelle.tsx'
 import { ChoixCadrage } from './ChoixCadrage.tsx'
 import { BandeauMessage, BarreNavigation, BoutonsFenetre, ChampInstant, Fenetre } from './commun.tsx'
 import { COULEURS } from './couleurs.ts'
-import { BarreEchelle, DessinEnginsImage } from './DessinEngins.tsx'
-import { DessinPlan } from './DessinPlan.tsx'
 import { ImageDeTravail } from './ImageDeTravail.tsx'
 import { CalqueEngins, ChoixType, RameAPoser } from './PanneauEngins.tsx'
-import { POLICE, styleAvertissement, styleBouton, styleBoutonDanger, styleBoutonPrincipal, styleChamp, styleDiscret, styleTitreSection } from './styles.ts'
+import { PanneauCreneau, PanneauPhasage, PanneauZone } from './PanneauImage.tsx'
+import { DessinPlanche } from './Planche.tsx'
+import { POLICE, styleBouton, styleBoutonDanger, styleBoutonPrincipal, styleChamp, styleDiscret, styleTitreSection } from './styles.ts'
 import type { Message } from './useEditeur.ts'
 import { RAISON_SANS_ECHELLE, TOUCHES_IMAGE, useEditeurImage, type EditeurImage, type OutilImage } from './useEditeurImage.ts'
 
 // Écran d'un synoptique : on feuillette ses images comme un PowerPoint, et on
 // pose les engins et les rames sur l'image courante, à l'échelle copiée du
-// plan (ou calée ici). Chaque image a ses propres engins ; « Nouvelle image »
-// les recopie, il ne reste qu'à déplacer ce qui bouge. Horaires, nombre
-// d'images et propriétés du synoptique se modifient aussi — le tout avec
-// Annuler / Rétablir.
+// plan (ou calée ici) ; on y choisit l'état de chaque zone de travaux, le
+// créneau et les étapes de l'encart PHASAGE. Chaque image a ses propres
+// engins et états de zones ; « Nouvelle image » les recopie, il ne reste qu'à
+// changer ce qui bouge. Horaires, nombre d'images et propriétés du synoptique
+// (dont le bandeau de titre) se modifient aussi — le tout avec Annuler /
+// Rétablir.
 
 // L'image courante fait partie de l'historique : Annuler ramène sur l'image
 // qu'on venait de modifier.
@@ -48,55 +50,21 @@ const estChampDeSaisie = (cible: EventTarget | null): boolean =>
 const dateLisible = (iso: string): string =>
   new Date(iso).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(' ', ' à ')
 
-// Une image du synoptique dessinée dans un rectangle d'écran : vue ajustée au
-// cadrage, et rien en dehors.
-function ImageCadree(props: { synoptique: Synoptique; index: number; largeur: number; hauteur: number; marge: number }) {
+// Une image du synoptique, mise en page comme une planche, dessinée dans un
+// rectangle d'écran.
+function ImageCadree(props: { synoptique: Synoptique; index: number; etatsVoie: EtatVoie[]; largeur: number; hauteur: number; marge: number }) {
   const { synoptique: s, index, largeur, hauteur, marge } = props
-  const idClip = useId()
-  const cadre = rectangleAffiche(s)
-  const vue = ajusterSurRectangle(cadre, { largeur, hauteur }, marge)
-  const planche = projetDeImage(s, s.images[index])
+  const vue = ajusterSurRectangle(miseEnPage(s, index).planche, { largeur, hauteur }, marge)
   return (
     <g transform={`translate(${vue.dx} ${vue.dy}) scale(${vue.zoom})`}>
-      <clipPath id={idClip}>
-        <rect x={cadre.x} y={cadre.y} width={cadre.largeur} height={cadre.hauteur} />
-      </clipPath>
-      <g clipPath={`url(#${idClip})`}>
-        <rect x={cadre.x} y={cadre.y} width={cadre.largeur} height={cadre.hauteur} fill="#ffffff" />
-        <DessinPlan
-          projet={planche}
-          zoom={vue.zoom}
-          affiche={cadre}
-          engins={<DessinEnginsImage projet={planche} visible={s.calqueEngins.visible} zoom={vue.zoom} />}
-        />
-        {/* Échelle graphique de la planche, en bas à droite du cadrage. */}
-        {s.echelle && (
-          <BarreEchelle
-            x={cadre.x + cadre.largeur - cadre.largeur * 0.015}
-            y={cadre.y + cadre.hauteur - cadre.largeur * 0.015}
-            unitesParMetre={s.echelle.pixelsParMetre}
-            longueurMax={cadre.largeur * 0.2}
-            taille={cadre.largeur / 90}
-            ancre="droite"
-          />
-        )}
-      </g>
-      <rect
-        x={cadre.x}
-        y={cadre.y}
-        width={cadre.largeur}
-        height={cadre.hauteur}
-        fill="none"
-        stroke={COULEURS.bordFeuille}
-        strokeWidth={1 / vue.zoom}
-      />
+      <DessinPlanche synoptique={s} index={index} etatsVoie={props.etatsVoie} zoom={vue.zoom} />
     </g>
   )
 }
 
-const VIGNETTE = { largeur: 168, hauteur: 94 }
+const VIGNETTE = { largeur: 168, hauteur: 104 }
 
-function Vignettes(props: { synoptique: Synoptique; index: number; choisir: (i: number) => void }) {
+function Vignettes(props: { synoptique: Synoptique; index: number; etatsVoie: EtatVoie[]; choisir: (i: number) => void }) {
   const { synoptique: s, index, choisir } = props
   const choisie = useRef<HTMLButtonElement>(null)
   // Corps en accolades : un effet ne doit rien renvoyer d'autre qu'une fonction
@@ -141,7 +109,7 @@ function Vignettes(props: { synoptique: Synoptique; index: number; choisir: (i: 
             }}
           >
             <svg width={VIGNETTE.largeur} height={VIGNETTE.hauteur} style={{ display: 'block', background: COULEURS.autourDuPlan }}>
-              <ImageCadree synoptique={s} index={i} {...VIGNETTE} marge={3} />
+              <ImageCadree synoptique={s} index={i} etatsVoie={props.etatsVoie} {...VIGNETTE} marge={3} />
             </svg>
             <span style={{ display: 'block', fontSize: 12, marginTop: 3, color: i === index ? COULEURS.selection : COULEURS.texte }}>
               <strong>{i + 1}</strong> · {formaterPlage(s.t0, image.debut, image.fin)}
@@ -181,7 +149,7 @@ function FenetreCadrage(props: { synoptique: Synoptique; index: number; valider:
 }
 
 const OUTILS_IMAGE: { outil: OutilImage; libelle: string; titre: string }[] = [
-  { outil: 'selection', libelle: 'Sélection', titre: 'Choisir un engin ou une rame, le glisser, le supprimer' },
+  { outil: 'selection', libelle: 'Sélection', titre: 'Choisir un engin ou une rame (le glisser, le supprimer), ou une zone (changer son état)' },
   { outil: 'main', libelle: 'Main', titre: 'Déplacer la vue' },
   { outil: 'engin', libelle: 'Engin', titre: "Engin à l'échelle : sur une voie (il la suit) ou hors voie" },
   { outil: 'rame', libelle: 'Rame', titre: 'Train : véhicules bout à bout le long d’une voie' },
@@ -246,7 +214,9 @@ function consigne(editeur: EditeurImage): string {
     case 'main':
       return `Glissez pour déplacer la vue · molette : zoom${fleches}`
     case 'selection':
-      return `Cliquez un engin ou une rame pour le choisir, puis glissez-le · Suppr : le retirer de cette image · molette : zoom${fleches}`
+      return editeur.zone
+        ? `Zone « ${editeur.zone.nom} » : choisissez son état dans le panneau, ou touches 1 à ${Math.min(9, editeur.etatsVoie.length)} · Échap : la libérer${fleches}`
+        : `Cliquez un engin ou une rame pour le choisir, puis glissez-le · cliquez une zone pour changer son état · Suppr : retirer l'engin de cette image · molette : zoom${fleches}`
   }
 }
 
@@ -267,7 +237,6 @@ export function EcranSynoptique(props: {
   const { synoptique: s } = historique.present
   const index = Math.min(historique.present.index, s.images.length - 1)
   const image = s.images[index]
-  const avertissements = avertissementsImages(s)
 
   // Chaque nouvel état part au chantier (qui l'enregistre).
   const { modifierChantier } = props
@@ -289,6 +258,7 @@ export function EcranSynoptique(props: {
     index,
     enregistrer: (suivant, cle = null) => modifier(suivant, index, cle),
     catalogue: chantier.catalogue,
+    etatsVoie: chantier.etatsVoie,
     setMessage,
   })
 
@@ -345,7 +315,10 @@ export function EcranSynoptique(props: {
         e.preventDefault()
         editeur.supprimerSelection()
       } else if (e.key === 'Escape') {
-        editeur.setSelection(null)
+        editeur.toutDeselectionner()
+      } else if (editeur.zone && !ctrl && !e.altKey && /^[1-9]$/.test(e.key)) {
+        e.preventDefault()
+        editeur.choisirEtatNumero(Number(e.key))
       } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
         e.preventDefault()
         aller(index - 1)
@@ -478,21 +451,19 @@ export function EcranSynoptique(props: {
       )}
       <BandeauMessage message={message} fermer={() => setMessage(null)} />
       <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
-        <main style={{ flex: 1, position: 'relative', minWidth: 0, overflow: 'hidden', userSelect: 'none' }}>
-          <ImageDeTravail editeur={editeur} />
+        <main style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden', userSelect: 'none' }}>
+          {/* La consigne sous l'image, pas par-dessus : elle ne cache ni le plan ni l'encart PHASAGE. */}
+          <div style={{ flex: 1, minHeight: 0 }}>
+            <ImageDeTravail editeur={editeur} />
+          </div>
           <p
             style={{
-              position: 'absolute',
-              left: 10,
-              bottom: 8,
               margin: 0,
-              padding: '4px 9px',
+              padding: '5px 12px',
               fontSize: 12,
-              borderRadius: 4,
-              background: 'rgba(255,255,255,0.92)',
-              border: `1px solid ${COULEURS.bordure}`,
+              background: '#ffffff',
+              borderTop: `1px solid ${COULEURS.bordure}`,
               color: COULEURS.discret,
-              pointerEvents: 'none',
             }}
             data-testid="consigne"
           >
@@ -503,6 +474,7 @@ export function EcranSynoptique(props: {
           style={{ width: 380, flexShrink: 0, overflowY: 'auto', background: COULEURS.panneau, borderLeft: `1px solid ${COULEURS.bordure}` }}
           data-testid="panneau-synoptique"
         >
+          <PanneauZone editeur={editeur} />
           {editeur.outil === 'engin' && <ChoixType editeur={editeur} />}
           {editeur.outil === 'rame' && <RameAPoser editeur={editeur} />}
           <Section titre={`Image ${index + 1} sur ${s.images.length}`}>
@@ -517,16 +489,9 @@ export function EcranSynoptique(props: {
             >
               Supprimer cette image
             </button>
-            {avertissements.length > 0 && (
-              <div style={{ marginTop: 10 }} data-testid="avertissements">
-                {avertissements.map((a) => (
-                  <p key={a} style={styleAvertissement}>
-                    {a}
-                  </p>
-                ))}
-              </div>
-            )}
           </Section>
+          <PanneauCreneau synoptique={s} index={index} modifier={(suivant, cle = null) => modifier(suivant, index, cle)} />
+          <PanneauPhasage synoptique={s} index={index} modifier={(suivant, cle = null) => modifier(suivant, index, cle)} />
           <CalqueEngins editeur={editeur} />
           <Section titre="Synoptique">
             <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
@@ -537,6 +502,16 @@ export function EcranSynoptique(props: {
                 aria-label="Nom du synoptique"
                 style={{ ...styleChamp, flex: 1, fontWeight: 600 }}
                 onChange={(e) => modifier({ ...s, nom: e.target.value }, index, 'nom')}
+              />
+            </label>
+            <label style={{ display: 'block', fontSize: 13, margin: '8px 0' }}>
+              Bandeau de titre <span style={{ color: COULEURS.discret, fontSize: 12 }}>(en haut de chaque image ; vide : pas de bandeau)</span>
+              <textarea
+                value={s.bandeau}
+                rows={2}
+                aria-label="Bandeau de titre"
+                style={{ ...styleChamp, display: 'block', width: '100%', boxSizing: 'border-box', marginTop: 4, resize: 'vertical' }}
+                onChange={(e) => modifier({ ...s, bandeau: e.target.value }, index, 'bandeau')}
               />
             </label>
             <ChampInstant libelle="Début" valeur={s.t0} changer={horaireSynoptique('debut')} />
@@ -562,7 +537,7 @@ export function EcranSynoptique(props: {
           </Section>
         </aside>
       </div>
-      <Vignettes synoptique={s} index={index} choisir={aller} />
+      <Vignettes synoptique={s} index={index} etatsVoie={chantier.etatsVoie} choisir={aller} />
       {fenetre === 'cadrage' && (
         <FenetreCadrage
           synoptique={s}

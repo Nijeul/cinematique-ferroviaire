@@ -2,6 +2,7 @@ import { nouvelIdentifiant } from './edition.ts'
 import type { Rectangle } from './elements.ts'
 import type { Resultat } from './echelle.ts'
 import type { EnginsEtRames } from './engins.ts'
+import type { EtatsZones } from './etatsZones.ts'
 import type { Calque, Echelle, Fond, Point, Projet } from './projet.ts'
 import { ecrireInstant, formaterHoraire, formaterPlage, lireInstant, minutesDepuisT0 } from './temps.ts'
 
@@ -16,14 +17,41 @@ import { ecrireInstant, formaterHoraire, formaterPlage, lireInstant, minutesDepu
 // duplique l'image courante, engins compris : c'est ainsi qu'on fait avancer
 // les engins d'une image à l'autre.
 //
+// Chaque image porte aussi l'état de chaque zone de travaux (recopié par
+// « Nouvelle image », comme les engins), et ce qui s'affiche autour du plan
+// comme sur les planches du commanditaire : son créneau horaire (en haut à
+// droite, avec un titre facultatif) et son encart PHASAGE (en bas à gauche,
+// propre à chaque image : il n'est pas recopié). Le bandeau de titre, en
+// haut, est le même pour toutes les images du synoptique.
+//
 // Temps : T0 est la date et l'heure du début du synoptique ; la fin et les
-// horaires des images sont en minutes depuis T0.
+// horaires des images sont en minutes depuis T0. Les horaires des images sont
+// indicatifs (décision du commanditaire) : deux images peuvent se chevaucher
+// ou laisser un trou.
 
 // Ce qui est dessiné sur une image : tout le plan sauf le fond et l'échelle,
 // gardés une fois au niveau du synoptique, et les engins et rames de l'image.
-export type ContenuImage = Pick<Projet, 'extremites' | 'calques' | 'cadres' | 'voies' | 'zones' | 'appareils' | 'textes'> & EnginsEtRames
+export type ContenuImage = Pick<Projet, 'extremites' | 'calques' | 'cadres' | 'voies' | 'zones' | 'appareils' | 'textes'> &
+  EnginsEtRames & { etatsZones: EtatsZones }
 
-export type ImageSynoptique = { id: string; debut: number; fin: number; contenu: ContenuImage }
+// Une étape de l'encart PHASAGE : « 3 – Dépose des rails… ». Le libellé peut
+// tenir sur plusieurs lignes.
+export type EtapePhasage = { numero: number; libelle: string }
+
+// Heures affichées dans le créneau : la plage (début – fin), le début seul
+// (« Sa 20h00 »), ou aucune (le titre seul, « Phase avant travaux »).
+export type HeuresCreneau = 'plage' | 'debut' | 'aucune'
+
+export type ImageSynoptique = {
+  id: string
+  debut: number
+  fin: number
+  // Titre du créneau (« Phase avant travaux ») ; vide : les heures seules.
+  titre: string
+  heures: HeuresCreneau
+  phasage: EtapePhasage[]
+  contenu: ContenuImage
+}
 
 export type Synoptique = {
   id: string
@@ -43,21 +71,41 @@ export type Synoptique = {
   echelle: Echelle | null
   // Calque « Engins » : visible, verrouillé. Le même pour toutes les images.
   calqueEngins: Calque
+  // Bandeau de titre, en haut de chaque image (une ou plusieurs lignes) ;
+  // vide : pas de bandeau.
+  bandeau: string
   images: ImageSynoptique[]
 }
 
 // Une image vue comme un plan : le fond et l'échelle du synoptique, les
-// éléments de l'image, ses engins et ses rames.
-export type PlanImage = Projet & EnginsEtRames
+// éléments de l'image, ses engins, ses rames et l'état de ses zones.
+export type PlanImage = Projet & EnginsEtRames & { etatsZones: EtatsZones }
 
 const copie = <T>(valeur: T): T => structuredClone(valeur)
 
-// Contenu d'une image tiré d'un plan (qui n'a pas d'engins) ; `enginsEtRames`
-// sert à la relecture d'un synoptique enregistré.
-export function contenuDe(projet: Projet, enginsEtRames: EnginsEtRames = { engins: [], rames: [] }): ContenuImage {
+// Contenu d'une image tiré d'un plan (qui n'a pas d'engins, et dont toutes
+// les zones sont avant travaux) ; `enginsEtRames` et `etatsZones` servent à
+// la relecture d'un synoptique enregistré.
+export function contenuDe(
+  projet: Projet,
+  enginsEtRames: EnginsEtRames = { engins: [], rames: [] },
+  etatsZones: EtatsZones = {},
+): ContenuImage {
   const { extremites, calques, cadres, voies, zones, appareils, textes } = projet
-  return copie({ extremites, calques, cadres, voies, zones, appareils, textes, ...enginsEtRames })
+  return copie({ extremites, calques, cadres, voies, zones, appareils, textes, ...enginsEtRames, etatsZones })
 }
+
+// Une image neuve : créneau sans titre (les heures, début et fin), encart
+// PHASAGE vide.
+const nouvelleImageVide = (id: string, debut: number, fin: number, contenu: ContenuImage): ImageSynoptique => ({
+  id,
+  debut,
+  fin,
+  titre: '',
+  heures: 'plage',
+  phasage: [],
+  contenu,
+})
 
 // Le plan tel qu'il apparaît sur une image : le fond et l'échelle du
 // synoptique, les éléments, engins et rames de l'image.
@@ -129,7 +177,8 @@ export function creerSynoptique(
     fond: projet.fond ? { ...projet.fond } : null,
     echelle: projet.echelle ? { ...projet.echelle } : null,
     calqueEngins: { ...CALQUE_ENGINS_PAR_DEFAUT },
-    images: [{ id: 'image-1', debut: 0, fin: demande.fin, contenu: contenuDe(projet) }],
+    bandeau: '',
+    images: [nouvelleImageVide('image-1', 0, demande.fin, contenuDe(projet))],
   }
 }
 
@@ -161,8 +210,10 @@ export function calerEchelleSynoptique(s: Synoptique, echelle: Echelle): Synopti
 
 // ——— Images ———
 
-// Nouvelle image : copie de l'image courante, engins et rames compris,
-// insérée juste après. Elle commence à la fin de la courante et dure autant,
+// Nouvelle image : copie de l'image courante, engins, rames et états des
+// zones compris, insérée juste après. Son encart PHASAGE est vide (chaque
+// créneau a ses propres étapes, comme sur les planches du commanditaire) et
+// son créneau n'a pas de titre. Elle commence à la fin de la courante et dure autant,
 // sans dépasser la fin du synoptique. S'il ne reste pas de place, elle reprend les horaires de la
 // courante, et un message invite à les ajuster.
 export function nouvelleImage(s: Synoptique, index: number): { synoptique: Synoptique; index: number; message: string | null } {
@@ -175,7 +226,7 @@ export function nouvelleImage(s: Synoptique, index: number): { synoptique: Synop
     fin = courante.fin
     message = `L'image ${index + 1} va jusqu'à la fin du synoptique : la nouvelle image reprend ses horaires. Ajustez-les à droite.`
   }
-  const image: ImageSynoptique = { id: nouvelIdentifiant(s.images, 'image'), debut, fin, contenu: copie(courante.contenu) }
+  const image = nouvelleImageVide(nouvelIdentifiant(s.images, 'image'), debut, fin, copie(courante.contenu))
   const images = [...s.images.slice(0, index + 1), image, ...s.images.slice(index + 1)]
   return { synoptique: { ...s, images }, index: index + 1, message }
 }
@@ -188,6 +239,8 @@ export function supprimerImage(s: Synoptique, index: number): Resultat<Synoptiqu
 }
 
 // Horaires d'une image : dans les bornes du synoptique, fin après début.
+// Chevauchements et trous entre images sont permis : les horaires sont
+// indicatifs.
 export function erreurHoraires(s: Pick<Synoptique, 't0' | 'fin'>, debut: number, fin: number): string | null {
   if (fin <= debut) return "La fin de l'image doit être après son début."
   if (debut < 0) return `L'image ne peut pas commencer avant le début du synoptique (${formaterHoraire(s.t0, 0)}).`
@@ -206,22 +259,6 @@ export function modifierHorairesImage(
   const erreur = erreurHoraires(s, debut, fin)
   if (erreur) return { ok: false, erreur }
   return { ok: true, valeur: { ...s, images: s.images.map((im, i) => (i === index ? { ...im, debut, fin } : im)) } }
-}
-
-// Avertissements discrets, sans blocage : deux images qui se suivent et se
-// chevauchent, ou qui laissent un trou entre elles.
-export function avertissementsImages(s: Synoptique): string[] {
-  const avertissements: string[] = []
-  for (let i = 1; i < s.images.length; i++) {
-    const a = s.images[i - 1]
-    const b = s.images[i]
-    if (b.debut < a.fin) {
-      avertissements.push(`Les images ${i} et ${i + 1} se chevauchent (${formaterPlage(s.t0, b.debut, Math.min(a.fin, b.fin))}).`)
-    } else if (b.debut > a.fin) {
-      avertissements.push(`Trou entre les images ${i} et ${i + 1} : rien de ${formaterPlage(s.t0, a.fin, b.debut)}.`)
-    }
-  }
-  return avertissements
 }
 
 // ——— Propriétés du synoptique ———

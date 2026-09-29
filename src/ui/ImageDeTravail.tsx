@@ -1,5 +1,5 @@
-import { useEffect, useId, useRef, useState, type PointerEvent as EvenementPointeur } from 'react'
-import { accrocherVoie, poigneeSousPointeur } from '../plan/detection.ts'
+import { useEffect, useRef, useState, type PointerEvent as EvenementPointeur } from 'react'
+import { accrocherVoie, poigneeSousPointeur, zoneSousPointeur } from '../plan/detection.ts'
 import {
   ajouterEngin,
   ajouterRame,
@@ -15,17 +15,20 @@ import {
   type ReferenceEngin,
 } from '../plan/engins.ts'
 import type { Point } from '../plan/projet.ts'
-import { rectangleAffiche, type PlanImage } from '../plan/synoptique.ts'
+import { miseEnPage } from '../plan/planche.ts'
+import type { PlanImage } from '../plan/synoptique.ts'
 import { projeterSurPolyligne } from '../plan/trace.ts'
 import { ajusterSurRectangle, deplacer, facteurMolette, versPlan, zoomerAutour, type Vue } from '../plan/vue.ts'
 import { COULEURS } from './couleurs.ts'
-import { BarreEchelle, DessinEngin, DessinEnginsImage, DessinRame } from './DessinEngins.tsx'
-import { DessinPlan } from './DessinPlan.tsx'
+import { DessinEngin, DessinRame } from './DessinEngins.tsx'
+import { DessinPlanche } from './Planche.tsx'
 import type { EditeurImage } from './useEditeurImage.ts'
 
-// L'image courante d'un synoptique, qu'on modifie : le plan figé, limité au
-// cadrage, et par-dessus ses engins et ses rames, qu'on pose, choisit et
-// glisse. Molette : zoom ; Main, Espace ou clic molette : déplacer la vue.
+// L'image courante d'un synoptique, qu'on modifie, mise en page comme une
+// planche (bandeau, créneau, encart PHASAGE) : le plan figé, limité au
+// cadrage, ses zones selon leur état — un clic choisit une zone, pour changer
+// son état dans le panneau — et par-dessus ses engins et ses rames, qu'on
+// pose, choisit et glisse. Molette : zoom ; Main, Espace ou clic molette : déplacer la vue.
 // Tolérances en pixels d'écran, donc identiques à tout zoom.
 const TOLERANCE_ELEMENT = 6
 const TOLERANCE_ACCROCHE = 12
@@ -46,7 +49,6 @@ const dansRectangle = (r: { x: number; y: number; largeur: number; hauteur: numb
 
 export function ImageDeTravail({ editeur }: { editeur: EditeurImage }) {
   const { synoptique: s, planche, outil, selection, espace, calque, setVue } = editeur
-  const idClip = useId()
   const svgRef = useRef<SVGSVGElement>(null)
   const glisser = useRef<Glisser | null>(null)
   const [taille, setTaille] = useState({ largeur: 0, hauteur: 0 })
@@ -61,9 +63,10 @@ export function ImageDeTravail({ editeur }: { editeur: EditeurImage }) {
     return () => observateur.disconnect()
   }, [])
 
-  const cadre = rectangleAffiche(s)
-  // Vue « null » = ajustée sur le cadrage du synoptique.
-  const vue: Vue = editeur.vue ?? ajusterSurRectangle(cadre, taille, MARGE_ECRAN)
+  const page = miseEnPage(s, editeur.index)
+  const cadre = page.carte
+  // Vue « null » = ajustée sur toute la planche (plan, bandeau, créneau, phasage).
+  const vue: Vue = editeur.vue ?? ajusterSurRectangle(page.planche, taille, MARGE_ECRAN)
 
   useEffect(() => {
     const svg = svgRef.current
@@ -114,7 +117,10 @@ export function ImageDeTravail({ editeur }: { editeur: EditeurImage }) {
     }
     const ref = actif ? enginSousPointeur(planche, p, TOLERANCE_ELEMENT / vue.zoom) : null
     if (!ref) {
-      editeur.setSelection(null)
+      // Pas d'engin : une zone de travaux, pour changer son état (elle ne se glisse pas).
+      const zone = planche.calques.zones.visible && dansRectangle(cadre, p) ? zoneSousPointeur(planche, p, TOLERANCE_ELEMENT / vue.zoom) : null
+      if (zone) editeur.choisirZone(zone)
+      else editeur.toutDeselectionner()
       return
     }
     editeur.choisir(ref)
@@ -210,42 +216,30 @@ export function ImageDeTravail({ editeur }: { editeur: EditeurImage }) {
       <rect width="100%" height="100%" fill={COULEURS.autourDuPlan} />
       {taille.largeur > 0 && (
         <g transform={`translate(${vue.dx} ${vue.dy}) scale(${vue.zoom})`}>
-          <clipPath id={idClip}>
-            <rect x={cadre.x} y={cadre.y} width={cadre.largeur} height={cadre.hauteur} />
-          </clipPath>
-          <g clipPath={`url(#${idClip})`}>
-            <rect x={cadre.x} y={cadre.y} width={cadre.largeur} height={cadre.hauteur} fill="#ffffff" />
-            <DessinPlan
-              projet={planche}
-              zoom={vue.zoom}
-              affiche={cadre}
-              engins={<DessinEnginsImage projet={planche} visible={calque.visible} zoom={vue.zoom} estChoisi={estChoisi} />}
-            />
-            {/* Échelle graphique de la planche, en bas à droite du cadrage. */}
-            {s.echelle && (
-              <BarreEchelle
-                x={cadre.x + cadre.largeur - cadre.largeur * 0.015}
-                y={cadre.y + cadre.hauteur - cadre.largeur * 0.015}
-                unitesParMetre={s.echelle.pixelsParMetre}
-                longueurMax={cadre.largeur * 0.2}
-                taille={cadre.largeur / 90}
-                ancre="droite"
-              />
-            )}
-            {apercu && <g style={{ pointerEvents: 'none' }}>{apercu}</g>}
-            {accroche && (
-              <circle
-                cx={accroche.point.x}
-                cy={accroche.point.y}
-                r={RAYON_POIGNEE / vue.zoom}
-                fill="#ffffff"
-                stroke={COULEURS.selection}
-                strokeWidth={2 / vue.zoom}
-                style={{ pointerEvents: 'none' }}
-              />
-            )}
-          </g>
-          <rect x={cadre.x} y={cadre.y} width={cadre.largeur} height={cadre.hauteur} fill="none" stroke={COULEURS.bordFeuille} strokeWidth={1 / vue.zoom} />
+          <DessinPlanche
+            synoptique={s}
+            index={editeur.index}
+            etatsVoie={editeur.etatsVoie}
+            zoom={vue.zoom}
+            estChoisi={estChoisi}
+            zoneChoisie={editeur.zone?.id ?? null}
+            surLaCarte={
+              <>
+                {apercu && <g style={{ pointerEvents: 'none' }}>{apercu}</g>}
+                {accroche && (
+                  <circle
+                    cx={accroche.point.x}
+                    cy={accroche.point.y}
+                    r={RAYON_POIGNEE / vue.zoom}
+                    fill="#ffffff"
+                    stroke={COULEURS.selection}
+                    strokeWidth={2 / vue.zoom}
+                    style={{ pointerEvents: 'none' }}
+                  />
+                )}
+              </>
+            }
+          />
           {poignees.map(({ cle, point }) => (
             <circle
               key={cle}
