@@ -53,7 +53,7 @@ function ImageCadree(props: { synoptique: Synoptique; index: number; largeur: nu
       </clipPath>
       <g clipPath={`url(#${idClip})`}>
         <rect x={cadre.x} y={cadre.y} width={cadre.largeur} height={cadre.hauteur} fill="#ffffff" />
-        <DessinPlan projet={projetDeImage(s, image)} zoom={vue.zoom} />
+        <DessinPlan projet={projetDeImage(s, image)} zoom={vue.zoom} affiche={cadre} />
       </g>
       <rect
         x={cadre.x}

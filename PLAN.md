@@ -99,7 +99,9 @@ Questions ouvertes (réponses attendues du commanditaire) :
 - Changer l'heure de début du synoptique garde chaque image à son heure réelle (et refuse si
   une image se retrouverait avant le début). Faut-il plutôt décaler toutes les images avec ?
 - Un cadrage qui coupe une voie cache son nom (écrit à son extrémité). Faut-il répéter le nom
-  au bord du cadre ?
+  au bord du cadre ? (Les repères « ◀ Nord » / « Sud ▶ », eux, restent toujours dans le cadre.)
+- Heures de nuit (avant 6 h) écrites « Ve/Sa 01h30 », y compris en fin de plage
+  (« Ve 22h30 → Ve/Sa 01h30 ») : ce format convient-il ?
 
 ## Décisions du commanditaire
 

@@ -12,6 +12,7 @@ import {
   type Cote,
 } from '../plan/dessin.ts'
 import { boiteTexte, type Genre } from '../plan/detection.ts'
+import type { Rectangle } from '../plan/elements.ts'
 import { positionNom, tailleNom } from '../plan/geometrie.ts'
 import {
   COULEUR_VOIE_PAR_DEFAUT,
@@ -249,7 +250,9 @@ function DessinTexte({ texte, choisi, zoom }: { texte: Texte; choisi: boolean; z
   )
 }
 
-export function DessinPlan(props: { projet: Projet; zoom: number; estChoisi?: (genre: Genre, id: string) => boolean }) {
+// `affiche` : la partie montrée (le cadrage d'un synoptique), pour y garder les
+// repères d'extrémités ; toute la feuille par défaut.
+export function DessinPlan(props: { projet: Projet; zoom: number; affiche?: Rectangle; estChoisi?: (genre: Genre, id: string) => boolean }) {
   const { projet } = props
   // Même nom que dans le plan de travail : les tailles « / vue.zoom » restent constantes à l'écran.
   const vue = { zoom: props.zoom }
@@ -260,7 +263,7 @@ export function DessinPlan(props: { projet: Projet; zoom: number; estChoisi?: (g
   const epaisseurTrace = epaisseurParDefaut(projet)
   const cotes = cotesEtiquettesZones(projet)
   const voiesParId = new Map(projet.voies.map((v) => [v.id, v]))
-  const extremites = positionsExtremites(projet)
+  const extremites = positionsExtremites(projet, props.affiche)
   // Appareils : une communication se dessine une fois, depuis son premier BS.
   const dejaDessinees = new Set<string>()
   return (
