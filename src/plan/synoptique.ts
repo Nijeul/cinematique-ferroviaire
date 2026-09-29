@@ -3,6 +3,7 @@ import type { Rectangle } from './elements.ts'
 import type { Resultat } from './echelle.ts'
 import type { EnginsEtRames } from './engins.ts'
 import type { EtatsZones } from './etatsZones.ts'
+import type { Fleche } from './fleches.ts'
 import type { Calque, Echelle, Fond, Point, Projet } from './projet.ts'
 import { ecrireInstant, formaterHoraire, formaterPlage, lireInstant, minutesDepuisT0 } from './temps.ts'
 
@@ -17,8 +18,9 @@ import { ecrireInstant, formaterHoraire, formaterPlage, lireInstant, minutesDepu
 // duplique l'image courante, engins compris : c'est ainsi qu'on fait avancer
 // les engins d'une image à l'autre.
 //
-// Chaque image porte aussi l'état de chaque zone de travaux (recopié par
-// « Nouvelle image », comme les engins), et ce qui s'affiche autour du plan
+// Chaque image porte aussi l'état de chaque zone de travaux et ses flèches
+// (recopiés par « Nouvelle image », comme les engins), sa légende (calculée
+// d'après ce qu'elle montre, voir legende.ts), et ce qui s'affiche autour du plan
 // comme sur les planches du commanditaire : son créneau horaire (en haut à
 // droite, avec un titre facultatif) et son encart PHASAGE (en bas à gauche,
 // propre à chaque image : il n'est pas recopié). Le bandeau de titre, en
@@ -30,9 +32,10 @@ import { ecrireInstant, formaterHoraire, formaterPlage, lireInstant, minutesDepu
 // ou laisser un trou.
 
 // Ce qui est dessiné sur une image : tout le plan sauf le fond et l'échelle,
-// gardés une fois au niveau du synoptique, et les engins et rames de l'image.
+// gardés une fois au niveau du synoptique, les engins et rames de l'image,
+// l'état de ses zones et ses flèches.
 export type ContenuImage = Pick<Projet, 'extremites' | 'calques' | 'cadres' | 'voies' | 'zones' | 'appareils' | 'textes'> &
-  EnginsEtRames & { etatsZones: EtatsZones }
+  EnginsEtRames & { etatsZones: EtatsZones; fleches: Fleche[] }
 
 // Une étape de l'encart PHASAGE : « 3 – Dépose des rails… ». Le libellé peut
 // tenir sur plusieurs lignes.
@@ -50,6 +53,9 @@ export type ImageSynoptique = {
   titre: string
   heures: HeuresCreneau
   phasage: EtapePhasage[]
+  // Lignes de la légende masquées sur cette image (par leur clé, voir
+  // legende.ts) ; les autres s'affichent.
+  legendeMasquee: string[]
   contenu: ContenuImage
 }
 
@@ -69,8 +75,12 @@ export type Synoptique = {
   // synoptique lui-même s'il n'en a pas (synoptiques de l'étape 4, plan sans
   // échelle).
   echelle: Echelle | null
-  // Calque « Engins » : visible, verrouillé. Le même pour toutes les images.
+  // Calques « Engins » et « Flèches » : visibles, verrouillés. Les mêmes pour
+  // toutes les images.
   calqueEngins: Calque
+  calqueFleches: Calque
+  // Légende de chaque image, en bas à droite (cochée par défaut).
+  afficherLegende: boolean
   // Bandeau de titre, en haut de chaque image (une ou plusieurs lignes) ;
   // vide : pas de bandeau.
   bandeau: string
@@ -78,32 +88,35 @@ export type Synoptique = {
 }
 
 // Une image vue comme un plan : le fond et l'échelle du synoptique, les
-// éléments de l'image, ses engins, ses rames et l'état de ses zones.
-export type PlanImage = Projet & EnginsEtRames & { etatsZones: EtatsZones }
+// éléments de l'image, ses engins, ses rames, l'état de ses zones et ses
+// flèches.
+export type PlanImage = Projet & EnginsEtRames & { etatsZones: EtatsZones; fleches: Fleche[] }
 
 const copie = <T>(valeur: T): T => structuredClone(valeur)
 
-// Contenu d'une image tiré d'un plan (qui n'a pas d'engins, et dont toutes
-// les zones sont avant travaux) ; `enginsEtRames` et `etatsZones` servent à
-// la relecture d'un synoptique enregistré.
+// Contenu d'une image tiré d'un plan (qui n'a ni engins ni flèches, et dont
+// toutes les zones sont avant travaux) ; `enginsEtRames`, `etatsZones` et
+// `fleches` servent à la relecture d'un synoptique enregistré.
 export function contenuDe(
   projet: Projet,
   enginsEtRames: EnginsEtRames = { engins: [], rames: [] },
   etatsZones: EtatsZones = {},
+  fleches: Fleche[] = [],
 ): ContenuImage {
   const { extremites, calques, cadres, voies, zones, appareils, textes } = projet
-  return copie({ extremites, calques, cadres, voies, zones, appareils, textes, ...enginsEtRames, etatsZones })
+  return copie({ extremites, calques, cadres, voies, zones, appareils, textes, ...enginsEtRames, etatsZones, fleches })
 }
 
 // Une image neuve : créneau sans titre (les heures, début et fin), encart
-// PHASAGE vide.
-const nouvelleImageVide = (id: string, debut: number, fin: number, contenu: ContenuImage): ImageSynoptique => ({
+// PHASAGE vide, toute la légende affichée.
+const nouvelleImageVide = (id: string, debut: number, fin: number, contenu: ContenuImage, legendeMasquee: string[] = []): ImageSynoptique => ({
   id,
   debut,
   fin,
   titre: '',
   heures: 'plage',
   phasage: [],
+  legendeMasquee,
   contenu,
 })
 
@@ -114,6 +127,7 @@ export function projetDeImage(s: Synoptique, image: ImageSynoptique): PlanImage 
 }
 
 export const CALQUE_ENGINS_PAR_DEFAUT: Calque = { visible: true, verrouille: false }
+export const CALQUE_FLECHES_PAR_DEFAUT: Calque = { visible: true, verrouille: false }
 
 // ——— Cadrage ———
 
@@ -177,6 +191,8 @@ export function creerSynoptique(
     fond: projet.fond ? { ...projet.fond } : null,
     echelle: projet.echelle ? { ...projet.echelle } : null,
     calqueEngins: { ...CALQUE_ENGINS_PAR_DEFAUT },
+    calqueFleches: { ...CALQUE_FLECHES_PAR_DEFAUT },
+    afficherLegende: true,
     bandeau: '',
     images: [nouvelleImageVide('image-1', 0, demande.fin, contenuDe(projet))],
   }
@@ -210,8 +226,9 @@ export function calerEchelleSynoptique(s: Synoptique, echelle: Echelle): Synopti
 
 // ——— Images ———
 
-// Nouvelle image : copie de l'image courante, engins, rames et états des
-// zones compris, insérée juste après. Son encart PHASAGE est vide (chaque
+// Nouvelle image : copie de l'image courante, engins, rames, états des zones
+// et flèches compris (ainsi que les lignes masquées de sa légende), insérée
+// juste après. Son encart PHASAGE est vide (chaque
 // créneau a ses propres étapes, comme sur les planches du commanditaire) et
 // son créneau n'a pas de titre. Elle commence à la fin de la courante et dure autant,
 // sans dépasser la fin du synoptique. S'il ne reste pas de place, elle reprend les horaires de la
@@ -226,7 +243,7 @@ export function nouvelleImage(s: Synoptique, index: number): { synoptique: Synop
     fin = courante.fin
     message = `L'image ${index + 1} va jusqu'à la fin du synoptique : la nouvelle image reprend ses horaires. Ajustez-les à droite.`
   }
-  const image = nouvelleImageVide(nouvelIdentifiant(s.images, 'image'), debut, fin, copie(courante.contenu))
+  const image = nouvelleImageVide(nouvelIdentifiant(s.images, 'image'), debut, fin, copie(courante.contenu), [...courante.legendeMasquee])
   const images = [...s.images.slice(0, index + 1), image, ...s.images.slice(index + 1)]
   return { synoptique: { ...s, images }, index: index + 1, message }
 }

@@ -35,8 +35,8 @@ Jamais deux étapes d'avance. Chaque étape est une PR courte qui dit quoi regar
 | 3 | Éléments du plan au calque : zones de travaux, appareils (BS et communications), cadres, textes, extrémités du plan (détail ci-dessous) | le plan de base d'une planche est complet | **validé** |
 | 4 | Organisation : accueil et chantiers, plusieurs plans par chantier, synoptiques et images (détail ci-dessous) | on crée un synoptique à partir d'un plan et on feuillette ses images | **validé** |
 | 5 | Échelle du plan, obligatoire à la création ; catalogue d'engins par chantier ; engins et rames posés à l'échelle **dans les images des synoptiques** (pas sur le plan), couleurs et numéros ; « Nouvelle image » emporte les engins (détail ci-dessous) | les engins se posent à la bonne taille dans une image, se reconnaissent et avancent d'une image à l'autre | **validé** |
-| 6 | États de la voie par chantier ; état et avancement partiel de chaque zone dans chaque image ; encart PHASAGE ; créneau horaire et bandeau de titre (détail ci-dessous) | une image se lit comme une planche actuelle (hors flèches et légende) | **en cours** |
-| 7 | Flèches (sens de travail, sens d'avancement TTX, cheminement, chemin de roule) et **légende** propre à chaque image : numéros d'engins (« 1 = pelle RR 1 »), états présents, trains, flèches | la planche s'explique d'elle-même, sans les carrés noirs numérotés | à faire |
+| 6 | États de la voie par chantier ; état et avancement partiel de chaque zone dans chaque image ; encart PHASAGE ; créneau horaire et bandeau de titre (détail ci-dessous) | une image se lit comme une planche actuelle (hors flèches et légende) | **validé** |
+| 7 | Types de flèches par chantier ; flèches tracées dans les images (sens de travail, sens d'avancement TTX, cheminement, chemin de roule) ; **légende** propre à chaque image, construite d'après ce qu'elle montre : engins numérotés (« 1 — Pelle RR »), rames, états présents, flèches (détail ci-dessous) | la planche s'explique d'elle-même, sans les carrés noirs numérotés | **en cours** |
 | 8 | Exports PowerPoint et PDF des images d'un synoptique | un jeu de planches équivalent à l'actuel | à faire |
 
 Les besoins au-delà (vidéo, orthophoto calée, import DXF, 3D en option) seront rediscutés une
@@ -224,16 +224,82 @@ dont l'aspect change avec l'état de la voie, parfois sur une partie seulement.
 - Hors étape 6 : flèches et légende (étape 7), exports (étape 8), découpage du site en bandes
   (pas demandé).
 
-Questions ouvertes de l'étape 6 (choix provisoires en place) :
+Questions de l'étape 6 — **tranchées** : « c'est bon », les choix en place sont gardés :
 
-- **Couleur de la sous-couche ballast** : brun clair (#a07c52), choisi pour se distinguer du
-  saumon (déballastée) et du jaune (voie neuve). Modifiable dans la page du chantier.
-  Convient-elle ?
-- **« Nouvelle image » ne recopie pas les étapes du PHASAGE** (ni le titre du créneau) : sur
-  vos planches, chaque créneau a ses propres étapes. L'encart de la nouvelle image est vide
-  et « + Étape » propose le numéro suivant. Est-ce bien ce qu'il faut ?
-- Bandeau, créneau et encart sont placés **autour** du plan (au-dessus et au-dessous), comme
-  sur vos planches, plutôt que par-dessus. Cela vous convient-il ?
+- ~~Couleur de la sous-couche ballast~~ : brun clair (#a07c52), modifiable dans la page du
+  chantier.
+- ~~« Nouvelle image » et le PHASAGE~~ : les étapes (et le titre du créneau) ne sont pas
+  recopiées ; l'encart de la nouvelle image est vide et « + Étape » propose le numéro suivant.
+- ~~Place du bandeau, du créneau et de l'encart~~ : **autour** du plan (au-dessus et
+  au-dessous), jamais par-dessus.
+
+### Étape 7 — flèches et légende de chaque image
+
+Le synoptique réel du commanditaire montre quatre sortes de flèches (fine rouge « Sens de
+travail », grosse bleue « Sens avancement TTX », magenta « Cheminement » d'un portique avec
+son panneau et « Cheminement retour », doubles traits rouges « Chemin de roule ») et, en bas à
+droite de chaque planche, une légende qui ne contient que ce qui y figure. Elle n'explique pas
+les numéros des pelles (carrés noirs) : « il faut faire mieux, par exemple une légende ».
+
+- **Types de flèches, par chantier** (comme les états de la voie), section « Flèches » de la
+  page du chantier, avec un aperçu : nom, couleur, épaisseur (en points : une voie en fait 8),
+  trait (plein, pointillés, double trait), pointe (au bout, aux deux bouts, aucune) ; modifier,
+  ajouter, réordonner (ordre de la légende), supprimer. Liste par défaut, dans l'ordre :
+  **Sens de travail** (rouge, fine, pointe au bout), **Sens avancement TTX** (bleue, épaisse,
+  pointe au bout), **Cheminement** (magenta, moyenne, pointe au bout), **Cheminement retour**
+  (magenta, moyenne, pointillés, pointe au bout), **Chemin de roule** (rouge, double trait,
+  sans pointe). Changer un type change toutes les images qui l'utilisent. Supprimer un type
+  utilisé demande une confirmation qui dit combien d'images sont concernées ; ses flèches
+  sont retirées. Les chantiers existants reçoivent la liste par défaut ; elle voyage avec
+  l'export (fichier de chantier version 4 ; les versions 1 à 3 s'ouvrent toujours).
+- **Flèches dans les images** : outil **Flèche (F)** ; on choisit le type dans le panneau,
+  puis un clic par point (départ, coudes, fin), double-clic ou Entrée pour finir, Échap pour
+  annuler, Suppr pour retirer le dernier point ; **Maj** : horizontale, verticale ou 45°.
+  Pointe en triangle proportionnée à l'épaisseur ; double trait = deux traits parallèles, coins
+  compris ; liseré blanc sous le trait pour qu'elle se détache du fond. Sélection, déplacement
+  d'un point (Maj aussi) ou de toute la flèche, Suppr, changement de type, **libellé
+  facultatif** écrit le long de la flèche, Annuler / Rétablir. Calque « Flèches » visible /
+  verrouillé. Les vignettes montrent les flèches. **« Nouvelle image » recopie les flèches**,
+  comme les engins (à confirmer).
+- **Légende de chaque image**, calculée d'après ce que l'image montre (rien d'autre), dans un
+  cadre « LÉGENDE » en bas à droite, dans la bande du bas, à côté de l'encart PHASAGE et dans
+  son style ; échantillons à gauche, textes à droite, sur deux ou trois colonnes équilibrées si
+  elle est longue. Hauteur de bande identique sur toutes les images ; pas de cadre si la
+  légende est vide. Elle contient, dans l'ordre :
+  - les **rames** : nom en gras (« TTX 1 »), description, composition courte (« BB 61000 +
+    6 × R39 ») ou, au-delà de trois groupes de véhicules, la longueur ;
+  - les **engins numérotés**, dans l'ordre des numéros : « 1 — Pelle RR », puis leur
+    description ;
+  - les **engins sans numéro**, regroupés quand ils sont pareils : « Pelle RR ×2 » ;
+  - les **états de la voie présents** (échantillon du rendu, puis le nom), sans « Avant
+    travaux » ;
+  - les **types de flèches présents**, avec un échantillon du trait.
+- **Description (légende)** : champ facultatif des engins et des rames (« déblais +
+  sous-couche ballast »), écrit après le nom ; le nom d'une rame se modifie (« TTX 1 »).
+- **Réglages** : case « Afficher la légende » du synoptique (cochée par défaut) ; dans le
+  panneau « Légende de l'image n », une case par ligne pour la masquer sur cette image
+  seulement.
+- Hors étape 7 : exports PowerPoint et PDF (étape 8).
+
+Questions ouvertes de l'étape 7 (choix provisoires en place) :
+
+- **« Nouvelle image » recopie les flèches** (et les lignes masquées de la légende), comme
+  les engins : il ne reste qu'à déplacer ce qui change. Est-ce ce qu'il faut, ou chaque
+  créneau doit-il repartir sans flèche ?
+- **Engins sans numéro** : ils figurent dans la légende, regroupés (« Pelle RR ×2 »), plutôt
+  que d'en être absents. Les garder ?
+- **« Avant travaux »** n'apparaît jamais dans la légende : c'est la couleur propre de chaque
+  zone, déjà nommée sur le plan. D'accord ?
+- **Nom d'un engin dans la légende** : la catégorie seule quand le catalogue n'a qu'un modèle
+  dans cette catégorie (« Pelle RR »), catégorie et modèle sinon (« BML 08-32U », sans le mot
+  « Type »). Cela convient-il ?
+- **Rame** : composition courte entre parenthèses après la description ; la longueur au-delà
+  de trois groupes de véhicules. Préférez-vous toujours la longueur ?
+- **Ordre des lignes** : rames, engins numérotés, autres engins, états, flèches (dans l'ordre
+  de la liste du chantier).
+- **Épaisseurs par défaut** : Sens de travail 2, Sens avancement TTX 12, Cheminement 3,
+  Chemin de roule 2 (une voie = 8), relevées à l'œil sur vos planches ; modifiables dans la
+  page du chantier.
 
 ## Décisions du commanditaire
 
@@ -261,11 +327,14 @@ Questions ouvertes de l'étape 6 (choix provisoires en place) :
 - **Pas de découpage du site en deux bandes** : « Pas besoin. »
 - **Numéros des pelles** (carrés noirs numérotés de ses planches) : « Il faut faire mieux, par
   exemple une légende. » → légende de l'étape 7.
+- **Questions de l'étape 6** (couleur de la sous-couche, PHASAGE non recopié, bandeau,
+  créneau et encart autour du plan) : « C'est bon. » Les choix en place sont gardés.
 
 ## Synoptiques réels
 
 Le commanditaire importe directement ses propres plans (PDF ou images) dans l'application. Il
 a aussi fourni un synoptique PowerPoint réel, analysé pour caler le style de l'étape 6 (encart
-PHASAGE, créneau, bandeau, états des zones) et qui servira aux étapes 7 et 8. **Il n'est pas
+PHASAGE, créneau, bandeau, états des zones) et de l'étape 7 (flèches, légende), et qui servira
+à l'étape 8. **Il n'est pas
 versionné** (données réelles) : `sources/` reste vide dans le dépôt, et les fixtures restent
 fictives.

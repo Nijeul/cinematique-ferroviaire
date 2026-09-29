@@ -89,16 +89,23 @@ export function sousPolyligne(points: Point[], debut: number, fin: number): Poin
 // alors écrêté (comme la limite d'onglet d'un trait SVG).
 const LIMITE_ONGLET = 4
 
-// Contour d'une bande de demi-largeur donnée autour d'un tracé : le bord d'un
-// côté à l'aller, le bord de l'autre côté au retour. Les coudes sont en
-// onglet, les bouts coupés droit. Polygone vide si le tracé n'a pas de
-// longueur.
-export function bandeAutour(points: Point[], demiLargeur: number): Point[] {
+// Le tracé sans les points répétés (un segment de longueur nulle n'a pas de
+// direction).
+export function sansDoublons(points: Point[]): Point[] {
   const nets: Point[] = []
   for (const p of points) {
     const dernier = nets[nets.length - 1]
     if (!dernier || dernier.x !== p.x || dernier.y !== p.y) nets.push(p)
   }
+  return nets
+}
+
+// Tracé parallèle, à `distance` du tracé d'origine (d'un côté si elle est
+// positive, de l'autre si elle est négative), coudes compris : les coudes
+// sont en onglet, écrêtés s'ils sont très aigus. Vide si le tracé n'a pas de
+// longueur. Sert aux bords d'une zone et au double trait d'une flèche.
+export function decalerPolyligne(points: Point[], distance: number): Point[] {
+  const nets = sansDoublons(points)
   if (nets.length < 2) return []
   // Normale unitaire de chaque segment.
   const normales: Point[] = []
@@ -106,19 +113,32 @@ export function bandeAutour(points: Point[], demiLargeur: number): Point[] {
     const l = longueurSegment(nets[i - 1], nets[i])
     normales.push({ x: -(nets[i].y - nets[i - 1].y) / l, y: (nets[i].x - nets[i - 1].x) / l })
   }
-  const decalages = nets.map((_, i) => {
+  const d = Math.abs(distance)
+  const signe = distance < 0 ? -1 : 1
+  return nets.map((p, i) => {
     const n1 = normales[Math.max(0, i - 1)]
     const n2 = normales[Math.min(normales.length - 1, i)]
     const somme = { x: n1.x + n2.x, y: n1.y + n2.y }
     const norme = Math.hypot(somme.x, somme.y)
+    let decalage: Point
     // Demi-tour complet : on garde la normale du segment d'arrivée.
-    if (norme < 1e-9) return { x: n1.x * demiLargeur, y: n1.y * demiLargeur }
-    const m = { x: somme.x / norme, y: somme.y / norme }
-    const cosinus = m.x * n1.x + m.y * n1.y
-    const longueur = Math.min(demiLargeur / cosinus, demiLargeur * LIMITE_ONGLET)
-    return { x: m.x * longueur, y: m.y * longueur }
+    if (norme < 1e-9) decalage = { x: n1.x * d, y: n1.y * d }
+    else {
+      const m = { x: somme.x / norme, y: somme.y / norme }
+      const cosinus = m.x * n1.x + m.y * n1.y
+      const longueur = Math.min(d / cosinus, d * LIMITE_ONGLET)
+      decalage = { x: m.x * longueur, y: m.y * longueur }
+    }
+    return { x: p.x + signe * decalage.x, y: p.y + signe * decalage.y }
   })
-  const unCote = nets.map((p, i) => ({ x: p.x + decalages[i].x, y: p.y + decalages[i].y }))
-  const autreCote = nets.map((p, i) => ({ x: p.x - decalages[i].x, y: p.y - decalages[i].y })).reverse()
-  return [...unCote, ...autreCote]
+}
+
+// Contour d'une bande de demi-largeur donnée autour d'un tracé : le bord d'un
+// côté à l'aller, le bord de l'autre côté au retour. Les coudes sont en
+// onglet, les bouts coupés droit. Polygone vide si le tracé n'a pas de
+// longueur.
+export function bandeAutour(points: Point[], demiLargeur: number): Point[] {
+  const unCote = decalerPolyligne(points, demiLargeur)
+  if (unCote.length === 0) return []
+  return [...unCote, ...decalerPolyligne(points, -demiLargeur).reverse()]
 }

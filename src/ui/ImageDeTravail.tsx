@@ -14,6 +14,17 @@ import {
   type PositionEngin,
   type ReferenceEngin,
 } from '../plan/engins.ts'
+import {
+  deplacerFleche,
+  deplacerPointFleche,
+  flecheSousPointeur,
+  geometrieFleche,
+  pointDeTrace,
+  uniteFleche,
+  type Fleche,
+} from '../plan/fleches.ts'
+import { contraindre } from '../plan/geometrie.ts'
+import { enPoints } from '../plan/dessin.ts'
 import type { Point } from '../plan/projet.ts'
 import { miseEnPage } from '../plan/planche.ts'
 import type { PlanImage } from '../plan/synoptique.ts'
@@ -21,6 +32,7 @@ import { projeterSurPolyligne } from '../plan/trace.ts'
 import { ajusterSurRectangle, deplacer, facteurMolette, versPlan, zoomerAutour, type Vue } from '../plan/vue.ts'
 import { COULEURS } from './couleurs.ts'
 import { DessinEngin, DessinRame } from './DessinEngins.tsx'
+import { TraceFleche } from './DessinFleches.tsx'
 import { DessinPlanche } from './Planche.tsx'
 import type { EditeurImage } from './useEditeurImage.ts'
 
@@ -28,7 +40,9 @@ import type { EditeurImage } from './useEditeurImage.ts'
 // planche (bandeau, créneau, encart PHASAGE) : le plan figé, limité au
 // cadrage, ses zones selon leur état — un clic choisit une zone, pour changer
 // son état dans le panneau — et par-dessus ses engins et ses rames, qu'on
-// pose, choisit et glisse. Molette : zoom ; Main, Espace ou clic molette : déplacer la vue.
+// pose, choisit et glisse, et ses flèches, qu'on trace point par point, dont
+// on glisse les points ou toute la flèche. Molette : zoom ; Main, Espace ou
+// clic molette : déplacer la vue.
 // Tolérances en pixels d'écran, donc identiques à tout zoom.
 const TOLERANCE_ELEMENT = 6
 const TOLERANCE_ACCROCHE = 12
@@ -41,6 +55,8 @@ type Glisser =
   | { genre: 'vue'; x: number; y: number }
   | { genre: 'rotation'; ref: ReferenceEngin; origine: PlanImage; cle: string }
   | { genre: 'corps'; ref: ReferenceEngin; depart: Point; ecran: Point; origine: PlanImage; cle: string }
+  | { genre: 'fleche'; id: string; depart: Point; ecran: Point; origine: Fleche[]; cle: string }
+  | { genre: 'pointFleche'; id: string; indice: number; origine: Fleche[]; cle: string }
 
 let compteurGlisser = 0
 
@@ -53,6 +69,7 @@ export function ImageDeTravail({ editeur }: { editeur: EditeurImage }) {
   const glisser = useRef<Glisser | null>(null)
   const [taille, setTaille] = useState({ largeur: 0, hauteur: 0 })
   const [curseur, setCurseur] = useState<Point | null>(null)
+  const [curseurMaj, setCurseurMaj] = useState(false)
   const [enDeplacement, setEnDeplacement] = useState(false)
 
   useEffect(() => {
@@ -63,7 +80,7 @@ export function ImageDeTravail({ editeur }: { editeur: EditeurImage }) {
     return () => observateur.disconnect()
   }, [])
 
-  const page = miseEnPage(s, editeur.index)
+  const page = miseEnPage(s, editeur.index, editeur.listes)
   const cadre = page.carte
   // Vue « null » = ajustée sur toute la planche (plan, bandeau, créneau, phasage).
   const vue: Vue = editeur.vue ?? ajusterSurRectangle(page.planche, taille, MARGE_ECRAN)
@@ -85,9 +102,13 @@ export function ImageDeTravail({ editeur }: { editeur: EditeurImage }) {
     return { x: e.clientX - r.left, y: e.clientY - r.top }
   }
 
-  // Les engins se choisissent si leur calque est visible et non verrouillé.
+  // Les engins et les flèches se choisissent si leur calque est visible et non verrouillé.
   const actif = calque.visible && !calque.verrouille
+  const flechesActives = editeur.calqueFleches.visible && !editeur.calqueFleches.verrouille
   const poignees = outil === 'selection' && selection && actif ? poigneesEngin(planche, selection) : []
+  const fleche = editeur.fleche
+  const poigneesFleche = outil === 'selection' && fleche && flechesActives ? fleche.points.map((point, i) => ({ cle: `point-${i}`, point })) : []
+  const unite = uniteFleche(planche)
 
   const surAppui = (e: EvenementPointeur<SVGSVGElement>) => {
     const ecran = pointEcran(e)
@@ -100,6 +121,14 @@ export function ImageDeTravail({ editeur }: { editeur: EditeurImage }) {
       return
     }
     if (e.button !== 0) return
+    if (outil === 'fleche') {
+      if (!dansRectangle(cadre, p)) {
+        editeur.setMessage({ genre: 'erreur', texte: "Cliquez dans le cadre de l'image : ce qui est tracé en dehors ne se verrait pas." })
+        return
+      }
+      editeur.ajouterPointTrace(p, e.shiftKey)
+      return
+    }
     if (outil === 'engin' || outil === 'rame') {
       if (!dansRectangle(cadre, p)) {
         editeur.setMessage({ genre: 'erreur', texte: "Cliquez dans le cadre de l'image : ce qui est posé en dehors ne se verrait pas." })
@@ -112,6 +141,21 @@ export function ImageDeTravail({ editeur }: { editeur: EditeurImage }) {
     if (outil !== 'selection') return
     if (selection && poigneeSousPointeur(poignees, p, TOLERANCE_POIGNEE / vue.zoom)) {
       glisser.current = { genre: 'rotation', ref: selection, origine: planche, cle: `glisser:${++compteurGlisser}` }
+      e.currentTarget.setPointerCapture(e.pointerId)
+      return
+    }
+    // Un point de la flèche choisie, puis une flèche (dessinées au-dessus des engins).
+    const poigneeFleche = fleche ? poigneeSousPointeur(poigneesFleche, p, TOLERANCE_POIGNEE / vue.zoom) : null
+    if (fleche && poigneeFleche) {
+      const indice = Number(poigneeFleche.replace('point-', ''))
+      glisser.current = { genre: 'pointFleche', id: fleche.id, indice, origine: planche.fleches, cle: `glisser:${++compteurGlisser}` }
+      e.currentTarget.setPointerCapture(e.pointerId)
+      return
+    }
+    const idFleche = flechesActives ? flecheSousPointeur(planche.fleches, editeur.typesFleches, unite, p, TOLERANCE_ELEMENT / vue.zoom) : null
+    if (idFleche) {
+      editeur.choisirFleche(idFleche)
+      glisser.current = { genre: 'fleche', id: idFleche, depart: p, ecran, origine: planche.fleches, cle: `glisser:${++compteurGlisser}` }
       e.currentTarget.setPointerCapture(e.pointerId)
       return
     }
@@ -158,6 +202,7 @@ export function ImageDeTravail({ editeur }: { editeur: EditeurImage }) {
     const ecran = pointEcran(e)
     const p = versPlan(vue, ecran)
     setCurseur(p)
+    setCurseurMaj(e.shiftKey)
     const g = glisser.current
     if (!g) return
     if (g.genre === 'vue') {
@@ -165,8 +210,21 @@ export function ImageDeTravail({ editeur }: { editeur: EditeurImage }) {
       glisser.current = { genre: 'vue', x: ecran.x, y: ecran.y }
       return
     }
-    if (g.genre === 'corps' && Math.hypot(ecran.x - g.ecran.x, ecran.y - g.ecran.y) < SEUIL_GLISSER) return
+    if ((g.genre === 'corps' || g.genre === 'fleche') && Math.hypot(ecran.x - g.ecran.x, ecran.y - g.ecran.y) < SEUIL_GLISSER) return
     setEnDeplacement(true)
+    if (g.genre === 'fleche') {
+      const decalage = { x: p.x - g.depart.x, y: p.y - g.depart.y }
+      editeur.modifierFleches(() => deplacerFleche(g.origine, g.id, decalage), g.cle)
+      return
+    }
+    if (g.genre === 'pointFleche') {
+      // Maj : le point reste à l'horizontale, à la verticale ou à 45° de son voisin.
+      const points = g.origine.find((f) => f.id === g.id)?.points ?? []
+      const voisin = points[g.indice - 1] ?? points[g.indice + 1]
+      const cible = e.shiftKey && voisin ? contraindre(voisin, p) : p
+      editeur.modifierFleches(() => deplacerPointFleche(g.origine, g.id, g.indice, cible), g.cle)
+      return
+    }
     const suivante = pendantGlisser(g, p, e.shiftKey)
     editeur.modifier(() => suivante, g.cle)
   }
@@ -178,6 +236,45 @@ export function ImageDeTravail({ editeur }: { editeur: EditeurImage }) {
   }
 
   const curseurCss = enDeplacement ? 'grabbing' : outil === 'main' || espace ? 'grab' : outil === 'selection' ? 'default' : 'crosshair'
+
+  // Flèche en cours de tracé : telle qu'elle sera, jusqu'au pointeur (Maj : contrainte).
+  const trace = editeur.trace
+  const typeTrace = editeur.typeFleche
+  const traceFleche = (() => {
+    if (outil !== 'fleche' || !typeTrace) return null
+    const points = trace && curseur ? [...trace, pointDeTrace(trace, curseur, curseurMaj)] : trace
+    const g = points ? geometrieFleche(points, typeTrace, unite) : null
+    return (
+      <g style={{ pointerEvents: 'none' }} data-testid="trace-fleche">
+        {g && (
+          <g opacity={0.75}>
+            <TraceFleche g={g} couleur={typeTrace.couleur} unite={unite} />
+          </g>
+        )}
+        {trace && (
+          <polyline
+            points={enPoints(trace)}
+            fill="none"
+            stroke={COULEURS.selection}
+            strokeWidth={1 / vue.zoom}
+            strokeDasharray={`${5 / vue.zoom} ${4 / vue.zoom}`}
+          />
+        )}
+        {trace?.map((q, i) => (
+          <rect
+            key={i}
+            x={q.x - 3.5 / vue.zoom}
+            y={q.y - 3.5 / vue.zoom}
+            width={7 / vue.zoom}
+            height={7 / vue.zoom}
+            fill="#ffffff"
+            stroke={COULEURS.selection}
+            strokeWidth={1.6 / vue.zoom}
+          />
+        ))}
+      </g>
+    )
+  })()
 
   // Pose en cours : où le pointeur s'accrocherait, et l'aperçu de ce qui serait posé.
   const tolerance = TOLERANCE_ACCROCHE / vue.zoom
@@ -210,6 +307,7 @@ export function ImageDeTravail({ editeur }: { editeur: EditeurImage }) {
       onPointerUp={surRelache}
       onPointerCancel={surRelache}
       onPointerLeave={() => setCurseur(null)}
+      onDoubleClick={() => outil === 'fleche' && editeur.terminerFleche(4 / vue.zoom)}
       onContextMenu={(e) => e.preventDefault()}
       data-testid="image-synoptique"
     >
@@ -219,13 +317,15 @@ export function ImageDeTravail({ editeur }: { editeur: EditeurImage }) {
           <DessinPlanche
             synoptique={s}
             index={editeur.index}
-            etatsVoie={editeur.etatsVoie}
+            listes={editeur.listes}
             zoom={vue.zoom}
             estChoisi={estChoisi}
             zoneChoisie={editeur.zone?.id ?? null}
+            flecheChoisie={fleche?.id ?? null}
             surLaCarte={
               <>
                 {apercu && <g style={{ pointerEvents: 'none' }}>{apercu}</g>}
+                {traceFleche}
                 {accroche && (
                   <circle
                     cx={accroche.point.x}
@@ -240,6 +340,19 @@ export function ImageDeTravail({ editeur }: { editeur: EditeurImage }) {
               </>
             }
           />
+          {poigneesFleche.map(({ cle, point }) => (
+            <circle
+              key={cle}
+              cx={point.x}
+              cy={point.y}
+              r={RAYON_POIGNEE / vue.zoom}
+              fill="#ffffff"
+              stroke={COULEURS.selection}
+              strokeWidth={1.8 / vue.zoom}
+              style={{ cursor: 'move' }}
+              data-poignee={`fleche-${cle}`}
+            />
+          ))}
           {poignees.map(({ cle, point }) => (
             <circle
               key={cle}

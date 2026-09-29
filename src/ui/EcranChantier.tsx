@@ -21,6 +21,7 @@ import { formaterDuree, formaterPlage } from '../plan/temps.ts'
 import { AssistantNouveauPlan } from './AssistantNouveauPlan.tsx'
 import { CatalogueEngins } from './CatalogueEngins.tsx'
 import { EtatsVoie } from './EtatsVoie.tsx'
+import { TypesFleches } from './TypesFleches.tsx'
 import { BandeauMessage, BarreNavigation, ChampRenommer, Confirmation, LigneListe, Page } from './commun.tsx'
 import { COULEURS } from './couleurs.ts'
 import { lireFichierTexte, telecharger } from './navigateur.ts'
@@ -28,7 +29,8 @@ import { POLICE, styleBouton, styleBoutonDanger, styleBoutonPrincipal, styleDisc
 import type { Message } from './useEditeur.ts'
 
 // Écran d'un chantier : ses plans (un par phase), ses synoptiques, les états
-// de la voie de ses zones de travaux et son catalogue d'engins.
+// de la voie de ses zones de travaux, ses types de flèches et son catalogue
+// d'engins.
 
 type ASupprimer = { genre: 'plan' | 'synoptique'; id: string; nom: string; texte: string }
 
@@ -239,6 +241,7 @@ export function EcranChantier(props: {
         </section>
 
         <EtatsVoie chantier={chantier} modifierChantier={modifierChantier} />
+        <TypesFleches chantier={chantier} modifierChantier={modifierChantier} />
         <CatalogueEngins chantier={chantier} modifierChantier={modifierChantier} />
       </Page>
       {assistant && <AssistantNouveauPlan nomPropose={nomPlanPropose(chantier)} creer={creerPlan} fermer={() => setAssistant(false)} />}

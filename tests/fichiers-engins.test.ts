@@ -334,7 +334,7 @@ describe('export et import du chantier', () => {
     expect(relu).toEqual({ ok: true, chantier: c, avis: [] })
     expect(relu.ok && relu.chantier.catalogue.map((t) => t.modele)).toContain('Essai')
     expect(relu.ok && relu.chantier.synoptiques[0].images.map((im) => im.contenu.rames.length)).toEqual([1, 1, 0])
-    expect(JSON.parse(serialiserChantier(c)).version).toBe(3)
+    expect(JSON.parse(serialiserChantier(c)).version).toBe(4)
   })
 
   it('un catalogue abîmé est refusé, avec le type fautif', () => {
@@ -368,7 +368,7 @@ describe('catalogue du chantier et engins posés', () => {
   it('modifier un type ne change pas les engins déjà posés dans les synoptiques (copies figées)', () => {
     const c = fixture()
     const pelle = c.catalogue.find((t) => t.modele === 'CAT 323')!
-    expect(synoptiquesDuType(c, pelle.id)).toBe(1)
+    expect(synoptiquesDuType(c, pelle.id)).toBe(2)
     expect(synoptiquesDuType(c, type('V211').id)).toBe(0)
     const r = modifierTypeChantier(c, pelle.id, { longueur: 10 })
     if (!r.ok) throw new Error(r.erreur)

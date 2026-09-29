@@ -30,6 +30,8 @@ export type Engin = {
   // Numéro ou court libellé affiché dans une pastille (« 3 », « P4 ») ; vide :
   // pas de pastille.
   numero: string
+  // Écrite après son nom dans la légende de l'image (« déblais ») ; facultative.
+  description: string
   position: PositionEngin
 }
 
@@ -42,6 +44,9 @@ export type Rame = {
   id: string
   nom: string
   numero: string
+  // Écrite après son nom dans la légende de l'image (« déblais + sous-couche
+  // ballast ») ; facultative.
+  description: string
   // Couleur de la pastille ; chaque véhicule garde la couleur de sa catégorie.
   couleur: string
   voieId: string
@@ -319,11 +324,11 @@ export function ajouterEngin<P extends Planche>(projet: P, type: TypeEngin, posi
     position.genre === 'voie'
       ? { ...position, abscisse: bornerAbscisse(pointsDe(projet, position.voieId), position.abscisse) }
       : { ...position, angle: normaliserAngle(position.angle) }
-  const engin: Engin = { id, typeId: type.id, type: dimensionsDe(type), couleur: type.couleur, numero: '', position: placee }
+  const engin: Engin = { id, typeId: type.id, type: dimensionsDe(type), couleur: type.couleur, numero: '', description: '', position: placee }
   return { id, planche: { ...projet, engins: [...projet.engins, engin] } }
 }
 
-export function modifierEngin<P extends Planche>(projet: P, id: string, champs: Partial<Pick<Engin, 'couleur' | 'numero'>>): P {
+export function modifierEngin<P extends Planche>(projet: P, id: string, champs: Partial<Pick<Engin, 'couleur' | 'numero' | 'description'>>): P {
   return { ...projet, engins: remplacer(projet.engins, id, (e) => ({ ...e, ...champs })) }
 }
 
@@ -375,6 +380,7 @@ export function ajouterRame<P extends Planche>(projet: P, vehicules: Vehicule[],
     id,
     nom: nomParDefaut(projet.rames, 'Rame'),
     numero: '',
+    description: '',
     couleur: vehicules[0]?.type.couleur ?? '#9aa4ae',
     voieId,
     abscisse: s,
@@ -384,7 +390,7 @@ export function ajouterRame<P extends Planche>(projet: P, vehicules: Vehicule[],
   return { id, planche: { ...projet, rames: [...projet.rames, rame] } }
 }
 
-export function modifierRame<P extends Planche>(projet: P, id: string, champs: Partial<Pick<Rame, 'nom' | 'numero' | 'couleur'>>): P {
+export function modifierRame<P extends Planche>(projet: P, id: string, champs: Partial<Pick<Rame, 'nom' | 'numero' | 'couleur' | 'description'>>): P {
   return { ...projet, rames: remplacer(projet.rames, id, (r) => ({ ...r, ...champs })) }
 }
 

@@ -11,11 +11,15 @@ import {
   supprimerEtape,
   texteEtape,
 } from '../src/plan/planche.ts'
+import { creerCatalogue } from '../src/plan/catalogue.ts'
+import { creerEtatsVoie } from '../src/plan/etatsVoie.ts'
+import { creerTypesFleches } from '../src/plan/fleches.ts'
 import { creerProjet } from '../src/plan/projet.ts'
 import { creerSynoptique, modifierHorairesImage, nouvelleImage, type Synoptique } from '../src/plan/synoptique.ts'
 import { partiesHoraire } from '../src/plan/temps.ts'
 
 const QUAND = '2026-09-29T15:00:00.000Z'
+const LISTES = { etatsVoie: creerEtatsVoie(), typesFleches: creerTypesFleches(), catalogue: creerCatalogue() }
 
 const valeur = <T>(r: { ok: true; valeur: T } | { ok: false; erreur: string }): T => {
   if (!r.ok) throw new Error(r.erreur)
@@ -137,7 +141,7 @@ describe('mise en page de la planche', () => {
 
   it('créneau en haut à droite, au-dessus du plan ; ni bandeau ni encart quand ils sont vides', () => {
     const s = synoptique()
-    const p = miseEnPage(s, 0)
+    const p = miseEnPage(s, 0, LISTES)
     expect(p.carte).toEqual({ x: 200, y: 180, largeur: 900, hauteur: 460 })
     expect(p.bandeau).toBeNull()
     expect(p.phasage).toBeNull()
@@ -153,7 +157,7 @@ describe('mise en page de la planche', () => {
 
   it('bandeau de titre centré en haut, sur plusieurs lignes, sans toucher le créneau', () => {
     const s = { ...synoptique(), bandeau: 'RVB sur 80 m en deux zones\nAbaissement de voie' }
-    const p = miseEnPage(s, 0)
+    const p = miseEnPage(s, 0, LISTES)
     expect(p.bandeau!.lignes.map((l) => l.texte)).toEqual(['RVB sur 80 m en deux zones', 'Abaissement de voie'])
     const b = p.bandeau!.boite
     expect(b.x + b.largeur / 2).toBeCloseTo(p.carte.x + p.carte.largeur / 2)
@@ -166,7 +170,7 @@ describe('mise en page de la planche', () => {
     s = avecEtape(s, 0, 'Dépose des rails et des traverses sur le RVB 80 m. Les rails seront positionnés aux extrémités des traverses.')
     s = avecEtape(s, 0, 'Arrivée du TTX 1')
     s = avecEtape(s, 1, 'Déballastage')
-    const [p1, p2, p3] = [0, 1, 2].map((i) => miseEnPage(s, i))
+    const [p1, p2, p3] = [0, 1, 2].map((i) => miseEnPage(s, i, LISTES))
     const e = p1.phasage!
     expect(e.titre.texte).toBe('PHASAGE')
     expect(e.boite.x).toBe(p1.carte.x)
@@ -185,7 +189,7 @@ describe('mise en page de la planche', () => {
 
   it('le titre du créneau passe au-dessus des heures, et va à la ligne s’il est long', () => {
     const s = modifierCreneau(synoptique(), 0, { titre: 'Phase avant travaux' })
-    const lignes = miseEnPage(s, 0).creneau.lignes
+    const lignes = miseEnPage(s, 0, LISTES).creneau.lignes
     expect(lignes.map((l) => [l.texte, l.gras])).toEqual([
       ['Phase avant', true],
       ['travaux', true],

@@ -66,6 +66,7 @@ const plan = (): PlanImage => ({
   engins: [],
   rames: [],
   etatsZones: {},
+  fleches: [],
   echelle: { pixelsParMetre: 4 },
   voies: [
     { id: 'voie-1', nom: 'V1', couleur: '#454f59', epaisseur: 9, points: [{ x: 100, y: 200 }, { x: 1100, y: 200 }] },

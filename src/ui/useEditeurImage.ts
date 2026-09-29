@@ -16,25 +16,39 @@ import {
 } from '../plan/engins.ts'
 import type { EtatVoie } from '../plan/etatsVoie.ts'
 import { basculerAvancement, choisirEtatZone, etatDeZone, modifierAvancement, type Avancement } from '../plan/etatsZones.ts'
+import {
+  ajouterFleche,
+  modifierCalqueFleches,
+  modifierFlechesImage,
+  pointDeTrace,
+  supprimerFleche,
+  typeFlecheParId,
+  type Fleche,
+  type TypeFleche,
+} from '../plan/fleches.ts'
+import { terminerTrace } from '../plan/geometrie.ts'
+import type { ListesChantier } from '../plan/legende.ts'
 import type { Point } from '../plan/projet.ts'
 import { modifierCalqueEngins, modifierImage, projetDeImage, type PlanImage, type Synoptique } from '../plan/synoptique.ts'
 import type { Vue } from '../plan/vue.ts'
 import type { Message } from './useEditeur.ts'
 
 // Édition de l'image courante d'un synoptique : on y pose, choisit, glisse et
-// supprime des engins et des rames, à l'échelle du synoptique ; on y choisit
-// une zone de travaux pour changer son état (elle ne se déplace pas). Seule
-// l'image courante change ; l'historique (Annuler / Rétablir) est celui du
+// supprime des engins et des rames, à l'échelle du synoptique ; on y trace,
+// choisit, déforme, glisse et supprime des flèches ; on y choisit une zone de
+// travaux pour changer son état (elle ne se déplace pas). Seule l'image
+// courante change ; l'historique (Annuler / Rétablir) est celui du
 // synoptique.
 
-export type OutilImage = 'selection' | 'engin' | 'rame' | 'main'
+export type OutilImage = 'selection' | 'engin' | 'rame' | 'fleche' | 'main'
 
-export const TOUCHES_IMAGE: Record<OutilImage, string> = { selection: 'S', engin: 'E', rame: 'W', main: 'M' }
+export const TOUCHES_IMAGE: Record<OutilImage, string> = { selection: 'S', engin: 'E', rame: 'W', fleche: 'F', main: 'M' }
 
 export const RAISON_SANS_ECHELLE =
   "Calez d'abord l'échelle du synoptique (bouton « Caler l'échelle… ») : sans elle, les engins ne peuvent pas être à la bonne taille."
 
 const CALQUE_VERROUILLE = 'Le calque « Engins » est verrouillé : décochez « Verrouillé » dans le panneau pour le modifier.'
+const CALQUE_FLECHES_VERROUILLE = 'Le calque « Flèches » est verrouillé : décochez « Verrouillé » dans le panneau pour le modifier.'
 
 export function useEditeurImage(args: {
   synoptique: Synoptique
@@ -44,12 +58,18 @@ export function useEditeurImage(args: {
   enregistrer: (suivant: Synoptique, cle?: string | null) => void
   catalogue: TypeEngin[]
   etatsVoie: EtatVoie[]
+  typesFleches: TypeFleche[]
   setMessage: (m: Message | null) => void
 }) {
-  const { synoptique: s, index, enregistrer, catalogue, etatsVoie, setMessage } = args
+  const { synoptique: s, index, enregistrer, catalogue, etatsVoie, typesFleches, setMessage } = args
+  const listes: ListesChantier = { catalogue, etatsVoie, typesFleches }
   const [outil, setOutil] = useState<OutilImage>('selection')
   const [selectionBrute, setSelectionBrute] = useState<ReferenceEngin | null>(null)
   const [zoneBrute, setZoneBrute] = useState<string | null>(null)
+  const [flecheBrute, setFlecheBrute] = useState<string | null>(null)
+  const [typeFlecheId, setTypeFleche] = useState<string | null>(typesFleches[0]?.id ?? null)
+  // Flèche en cours de tracé : ses points, sur l'image où elle a commencé.
+  const [traceBrut, setTraceBrut] = useState<{ index: number; points: Point[] } | null>(null)
   const [typeChoisiId, setTypeChoisi] = useState<string | null>(catalogue[0]?.id ?? null)
   const [composition, setComposition] = useState<Groupe[]>([])
   const [vue, setVue] = useState<Vue | null>(null)
@@ -63,14 +83,33 @@ export function useEditeurImage(args: {
   // Une zone choisie le reste d'une image à l'autre (mêmes zones, plan figé).
   const zone = zoneBrute ? (planche.zones.find((z) => z.id === zoneBrute) ?? null) : null
   const etatZone = zone ? etatDeZone(planche.etatsZones, etatsVoie, zone.id) : null
-  // Choisir un engin libère la zone, et inversement.
+  // Une flèche choisie le reste d'une image à l'autre si elle y est (même
+  // identifiant, copiée par « Nouvelle image »).
+  const fleche: Fleche | null = flecheBrute ? (planche.fleches.find((f) => f.id === flecheBrute) ?? null) : null
+  const typeFleche = typeFlecheParId(typesFleches, typeFlecheId ?? '') ?? typesFleches[0]
+  const trace = traceBrut && traceBrut.index === index ? traceBrut.points : null
+  const calqueFleches = s.calqueFleches
+  // On ne choisit qu'une chose à la fois : engin (ou rame), zone ou flèche.
   const setSelection = (ref: ReferenceEngin | null) => {
     setSelectionBrute(ref)
-    if (ref) setZoneBrute(null)
+    if (ref) {
+      setZoneBrute(null)
+      setFlecheBrute(null)
+    }
   }
   const choisirZone = (id: string | null) => {
     setZoneBrute(id)
-    if (id) setSelectionBrute(null)
+    if (id) {
+      setSelectionBrute(null)
+      setFlecheBrute(null)
+    }
+  }
+  const choisirFleche = (id: string | null) => {
+    setFlecheBrute(id)
+    if (id) {
+      setSelectionBrute(null)
+      setZoneBrute(null)
+    }
   }
   const typeChoisi = catalogue.find((t) => t.id === typeChoisiId) ?? catalogue[0]
   const erreur = (texte: string) => setMessage({ genre: 'erreur', texte })
@@ -93,11 +132,64 @@ export function useEditeurImage(args: {
     return true
   }
 
+  // ——— Flèches ———
+
+  const modifierFleches = (transformer: (f: Fleche[]) => Fleche[], cle: string | null = null) => {
+    const suivant = modifierFlechesImage(s, index, transformer)
+    if (suivant !== s) enregistrer(suivant, cle)
+  }
+
+  const flechesModifiables = (): boolean => {
+    if (!calqueFleches.verrouille) return true
+    erreur(CALQUE_FLECHES_VERROUILLE)
+    return false
+  }
+
+  // Un clic de l'outil Flèche : un point de plus (Maj : horizontal, vertical, 45°).
+  const ajouterPointTrace = (p: Point, maj: boolean) => {
+    if (!trace) {
+      if (!flechesModifiables()) return
+      if (!typeFleche) return erreur('La liste des flèches du chantier est vide : ajoutez un type dans la page du chantier.')
+    }
+    const points = trace ?? []
+    setTraceBrut({ index, points: [...points, pointDeTrace(points, p, maj)] })
+  }
+
+  // Double-clic ou Entrée : la flèche est posée (elle doit avoir deux points).
+  const terminerFleche = (tolerance: number) => {
+    if (!trace) return
+    setTraceBrut(null)
+    const points = terminerTrace(trace, tolerance)
+    if (!points || !typeFleche) {
+      setMessage({ genre: 'info', texte: 'Une flèche a au moins deux points : cliquez le départ, puis chaque coude, puis la fin.' })
+      return
+    }
+    const r = ajouterFleche(planche.fleches, typeFleche.id, points)
+    const avec = modifierFlechesImage(s, index, () => r.fleches)
+    enregistrer(calqueFleches.visible ? avec : modifierCalqueFleches(avec, { visible: true }))
+    choisirFleche(r.id)
+    setMessage(null)
+  }
+  const annulerTrace = () => setTraceBrut(null)
+  const retirerDernierPoint = () => setTraceBrut((t) => (t && t.points.length > 1 ? { ...t, points: t.points.slice(0, -1) } : null))
+
+  const supprimerLaFleche = (id: string) => {
+    if (!flechesModifiables()) return
+    const f = planche.fleches.find((x) => x.id === id)
+    modifierFleches((liste) => supprimerFleche(liste, id))
+    if (flecheBrute === id) setFlecheBrute(null)
+    setMessage({
+      genre: 'info',
+      texte: `Flèche « ${typeFlecheParId(typesFleches, f?.typeId ?? '')?.nom ?? '?'} » retirée de l'image ${index + 1} (les autres images ne changent pas). Ctrl+Z la rétablit.`,
+    })
+  }
+
   const choisirOutil = (nouvel: OutilImage) => {
     if ((nouvel === 'engin' || nouvel === 'rame') && !s.echelle) {
       erreur(RAISON_SANS_ECHELLE)
       return
     }
+    if (trace) terminerFleche(0)
     setOutil(nouvel)
   }
 
@@ -159,6 +251,7 @@ export function useEditeurImage(args: {
 
   const supprimerSelection = () => {
     if (selection) supprimer(selection)
+    else if (fleche) supprimerLaFleche(fleche.id)
     else if (zone) setMessage({ genre: 'info', texte: `Les zones viennent du plan figé : elles ne se suppriment pas ici, seul leur état change.` })
   }
 
@@ -182,6 +275,7 @@ export function useEditeurImage(args: {
     synoptique: s,
     index,
     planche,
+    listes,
     calque,
     changerCalque: (champs: { visible?: boolean; verrouille?: boolean }) => enregistrer(modifierCalqueEngins(s, champs)),
     outil,
@@ -200,7 +294,23 @@ export function useEditeurImage(args: {
     toutDeselectionner: () => {
       setSelectionBrute(null)
       setZoneBrute(null)
+      setFlecheBrute(null)
     },
+    // Flèches.
+    fleche,
+    choisirFleche,
+    typesFleches,
+    typeFleche,
+    setTypeFleche,
+    calqueFleches,
+    changerCalqueFleches: (champs: { visible?: boolean; verrouille?: boolean }) => enregistrer(modifierCalqueFleches(s, champs)),
+    modifierFleches,
+    trace,
+    ajouterPointTrace,
+    terminerFleche,
+    annulerTrace,
+    retirerDernierPoint,
+    supprimerFleche: supprimerLaFleche,
     catalogue,
     typeChoisi,
     setTypeChoisi,

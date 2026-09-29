@@ -21,6 +21,7 @@ import {
 import type { DimensionsEngin, TypeEngin } from './catalogue.ts'
 import type { Engin, EnginsEtRames, Rame, Vehicule } from './engins.ts'
 import type { EtatVoie, RenduEtat } from './etatsVoie.ts'
+import { EPAISSEUR_FLECHE_MAX, EPAISSEUR_FLECHE_MIN, POINTES, STYLES_TRAIT, type Fleche, type Pointes, type StyleTrait, type TypeFleche } from './fleches.ts'
 import { longueurPolyligne } from './trace.ts'
 
 // Lecture et vérification d'un projet enregistré. Les erreurs sont en
@@ -313,6 +314,50 @@ export function lireEtatsVoie(brut: unknown, erreurs: string[]): EtatVoie[] {
   return liste
 }
 
+// La liste des types de flèches d'un chantier.
+export function lireTypesFleches(brut: unknown, erreurs: string[]): TypeFleche[] {
+  return lireListe(brut, 'Type de flèche', erreurs, (t, libelle): TypeFleche | null => {
+    const debut = erreurs.length
+    if (typeof t.nom !== 'string' || t.nom.trim() === '') erreurs.push(`${libelle} : nom manquant.`)
+    verifierCouleur(t.couleur, libelle, erreurs)
+    if (!estNombre(t.epaisseur) || t.epaisseur < EPAISSEUR_FLECHE_MIN || t.epaisseur > EPAISSEUR_FLECHE_MAX) {
+      erreurs.push(`${libelle} : épaisseur illisible (de ${EPAISSEUR_FLECHE_MIN} à ${EPAISSEUR_FLECHE_MAX} points).`)
+    }
+    if (!STYLES_TRAIT.includes(t.trait as StyleTrait)) erreurs.push(`${libelle} : trait illisible (plein, pointilles ou double attendu).`)
+    if (!POINTES.includes(t.pointes as Pointes)) erreurs.push(`${libelle} : pointe illisible (fin, deux ou aucune attendu).`)
+    if (erreurs.length > debut) return null
+    return {
+      id: t.id as string,
+      nom: t.nom as string,
+      couleur: (t.couleur as string).toLowerCase(),
+      epaisseur: t.epaisseur as number,
+      trait: t.trait as StyleTrait,
+      pointes: t.pointes as Pointes,
+    }
+  })
+}
+
+// Les flèches d'une image : chacune désigne un type de la liste du chantier
+// et a au moins deux points.
+export function lireFleches(brut: unknown, types: Set<string>, erreurs: string[]): Fleche[] {
+  return lireListe(brut, 'Flèche', erreurs, (f, libelle): Fleche | null => {
+    const debut = erreurs.length
+    if (typeof f.typeId !== 'string' || !types.has(f.typeId)) erreurs.push(`${libelle} : type inconnu dans la liste des flèches du chantier.`)
+    const points = Array.isArray(f.points) ? f.points : []
+    if (points.length < 2 || !points.every((p: unknown) => estObjet(p) && estNombre(p.x) && estNombre(p.y))) {
+      erreurs.push(`${libelle} : il faut au moins deux points (x, y) lisibles.`)
+    }
+    if (f.libelle !== undefined && typeof f.libelle !== 'string') erreurs.push(`${libelle} : libellé illisible.`)
+    if (erreurs.length > debut) return null
+    return {
+      id: f.id as string,
+      typeId: f.typeId as string,
+      points: (points as Point[]).map((p) => ({ x: p.x, y: p.y })),
+      libelle: typeof f.libelle === 'string' ? f.libelle : '',
+    }
+  })
+}
+
 const libelleEngin = (e: Brut, libelle: string): string =>
   estObjet(e.type) && typeof e.type.modele === 'string' ? libelle.replace(/^Engin n°\d+/, (m) => `${m} (« ${(e.type as Brut).modele} »)`) : libelle
 
@@ -323,6 +368,7 @@ function lireEngin(e: Brut, libelleBrut: string, erreurs: string[], voies: Map<s
   const type = lireDimensions(e.type, libelle, erreurs)
   verifierCouleur(e.couleur, libelle, erreurs)
   const numero = typeof e.numero === 'string' ? e.numero : ''
+  if (e.description !== undefined && typeof e.description !== 'string') erreurs.push(`${libelle} : description illisible.`)
   const p = e.position
   let position: Engin['position'] | null = null
   if (estObjet(p) && p.genre === 'voie') {
@@ -335,7 +381,15 @@ function lireEngin(e: Brut, libelleBrut: string, erreurs: string[], voies: Map<s
     erreurs.push(`${libelle} : position illisible (sur une voie ou libre).`)
   }
   if (erreurs.length > avant || !type || !position) return null
-  return { id: e.id as string, typeId: e.typeId as string, type, couleur: (e.couleur as string).toLowerCase(), numero, position }
+  return {
+    id: e.id as string,
+    typeId: e.typeId as string,
+    type,
+    couleur: (e.couleur as string).toLowerCase(),
+    numero,
+    description: typeof e.description === 'string' ? e.description : '',
+    position,
+  }
 }
 
 function lireRame(r: Brut, libelle: string, erreurs: string[], voies: Map<string, Voie>): Rame | null {
@@ -344,6 +398,7 @@ function lireRame(r: Brut, libelle: string, erreurs: string[], voies: Map<string
   verifierCouleur(r.couleur, libelle, erreurs)
   verifierSurVoie(r.voieId, [["l'abscisse", r.abscisse]], voies, libelle, erreurs)
   if (r.sens !== 1 && r.sens !== -1) erreurs.push(`${libelle} : sens illisible (1 ou -1 attendu).`)
+  if (r.description !== undefined && typeof r.description !== 'string') erreurs.push(`${libelle} : description illisible.`)
   const brutes = Array.isArray(r.vehicules) ? r.vehicules : []
   if (brutes.length === 0) erreurs.push(`${libelle} : une rame doit avoir au moins un véhicule.`)
   const vehicules: Vehicule[] = []
@@ -361,6 +416,7 @@ function lireRame(r: Brut, libelle: string, erreurs: string[], voies: Map<string
     id: r.id as string,
     nom: r.nom as string,
     numero: typeof r.numero === 'string' ? r.numero : '',
+    description: typeof r.description === 'string' ? r.description : '',
     couleur: (r.couleur as string).toLowerCase(),
     voieId: r.voieId as string,
     abscisse: r.abscisse as number,

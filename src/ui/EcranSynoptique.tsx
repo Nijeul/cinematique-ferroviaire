@@ -5,7 +5,7 @@ import type { Rectangle } from '../plan/elements.ts'
 import { annuler, creerHistorique, enregistrer, peutAnnuler, peutRetablir, retablir } from '../plan/historique.ts'
 import { descriptionEchelle } from '../plan/echelle.ts'
 import type { Echelle } from '../plan/projet.ts'
-import type { EtatVoie } from '../plan/etatsVoie.ts'
+import type { ListesChantier } from '../plan/legende.ts'
 import { miseEnPage } from '../plan/planche.ts'
 import {
   calerEchelleSynoptique,
@@ -25,7 +25,8 @@ import { BandeauMessage, BarreNavigation, BoutonsFenetre, ChampInstant, Fenetre 
 import { COULEURS } from './couleurs.ts'
 import { ImageDeTravail } from './ImageDeTravail.tsx'
 import { CalqueEngins, ChoixType, RameAPoser } from './PanneauEngins.tsx'
-import { PanneauCreneau, PanneauPhasage, PanneauZone } from './PanneauImage.tsx'
+import { CalqueFleches, ChoixTypeFleche, PanneauFleche } from './PanneauFleches.tsx'
+import { PanneauCreneau, PanneauLegende, PanneauPhasage, PanneauZone } from './PanneauImage.tsx'
 import { DessinPlanche } from './Planche.tsx'
 import { POLICE, styleBouton, styleBoutonDanger, styleBoutonPrincipal, styleChamp, styleDiscret, styleTitreSection } from './styles.ts'
 import type { Message } from './useEditeur.ts'
@@ -33,12 +34,12 @@ import { RAISON_SANS_ECHELLE, TOUCHES_IMAGE, useEditeurImage, type EditeurImage,
 
 // Écran d'un synoptique : on feuillette ses images comme un PowerPoint, et on
 // pose les engins et les rames sur l'image courante, à l'échelle copiée du
-// plan (ou calée ici) ; on y choisit l'état de chaque zone de travaux, le
-// créneau et les étapes de l'encart PHASAGE. Chaque image a ses propres
-// engins et états de zones ; « Nouvelle image » les recopie, il ne reste qu'à
-// changer ce qui bouge. Horaires, nombre d'images et propriétés du synoptique
-// (dont le bandeau de titre) se modifient aussi — le tout avec Annuler /
-// Rétablir.
+// plan (ou calée ici) ; on y trace les flèches, on y choisit l'état de chaque
+// zone de travaux, le créneau, les étapes de l'encart PHASAGE et ce que
+// montre la légende. Chaque image a ses propres engins, flèches et états de
+// zones ; « Nouvelle image » les recopie, il ne reste qu'à changer ce qui
+// bouge. Horaires, nombre d'images et propriétés du synoptique (dont le
+// bandeau de titre) se modifient aussi — le tout avec Annuler / Rétablir.
 
 // L'image courante fait partie de l'historique : Annuler ramène sur l'image
 // qu'on venait de modifier.
@@ -52,19 +53,19 @@ const dateLisible = (iso: string): string =>
 
 // Une image du synoptique, mise en page comme une planche, dessinée dans un
 // rectangle d'écran.
-function ImageCadree(props: { synoptique: Synoptique; index: number; etatsVoie: EtatVoie[]; largeur: number; hauteur: number; marge: number }) {
+function ImageCadree(props: { synoptique: Synoptique; index: number; listes: ListesChantier; largeur: number; hauteur: number; marge: number }) {
   const { synoptique: s, index, largeur, hauteur, marge } = props
-  const vue = ajusterSurRectangle(miseEnPage(s, index).planche, { largeur, hauteur }, marge)
+  const vue = ajusterSurRectangle(miseEnPage(s, index, props.listes).planche, { largeur, hauteur }, marge)
   return (
     <g transform={`translate(${vue.dx} ${vue.dy}) scale(${vue.zoom})`}>
-      <DessinPlanche synoptique={s} index={index} etatsVoie={props.etatsVoie} zoom={vue.zoom} />
+      <DessinPlanche synoptique={s} index={index} listes={props.listes} zoom={vue.zoom} />
     </g>
   )
 }
 
 const VIGNETTE = { largeur: 168, hauteur: 104 }
 
-function Vignettes(props: { synoptique: Synoptique; index: number; etatsVoie: EtatVoie[]; choisir: (i: number) => void }) {
+function Vignettes(props: { synoptique: Synoptique; index: number; listes: ListesChantier; choisir: (i: number) => void }) {
   const { synoptique: s, index, choisir } = props
   const choisie = useRef<HTMLButtonElement>(null)
   // Corps en accolades : un effet ne doit rien renvoyer d'autre qu'une fonction
@@ -109,7 +110,7 @@ function Vignettes(props: { synoptique: Synoptique; index: number; etatsVoie: Et
             }}
           >
             <svg width={VIGNETTE.largeur} height={VIGNETTE.hauteur} style={{ display: 'block', background: COULEURS.autourDuPlan }}>
-              <ImageCadree synoptique={s} index={i} etatsVoie={props.etatsVoie} {...VIGNETTE} marge={3} />
+              <ImageCadree synoptique={s} index={i} listes={props.listes} {...VIGNETTE} marge={3} />
             </svg>
             <span style={{ display: 'block', fontSize: 12, marginTop: 3, color: i === index ? COULEURS.selection : COULEURS.texte }}>
               <strong>{i + 1}</strong> · {formaterPlage(s.t0, image.debut, image.fin)}
@@ -153,6 +154,7 @@ const OUTILS_IMAGE: { outil: OutilImage; libelle: string; titre: string }[] = [
   { outil: 'main', libelle: 'Main', titre: 'Déplacer la vue' },
   { outil: 'engin', libelle: 'Engin', titre: "Engin à l'échelle : sur une voie (il la suit) ou hors voie" },
   { outil: 'rame', libelle: 'Rame', titre: 'Train : véhicules bout à bout le long d’une voie' },
+  { outil: 'fleche', libelle: 'Flèche', titre: 'Flèche : sens de travail, avancement du TTX, cheminement, chemin de roule…' },
 ]
 
 // Outils de l'image courante : Engin et Rame sont grisés tant que le
@@ -211,12 +213,19 @@ function consigne(editeur: EditeurImage): string {
       return editeur.composition.length > 0
         ? 'Cliquez sur une voie : la rame se pose centrée sur ce point, véhicules bout à bout · composition dans le panneau'
         : 'Composez la rame dans le panneau de droite, puis cliquez sur une voie'
+    case 'fleche':
+      return editeur.typeFleche
+        ? `Flèche « ${editeur.typeFleche.nom} » : un clic par point · double-clic ou Entrée pour finir · Maj : horizontal, vertical, 45° · Suppr : retirer le dernier point · Échap : annuler`
+        : 'Liste des flèches vide : ajoutez des types dans la page du chantier'
     case 'main':
       return `Glissez pour déplacer la vue · molette : zoom${fleches}`
     case 'selection':
+      if (editeur.fleche) {
+        return `Flèche choisie : glissez un point rond pour le déplacer (Maj : horizontal, vertical, 45°), ou le trait pour déplacer toute la flèche · Suppr : la retirer de cette image · Échap : la libérer${fleches}`
+      }
       return editeur.zone
         ? `Zone « ${editeur.zone.nom} » : choisissez son état dans le panneau, ou touches 1 à ${Math.min(9, editeur.etatsVoie.length)} · Échap : la libérer${fleches}`
-        : `Cliquez un engin ou une rame pour le choisir, puis glissez-le · cliquez une zone pour changer son état · Suppr : retirer l'engin de cette image · molette : zoom${fleches}`
+        : `Cliquez un engin, une rame ou une flèche pour le choisir, puis glissez-le · cliquez une zone pour changer son état · Suppr : retirer de cette image · molette : zoom${fleches}`
   }
 }
 
@@ -259,6 +268,7 @@ export function EcranSynoptique(props: {
     enregistrer: (suivant, cle = null) => modifier(suivant, index, cle),
     catalogue: chantier.catalogue,
     etatsVoie: chantier.etatsVoie,
+    typesFleches: chantier.typesFleches,
     setMessage,
   })
 
@@ -311,11 +321,18 @@ export function EcranSynoptique(props: {
       if (e.key === ' ') {
         e.preventDefault()
         editeur.setEspace(true)
+      } else if (editeur.trace && e.key === 'Enter') {
+        // Flèche en cours de tracé : Entrée la termine, Suppr retire le
+        // dernier point, Échap l'abandonne.
+        e.preventDefault()
+        editeur.terminerFleche(0)
       } else if (e.key === 'Delete' || e.key === 'Backspace') {
         e.preventDefault()
-        editeur.supprimerSelection()
+        if (editeur.trace) editeur.retirerDernierPoint()
+        else editeur.supprimerSelection()
       } else if (e.key === 'Escape') {
-        editeur.toutDeselectionner()
+        if (editeur.trace) editeur.annulerTrace()
+        else editeur.toutDeselectionner()
       } else if (editeur.zone && !ctrl && !e.altKey && /^[1-9]$/.test(e.key)) {
         e.preventDefault()
         editeur.choisirEtatNumero(Number(e.key))
@@ -327,7 +344,8 @@ export function EcranSynoptique(props: {
         aller(index + 1)
       } else if (ctrl && touche === 'z' && !e.shiftKey) {
         e.preventDefault()
-        faireAnnuler()
+        if (editeur.trace) editeur.retirerDernierPoint()
+        else faireAnnuler()
       } else if (ctrl && (touche === 'y' || (touche === 'z' && e.shiftKey))) {
         e.preventDefault()
         faireRetablir()
@@ -475,8 +493,10 @@ export function EcranSynoptique(props: {
           data-testid="panneau-synoptique"
         >
           <PanneauZone editeur={editeur} />
+          <PanneauFleche editeur={editeur} />
           {editeur.outil === 'engin' && <ChoixType editeur={editeur} />}
           {editeur.outil === 'rame' && <RameAPoser editeur={editeur} />}
+          {editeur.outil === 'fleche' && <ChoixTypeFleche editeur={editeur} />}
           <Section titre={`Image ${index + 1} sur ${s.images.length}`}>
             <ChampInstant libelle="Début" valeur={instantDepuisT0(s.t0, image.debut)} changer={horaireImage('debut')} />
             <ChampInstant libelle="Fin" valeur={instantDepuisT0(s.t0, image.fin)} changer={horaireImage('fin')} />
@@ -492,7 +512,9 @@ export function EcranSynoptique(props: {
           </Section>
           <PanneauCreneau synoptique={s} index={index} modifier={(suivant, cle = null) => modifier(suivant, index, cle)} />
           <PanneauPhasage synoptique={s} index={index} modifier={(suivant, cle = null) => modifier(suivant, index, cle)} />
+          <PanneauLegende synoptique={s} index={index} listes={editeur.listes} modifier={(suivant, cle = null) => modifier(suivant, index, cle)} />
           <CalqueEngins editeur={editeur} />
+          <CalqueFleches editeur={editeur} />
           <Section titre="Synoptique">
             <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
               <span style={{ width: 40, flexShrink: 0 }}>Nom</span>
@@ -537,7 +559,7 @@ export function EcranSynoptique(props: {
           </Section>
         </aside>
       </div>
-      <Vignettes synoptique={s} index={index} etatsVoie={chantier.etatsVoie} choisir={aller} />
+      <Vignettes synoptique={s} index={index} listes={editeur.listes} choisir={aller} />
       {fenetre === 'cadrage' && (
         <FenetreCadrage
           synoptique={s}

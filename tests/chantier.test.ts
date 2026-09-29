@@ -21,6 +21,7 @@ import {
 } from '../src/plan/chantier.ts'
 import { creerCatalogue } from '../src/plan/catalogue.ts'
 import { creerEtatsVoie } from '../src/plan/etatsVoie.ts'
+import { creerTypesFleches } from '../src/plan/fleches.ts'
 import { lireChantier, lirePlanImporte, nomFichierChantier, serialiserChantier } from '../src/plan/fichierChantier.ts'
 import { lireProjet } from '../src/plan/lecture.ts'
 import { creerProjet, FORMAT_FICHIER, serialiserProjet } from '../src/plan/projet.ts'
@@ -47,8 +48,10 @@ describe('chantier d’exemple', () => {
   it('contient deux plans et un synoptique de trois images qui se suivent', () => {
     const c = fixture()
     expect(c.plans.map((p) => p.projet.nom)).toEqual(['Phase définitive', 'Phase provisoire'])
-    // Le second synoptique (étape 6) raconte les états d'une zone : voir etats.test.ts.
-    expect(c.synoptiques).toHaveLength(2)
+    // Le deuxième synoptique (étape 6) raconte les états d'une zone : voir
+    // etats.test.ts ; le troisième (étape 7) a des flèches et une légende :
+    // voir fleches.test.ts et legende.test.ts.
+    expect(c.synoptiques).toHaveLength(3)
     const s = c.synoptiques[0]
     expect(s.images).toHaveLength(3)
     expect(s.cadrage).not.toBeNull()
@@ -71,6 +74,7 @@ describe('modèle du chantier', () => {
       synoptiques: [],
       catalogue: creerCatalogue(),
       etatsVoie: creerEtatsVoie(),
+      typesFleches: creerTypesFleches(),
     })
     expect(nomLibre([], 'Nouveau chantier')).toBe('Nouveau chantier')
     expect(nomLibre(['Nouveau chantier', 'Nouveau chantier 2'], 'Nouveau chantier')).toBe('Nouveau chantier 3')
@@ -108,17 +112,17 @@ describe('modèle du chantier', () => {
     expect(c.plans[0].projet.nom).toBe('Définitive')
     c = supprimerPlan(c, 'plan-1')
     expect(c.plans.map((p) => p.id)).toEqual(['plan-2'])
-    expect(c.synoptiques).toHaveLength(2)
+    expect(c.synoptiques).toHaveLength(3)
     expect(c.synoptiques[0].origine.nomPlan).toBe('Phase définitive')
   })
 
   it('ajoute, renomme et supprime un synoptique', () => {
     let c = fixture()
     const r = ajouterSynoptique(c, c.plans[1], { nom: 'Nuit 2', t0: '2026-10-16T22:00', fin: 480, cadrage: null }, QUAND)
-    expect(r.id).toBe('synoptique-3')
-    c = renommerSynoptique(r.chantier, 'synoptique-3', 'Nuit 3 bis')
-    expect(c.synoptiques[2]).toMatchObject({ nom: 'Nuit 3 bis', origine: { planId: 'plan-2', nomPlan: 'Phase provisoire' } })
-    expect(supprimerSynoptique(c, 'synoptique-1').synoptiques.map((s) => s.id)).toEqual(['synoptique-2', 'synoptique-3'])
+    expect(r.id).toBe('synoptique-4')
+    c = renommerSynoptique(r.chantier, 'synoptique-4', 'Nuit 4 bis')
+    expect(c.synoptiques[3]).toMatchObject({ nom: 'Nuit 4 bis', origine: { planId: 'plan-2', nomPlan: 'Phase provisoire' } })
+    expect(supprimerSynoptique(c, 'synoptique-1').synoptiques.map((s) => s.id)).toEqual(['synoptique-2', 'synoptique-3', 'synoptique-4'])
   })
 
   it('résume un plan en une ligne', () => {
@@ -131,7 +135,7 @@ describe('modèle du chantier', () => {
   })
 
   it('dit ce qui sera perdu en supprimant le chantier', () => {
-    expect(descriptionPerte(fixture())).toBe('2 plans et 2 synoptiques (7 images), fonds de plan compris.')
+    expect(descriptionPerte(fixture())).toBe('2 plans et 3 synoptiques (9 images), fonds de plan compris.')
     expect(descriptionPerte(ajouterPlan(creerChantier('c', 'C', QUAND), creerProjet()).chantier)).toBe('1 plan, fonds de plan compris.')
     expect(descriptionPerte(creerChantier('c', 'C', QUAND))).toBe('Ce chantier est vide.')
   })
