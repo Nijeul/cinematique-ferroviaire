@@ -1,4 +1,4 @@
-import { chantierRecupere, identifiantChantierLibre, NOM_CHANTIER_RECUPERE, type Chantier } from '../plan/chantier.ts'
+import { chantierRecupere, identifiantChantierLibre, migrerChantier, NOM_CHANTIER_RECUPERE, type Chantier } from '../plan/chantier.ts'
 import { lireAncienneSauvegarde, oublierAncienneSauvegarde } from './navigateur.ts'
 
 // Les chantiers sont gardés dans le navigateur, dans IndexedDB : les fonds de
@@ -54,10 +54,15 @@ async function operation<T>(mode: IDBTransactionMode, faire: (magasin: IDBObject
   }
 }
 
-export const listerChantiers = (): Promise<Chantier[]> => operation('readonly', (m) => m.getAll() as IDBRequest<Chantier[]>)
+// Les chantiers gardés avant l'étape 5 reçoivent à la lecture ce qui leur
+// manque (catalogue d'engins, plans sans échelle).
+export const listerChantiers = async (): Promise<Chantier[]> =>
+  (await operation('readonly', (m) => m.getAll() as IDBRequest<Chantier[]>)).map(migrerChantier)
 
-export const lireChantierStocke = async (id: string): Promise<Chantier | null> =>
-  ((await operation('readonly', (m) => m.get(id))) as Chantier | undefined) ?? null
+export const lireChantierStocke = async (id: string): Promise<Chantier | null> => {
+  const c = (await operation('readonly', (m) => m.get(id))) as Chantier | undefined
+  return c ? migrerChantier(c) : null
+}
 
 export const enregistrerChantier = async (c: Chantier): Promise<void> => {
   await operation('readwrite', (m) => m.put(c))

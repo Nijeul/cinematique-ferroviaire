@@ -26,9 +26,11 @@ import {
 } from '../plan/projet.ts'
 import { bandeAutour, sousPolyligne } from '../plan/trace.ts'
 import { COULEURS } from './couleurs.ts'
+import { DessinEngin, DessinRame } from './DessinEngins.tsx'
 
 // Le dessin d'un plan, sans interaction : la feuille et le fond, puis au
-// calque, du dessous vers le dessus : cadres, voies, zones, appareils, textes.
+// calque, du dessous vers le dessus : cadres, voies, zones, appareils,
+// engins et rames, textes.
 // Sert au plan de travail, aux images d'un synoptique et à leurs vignettes.
 // Coordonnées en pixels du plan ; `zoom` règle l'épaisseur des repères de
 // sélection, constants à l'écran.
@@ -364,6 +366,17 @@ export function DessinPlan(props: { projet: Projet; zoom: number; affiche?: Rect
             />
           )
         })}
+
+      {calques.engins.visible && projet.echelle && (
+        <g data-testid="calque-engins-dessin">
+          {projet.rames.map((rame) => (
+            <DessinRame key={rame.id} projet={projet} rame={rame} choisie={estChoisi('rame', rame.id)} zoom={vue.zoom} />
+          ))}
+          {projet.engins.map((engin) => (
+            <DessinEngin key={engin.id} projet={projet} engin={engin} choisi={estChoisi('engin', engin.id)} zoom={vue.zoom} />
+          ))}
+        </g>
+      )}
 
       {calques.textes.visible &&
         projet.textes.map((texte) => (

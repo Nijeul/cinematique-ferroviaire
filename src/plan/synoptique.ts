@@ -1,6 +1,7 @@
 import { nouvelIdentifiant } from './edition.ts'
 import type { Rectangle } from './elements.ts'
-import type { Fond, Point, Projet } from './projet.ts'
+import type { Resultat } from './echelle.ts'
+import type { Echelle, Fond, Point, Projet } from './projet.ts'
 import { ecrireInstant, formaterHoraire, formaterPlage, lireInstant, minutesDepuisT0 } from './temps.ts'
 
 // Un synoptique : une copie figée d'un plan, cadrée sur une partie du plan,
@@ -14,8 +15,9 @@ import { ecrireInstant, formaterHoraire, formaterPlage, lireInstant, minutesDepu
 // Temps : T0 est la date et l'heure du début du synoptique ; la fin et les
 // horaires des images sont en minutes depuis T0.
 
-// Ce qui est dessiné sur une image : tout le plan sauf le fond.
-export type ContenuImage = Pick<Projet, 'extremites' | 'calques' | 'cadres' | 'voies' | 'zones' | 'appareils' | 'textes'>
+// Ce qui est dessiné sur une image : tout le plan sauf le fond et l'échelle,
+// gardés une fois au niveau du synoptique.
+export type ContenuImage = Pick<Projet, 'extremites' | 'calques' | 'cadres' | 'voies' | 'zones' | 'appareils' | 'engins' | 'rames' | 'textes'>
 
 export type ImageSynoptique = { id: string; debut: number; fin: number; contenu: ContenuImage }
 
@@ -31,22 +33,22 @@ export type Synoptique = {
   largeur: number
   hauteur: number
   fond: Fond | null
+  // Copiée du plan à la création, figée comme le reste.
+  echelle: Echelle | null
   images: ImageSynoptique[]
 }
-
-export type Resultat<T> = { ok: true; valeur: T } | { ok: false; erreur: string }
 
 const copie = <T>(valeur: T): T => structuredClone(valeur)
 
 export function contenuDe(projet: Projet): ContenuImage {
-  const { extremites, calques, cadres, voies, zones, appareils, textes } = projet
-  return copie({ extremites, calques, cadres, voies, zones, appareils, textes })
+  const { extremites, calques, cadres, voies, zones, appareils, engins, rames, textes } = projet
+  return copie({ extremites, calques, cadres, voies, zones, appareils, engins, rames, textes })
 }
 
-// Le plan tel qu'il apparaît sur une image : le fond du synoptique et les
-// éléments de l'image.
+// Le plan tel qu'il apparaît sur une image : le fond et l'échelle du
+// synoptique, et les éléments de l'image.
 export function projetDeImage(s: Synoptique, image: ImageSynoptique): Projet {
-  return { nom: s.nom, largeur: s.largeur, hauteur: s.hauteur, fond: s.fond, ...image.contenu }
+  return { nom: s.nom, largeur: s.largeur, hauteur: s.hauteur, fond: s.fond, echelle: s.echelle, ...image.contenu }
 }
 
 // ——— Cadrage ———
@@ -109,6 +111,7 @@ export function creerSynoptique(
     largeur: projet.largeur,
     hauteur: projet.hauteur,
     fond: projet.fond ? { ...projet.fond } : null,
+    echelle: projet.echelle ? { ...projet.echelle } : null,
     images: [{ id: 'image-1', debut: 0, fin: demande.fin, contenu: contenuDe(projet) }],
   }
 }

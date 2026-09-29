@@ -52,14 +52,17 @@ Le commanditaire fait le contrôle visuel — c'est le cœur de la méthode.
 ```
 src/
   plan/       modèle du plan, du chantier et du synoptique, lecture des fichiers (plan,
-              chantier), temps (minutes depuis T0 → « Ve/Sa 01h30 »), adresses des
-              écrans, vue et cadrage, géométrie du tracé et le long des voies, zones /
-              appareils / cadres / textes, détection sous le pointeur, annuler
-              (ni React ni DOM, testé)
-  ui/         écrans React (accueil, chantier, plan, synoptique), dessin SVG du plan,
+              chantier) et migrations, temps (minutes depuis T0 → « Ve/Sa 01h30 »),
+              adresses des écrans, vue et cadrage, géométrie du tracé et le long des
+              voies, zones / appareils / cadres / textes, échelle du plan, catalogue
+              d'engins (liste par défaut dans catalogue.ts), engins et rames à l'échelle,
+              détection sous le pointeur, annuler (ni React ni DOM, testé)
+  ui/         écrans React (accueil, chantier et son catalogue, assistant « Nouveau plan »,
+              plan, synoptique), calage de l'échelle, dessin SVG du plan et des engins,
               panneau Calques, et accès au navigateur (IndexedDB pour les chantiers,
               pdf.js, téléchargement)
-fixtures/     jeux de données d'exemple, anonymisés (dont un plan et un chantier V2)
+fixtures/     jeux de données d'exemple, anonymisés (dont un plan des étapes 2-3 et un
+              chantier avec échelle, engins et rame)
 sources/      synoptiques réels fournis par le commanditaire (facultatif : il importe
               ses propres plans dans l'application)
 ```

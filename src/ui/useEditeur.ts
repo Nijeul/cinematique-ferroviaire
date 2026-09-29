@@ -1,14 +1,23 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { accrocherVoie, CALQUE_DU_GENRE, existe, type Genre, type Reference } from '../plan/detection.ts'
-import { ajouterVoie, dependancesVoie, supprimerPoint, remplacerFond } from '../plan/edition.ts'
+import { ajouterVoie, dependancesVoie, supprimerPoint, remplacerFond, type Dependances } from '../plan/edition.ts'
 import { ajouterCadre, ajouterCommunication, ajouterAppareil, ajouterTexte, ajouterZone, jumeau, supprimerElement } from '../plan/elements.ts'
-import { bornerPage, typeDeFond } from '../plan/fond.ts'
+import { bornerPage } from '../plan/fond.ts'
+import {
+  ajouterEngin,
+  ajouterRame,
+  avertissementDepassement,
+  silhouetteEngin,
+  silhouetteRame,
+  vehiculesDeGroupes,
+  type Groupe,
+} from '../plan/engins.ts'
 import { terminerTrace } from '../plan/geometrie.ts'
 import { annuler, creerHistorique, enregistrer, peutAnnuler, peutRetablir, retablir } from '../plan/historique.ts'
 import { lireProjet } from '../plan/lecture.ts'
-import { nomDeFichier, serialiserProjet, type Point, type Projet } from '../plan/projet.ts'
+import { nomDeFichier, serialiserProjet, type Point, type PositionEngin, type Projet, type TypeEngin } from '../plan/projet.ts'
 import type { Vue } from '../plan/vue.ts'
-import { fermerPdf, lireImage, ouvrirPdf, rendrePage, type PdfOuvert } from './fondDePlan.ts'
+import { fermerPdf, ouvrirFond, rendrePage, type PdfOuvert } from './fondDePlan.ts'
 import { telecharger } from './navigateur.ts'
 
 // L'état de l'éditeur d'un plan et toutes ses actions : projet et historique,
@@ -17,7 +26,7 @@ import { telecharger } from './navigateur.ts'
 // (`surChangement`), et c'est le chantier qui l'enregistre dans le navigateur.
 // `suspendu` : une fenêtre est ouverte par-dessus, les raccourcis se taisent.
 
-export type Outil = 'selection' | 'voie' | 'zone' | 'bs' | 'communication' | 'cadre' | 'texte' | 'main'
+export type Outil = 'selection' | 'voie' | 'zone' | 'bs' | 'communication' | 'cadre' | 'texte' | 'engin' | 'rame' | 'main'
 // Élément choisi ; pour une voie, `point` désigne en plus le point choisi.
 export type Selection = (Reference & { point: number | null }) | null
 // Premier clic d'une zone, d'un BS ou d'une communication, en attente du second.
@@ -32,14 +41,25 @@ export const TOUCHES: Record<Outil, string> = {
   communication: 'C',
   cadre: 'R',
   texte: 'X',
+  engin: 'E',
+  rame: 'W',
   main: 'M',
 }
+
+// L'outil « Échelle » ouvre la fenêtre de calage.
+export const TOUCHE_ECHELLE = 'L'
+
+export const RAISON_SANS_ECHELLE =
+  "Calez d'abord l'échelle du plan (bouton « Échelle… ») : sans elle, les engins ne peuvent pas être à la bonne taille."
+
 
 const NOM_CALQUE: Record<Genre, string> = {
   cadre: 'Cadres',
   voie: 'Voies',
   zone: 'Zones',
   appareil: 'Appareils',
+  engin: 'Engins',
+  rame: 'Engins',
   texte: 'Textes',
 }
 
@@ -49,9 +69,20 @@ const estChampDeSaisie = (cible: EventTarget | null): boolean =>
 
 const pluriel = (n: number, mot: string) => `${n} ${mot}${n > 1 ? 's' : ''}`
 
-export function useEditeur(projetInitial: Projet, surChangement: (projet: Projet) => void, suspendu: boolean) {
+export type OptionsEditeur = {
+  // Une fenêtre est ouverte par-dessus : les raccourcis se taisent.
+  suspendu: boolean
+  // Le catalogue d'engins du chantier.
+  catalogue: TypeEngin[]
+  ouvrirEchelle: () => void
+}
+
+export function useEditeur(projetInitial: Projet, surChangement: (projet: Projet) => void, options: OptionsEditeur) {
+  const { suspendu, catalogue, ouvrirEchelle } = options
   const [historique, setHistorique] = useState(() => creerHistorique(projetInitial))
   const [outil, setOutil] = useState<Outil>('voie')
+  const [typeChoisiId, setTypeChoisi] = useState<string | null>(catalogue[0]?.id ?? null)
+  const [composition, setComposition] = useState<Groupe[]>([])
   const [selectionBrute, setSelection] = useState<Selection>(null)
   const [trace, setTrace] = useState<Point[] | null>(null)
   const [pose, setPose] = useState<Pose>(null)
@@ -116,9 +147,57 @@ export function useEditeur(projetInitial: Projet, surChangement: (projet: Projet
   const retirerDernierPointTrace = () => setTrace((t) => (t && t.length > 1 ? t.slice(0, -1) : null))
 
   const choisirOutil = (nouvel: Outil) => {
+    if ((nouvel === 'engin' || nouvel === 'rame') && !projet.echelle) {
+      erreur(RAISON_SANS_ECHELLE)
+      return
+    }
     if (trace) terminer(0)
     setPose(null)
     setOutil(nouvel)
+  }
+
+  // Type choisi pour l'outil Engin (le premier du catalogue par défaut).
+  const typeChoisi = catalogue.find((t) => t.id === typeChoisiId) ?? catalogue[0]
+
+  // Pose d'un engin : le long de la voie cliquée, ou libre loin de toute voie.
+  const poserEngin = (p: Point, tolerance: number) => {
+    if (!projet.echelle) return erreur(RAISON_SANS_ECHELLE)
+    if (!calqueModifiable('engin')) return
+    if (!typeChoisi) return erreur("Le catalogue d'engins du chantier est vide : ajoutez un type dans la page du chantier.")
+    const accroche = projet.calques.voies.visible ? accrocherVoie(projet.voies, p, tolerance) : null
+    const position: PositionEngin = accroche
+      ? { genre: 'voie', voieId: accroche.voieId, abscisse: accroche.abscisse }
+      : { genre: 'libre', x: p.x, y: p.y, angle: 0 }
+    const { projet: suivant, id } = ajouterEngin(projet, typeChoisi, position)
+    modifier(() => suivant)
+    choisir('engin', id)
+    const engin = suivant.engins.find((e) => e.id === id)!
+    const voie = accroche ? projet.voies.find((v) => v.id === accroche.voieId) : undefined
+    const depasse = avertissementDepassement(`« ${typeChoisi.modele} »`, voie, silhouetteEngin(suivant, engin)?.depassement ?? 0)
+    setMessage(
+      depasse
+        ? { genre: 'erreur', texte: depasse }
+        : accroche
+          ? null
+          : { genre: 'info', texte: `« ${typeChoisi.modele} » posé hors voie : tournez-le avec la poignée ronde ou le champ « Angle » du panneau.` },
+    )
+  }
+
+  // Pose d'une rame composée dans le panneau : centrée sur le point cliqué de la voie.
+  const poserRame = (p: Point, tolerance: number) => {
+    if (!projet.echelle) return erreur(RAISON_SANS_ECHELLE)
+    if (!calqueModifiable('rame')) return
+    const vehicules = vehiculesDeGroupes(composition)
+    if (vehicules.length === 0) return erreur('Composez d\'abord la rame dans le panneau de droite (« Rame à poser »).')
+    const accroche = projet.calques.voies.visible ? accrocherVoie(projet.voies, p, tolerance) : null
+    if (!accroche) return erreur('Cliquez sur une voie : une rame se pose le long d\'une voie.')
+    const { projet: suivant, id } = ajouterRame(projet, vehicules, accroche.voieId, accroche.abscisse)
+    modifier(() => suivant)
+    choisir('rame', id)
+    const rame = suivant.rames.find((r) => r.id === id)!
+    const voie = projet.voies.find((v) => v.id === accroche.voieId)
+    const depasse = avertissementDepassement(`La rame « ${rame.nom} »`, voie, silhouetteRame(suivant, rame)?.depassement ?? 0)
+    setMessage(depasse ? { genre: 'erreur', texte: depasse } : null)
   }
 
   // Clic avec l'outil Zone, Appareil (BS) ou Communication : le premier clic
@@ -213,11 +292,15 @@ export function useEditeur(projetInitial: Projet, surChangement: (projet: Projet
     setMessage(null)
   }
 
-  // Message après la suppression d'une voie qui portait zones ou appareils.
-  const annoncerCascade = (nomVoie: string, dependances: { zones: number; appareils: number }) => {
-    const { zones, appareils } = dependances
-    if (zones + appareils === 0) return
-    const avec = [zones && pluriel(zones, 'zone'), appareils && pluriel(appareils, 'appareil')].filter(Boolean).join(' et ')
+  // Message après la suppression d'une voie qui portait zones, appareils,
+  // engins ou rames.
+  const annoncerCascade = (nomVoie: string, dependances: Dependances) => {
+    const { zones, appareils, engins, rames } = dependances
+    if (zones + appareils + engins + rames === 0) return
+    const parties = [zones && pluriel(zones, 'zone'), appareils && pluriel(appareils, 'appareil'), engins && pluriel(engins, 'engin'), rames && pluriel(rames, 'rame')].filter(
+      (x): x is string => typeof x === 'string',
+    )
+    const avec = parties.length > 1 ? `${parties.slice(0, -1).join(', ')} et ${parties[parties.length - 1]}` : parties[0]
     setMessage({ genre: 'info', texte: `Voie « ${nomVoie} » supprimée avec ce qui était posé dessus : ${avec}. Ctrl+Z rétablit le tout.` })
   }
 
@@ -288,6 +371,8 @@ export function useEditeur(projetInitial: Projet, surChangement: (projet: Projet
         e.preventDefault()
         if (trace) retirerDernierPointTrace()
         else supprimerSelection()
+      } else if (!ctrl && !e.altKey && touche === TOUCHE_ECHELLE.toLowerCase()) {
+        ouvrirEchelle()
       } else if (!ctrl && !e.altKey) {
         const choisi = (Object.keys(TOUCHES) as Outil[]).find((o) => TOUCHES[o].toLowerCase() === touche)
         if (choisi) choisirOutil(choisi)
@@ -311,25 +396,17 @@ export function useEditeur(projetInitial: Projet, surChangement: (projet: Projet
   })
 
   const importerFond = async (fichier: File) => {
-    const type = typeDeFond(fichier.name, fichier.type)
-    if (!type) {
-      erreur(`« ${fichier.name} » n'est ni une image (PNG, JPG) ni un PDF.`)
-      return
-    }
     setOccupe('Lecture du fond de plan…')
     try {
-      const ouvert = type === 'pdf' ? await ouvrirPdf(fichier) : null
-      const fond = ouvert ? await rendrePage(ouvert, 1) : await lireImage(fichier)
+      const { fond, pdf: ouvert } = await ouvrirFond(fichier)
       fermerPdf(pdf)
       setPdf(ouvert)
       jetonPage.current++
       modifier((p) => remplacerFond(p, fond))
       setVue(null)
-      setMessage(
-        ouvert && ouvert.nombrePages > 1
-          ? { genre: 'info', texte: `PDF de ${ouvert.nombrePages} pages : page 1 affichée. Changez de page dans le panneau « Calques ».` }
-          : null,
-      )
+      const pages = ouvert && ouvert.nombrePages > 1 ? `PDF de ${ouvert.nombrePages} pages : page 1 affichée. Changez de page dans le panneau « Calques ». ` : ''
+      const echelle = projet.echelle ? 'Nouveau fond : vérifiez l\'échelle du plan (bouton « Échelle… »).' : ''
+      setMessage(pages || echelle ? { genre: 'info', texte: pages + echelle } : null)
     } catch (e) {
       erreur(`Impossible de lire « ${fichier.name} » : ${(e as Error).message}`)
     } finally {
@@ -411,6 +488,13 @@ export function useEditeur(projetInitial: Projet, surChangement: (projet: Projet
     terminer,
     pose: poseValide,
     poserSurVoie,
+    catalogue,
+    typeChoisi,
+    setTypeChoisi,
+    poserEngin,
+    composition,
+    setComposition,
+    poserRame,
     creerCadre,
     creerTexte,
     editerTexte,

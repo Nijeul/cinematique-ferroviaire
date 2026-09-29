@@ -1,6 +1,6 @@
 {
   "format": "cinematique-ferroviaire/chantier",
-  "version": 1,
+  "version": 2,
   "id": "chantier-1",
   "nom": "Chantier d’exemple (données fictives)",
   "modifieLe": "2026-09-29T15:00:00.000Z",
@@ -12,6 +12,9 @@
         "largeur": 1600,
         "hauteur": 900,
         "fond": null,
+        "echelle": {
+          "pixelsParMetre": 4
+        },
         "extremites": {
           "gauche": "Nord",
           "droite": "Sud"
@@ -35,6 +38,10 @@
             "verrouille": false
           },
           "appareils": {
+            "visible": true,
+            "verrouille": false
+          },
+          "engins": {
             "visible": true,
             "verrouille": false
           },
@@ -203,6 +210,206 @@
               "abscisse": 700
             },
             "communication": "com-1"
+          }
+        ],
+        "engins": [
+          {
+            "id": "engin-1",
+            "typeId": "type-8",
+            "type": {
+              "categorie": "BML",
+              "modele": "Type 08-32U",
+              "longueur": 31,
+              "largeur": 3,
+              "couleur": "#ff9999"
+            },
+            "couleur": "#ff9999",
+            "numero": "",
+            "position": {
+              "genre": "voie",
+              "voieId": "voie-3",
+              "abscisse": 700
+            }
+          },
+          {
+            "id": "engin-2",
+            "typeId": "type-13",
+            "type": {
+              "categorie": "Pelle RR",
+              "modele": "CAT 323",
+              "longueur": 9.5,
+              "largeur": 3.2,
+              "couleur": "#e8a33d"
+            },
+            "couleur": "#e8a33d",
+            "numero": "3",
+            "position": {
+              "genre": "voie",
+              "voieId": "voie-4",
+              "abscisse": 300
+            }
+          },
+          {
+            "id": "engin-3",
+            "typeId": "type-13",
+            "type": {
+              "categorie": "Pelle RR",
+              "modele": "CAT 323",
+              "longueur": 9.5,
+              "largeur": 3.2,
+              "couleur": "#e8a33d"
+            },
+            "couleur": "#e8a33d",
+            "numero": "P4",
+            "position": {
+              "genre": "libre",
+              "x": 480,
+              "y": 640,
+              "angle": 30
+            }
+          }
+        ],
+        "rames": [
+          {
+            "id": "rame-1",
+            "nom": "Rame 1",
+            "numero": "T1",
+            "couleur": "#66ff99",
+            "voieId": "voie-2",
+            "abscisse": 810,
+            "sens": -1,
+            "vehicules": [
+              {
+                "typeId": "type-1",
+                "type": {
+                  "categorie": "Loco",
+                  "modele": "BB 61000",
+                  "longueur": 14.5,
+                  "largeur": 3,
+                  "couleur": "#66ff99"
+                }
+              },
+              {
+                "typeId": "type-12",
+                "type": {
+                  "categorie": "Wagon",
+                  "modele": "R39",
+                  "longueur": 19.9,
+                  "largeur": 3,
+                  "couleur": "#ff9933"
+                }
+              },
+              {
+                "typeId": "type-12",
+                "type": {
+                  "categorie": "Wagon",
+                  "modele": "R39",
+                  "longueur": 19.9,
+                  "largeur": 3,
+                  "couleur": "#ff9933"
+                }
+              },
+              {
+                "typeId": "type-12",
+                "type": {
+                  "categorie": "Wagon",
+                  "modele": "R39",
+                  "longueur": 19.9,
+                  "largeur": 3,
+                  "couleur": "#ff9933"
+                }
+              },
+              {
+                "typeId": "type-12",
+                "type": {
+                  "categorie": "Wagon",
+                  "modele": "R39",
+                  "longueur": 19.9,
+                  "largeur": 3,
+                  "couleur": "#ff9933"
+                }
+              },
+              {
+                "typeId": "type-12",
+                "type": {
+                  "categorie": "Wagon",
+                  "modele": "R39",
+                  "longueur": 19.9,
+                  "largeur": 3,
+                  "couleur": "#ff9933"
+                }
+              },
+              {
+                "typeId": "type-12",
+                "type": {
+                  "categorie": "Wagon",
+                  "modele": "R39",
+                  "longueur": 19.9,
+                  "largeur": 3,
+                  "couleur": "#ff9933"
+                }
+              },
+              {
+                "typeId": "type-12",
+                "type": {
+                  "categorie": "Wagon",
+                  "modele": "R39",
+                  "longueur": 19.9,
+                  "largeur": 3,
+                  "couleur": "#ff9933"
+                }
+              },
+              {
+                "typeId": "type-12",
+                "type": {
+                  "categorie": "Wagon",
+                  "modele": "R39",
+                  "longueur": 19.9,
+                  "largeur": 3,
+                  "couleur": "#ff9933"
+                }
+              },
+              {
+                "typeId": "type-12",
+                "type": {
+                  "categorie": "Wagon",
+                  "modele": "R39",
+                  "longueur": 19.9,
+                  "largeur": 3,
+                  "couleur": "#ff9933"
+                }
+              },
+              {
+                "typeId": "type-12",
+                "type": {
+                  "categorie": "Wagon",
+                  "modele": "R39",
+                  "longueur": 19.9,
+                  "largeur": 3,
+                  "couleur": "#ff9933"
+                }
+              },
+              {
+                "typeId": "type-12",
+                "type": {
+                  "categorie": "Wagon",
+                  "modele": "R39",
+                  "longueur": 19.9,
+                  "largeur": 3,
+                  "couleur": "#ff9933"
+                }
+              },
+              {
+                "typeId": "type-12",
+                "type": {
+                  "categorie": "Wagon",
+                  "modele": "R39",
+                  "longueur": 19.9,
+                  "largeur": 3,
+                  "couleur": "#ff9933"
+                }
+              }
+            ]
           }
         ],
         "textes": [
@@ -225,6 +432,9 @@
         "largeur": 1600,
         "hauteur": 900,
         "fond": null,
+        "echelle": {
+          "pixelsParMetre": 4
+        },
         "extremites": {
           "gauche": "Nord",
           "droite": "Sud"
@@ -248,6 +458,10 @@
             "verrouille": false
           },
           "appareils": {
+            "visible": true,
+            "verrouille": false
+          },
+          "engins": {
             "visible": true,
             "verrouille": false
           },
@@ -416,6 +630,206 @@
               "abscisse": 700
             },
             "communication": "com-1"
+          }
+        ],
+        "engins": [
+          {
+            "id": "engin-1",
+            "typeId": "type-8",
+            "type": {
+              "categorie": "BML",
+              "modele": "Type 08-32U",
+              "longueur": 31,
+              "largeur": 3,
+              "couleur": "#ff9999"
+            },
+            "couleur": "#ff9999",
+            "numero": "",
+            "position": {
+              "genre": "voie",
+              "voieId": "voie-3",
+              "abscisse": 700
+            }
+          },
+          {
+            "id": "engin-2",
+            "typeId": "type-13",
+            "type": {
+              "categorie": "Pelle RR",
+              "modele": "CAT 323",
+              "longueur": 9.5,
+              "largeur": 3.2,
+              "couleur": "#e8a33d"
+            },
+            "couleur": "#e8a33d",
+            "numero": "3",
+            "position": {
+              "genre": "voie",
+              "voieId": "voie-4",
+              "abscisse": 300
+            }
+          },
+          {
+            "id": "engin-3",
+            "typeId": "type-13",
+            "type": {
+              "categorie": "Pelle RR",
+              "modele": "CAT 323",
+              "longueur": 9.5,
+              "largeur": 3.2,
+              "couleur": "#e8a33d"
+            },
+            "couleur": "#e8a33d",
+            "numero": "P4",
+            "position": {
+              "genre": "libre",
+              "x": 480,
+              "y": 640,
+              "angle": 30
+            }
+          }
+        ],
+        "rames": [
+          {
+            "id": "rame-1",
+            "nom": "Rame 1",
+            "numero": "T1",
+            "couleur": "#66ff99",
+            "voieId": "voie-2",
+            "abscisse": 810,
+            "sens": -1,
+            "vehicules": [
+              {
+                "typeId": "type-1",
+                "type": {
+                  "categorie": "Loco",
+                  "modele": "BB 61000",
+                  "longueur": 14.5,
+                  "largeur": 3,
+                  "couleur": "#66ff99"
+                }
+              },
+              {
+                "typeId": "type-12",
+                "type": {
+                  "categorie": "Wagon",
+                  "modele": "R39",
+                  "longueur": 19.9,
+                  "largeur": 3,
+                  "couleur": "#ff9933"
+                }
+              },
+              {
+                "typeId": "type-12",
+                "type": {
+                  "categorie": "Wagon",
+                  "modele": "R39",
+                  "longueur": 19.9,
+                  "largeur": 3,
+                  "couleur": "#ff9933"
+                }
+              },
+              {
+                "typeId": "type-12",
+                "type": {
+                  "categorie": "Wagon",
+                  "modele": "R39",
+                  "longueur": 19.9,
+                  "largeur": 3,
+                  "couleur": "#ff9933"
+                }
+              },
+              {
+                "typeId": "type-12",
+                "type": {
+                  "categorie": "Wagon",
+                  "modele": "R39",
+                  "longueur": 19.9,
+                  "largeur": 3,
+                  "couleur": "#ff9933"
+                }
+              },
+              {
+                "typeId": "type-12",
+                "type": {
+                  "categorie": "Wagon",
+                  "modele": "R39",
+                  "longueur": 19.9,
+                  "largeur": 3,
+                  "couleur": "#ff9933"
+                }
+              },
+              {
+                "typeId": "type-12",
+                "type": {
+                  "categorie": "Wagon",
+                  "modele": "R39",
+                  "longueur": 19.9,
+                  "largeur": 3,
+                  "couleur": "#ff9933"
+                }
+              },
+              {
+                "typeId": "type-12",
+                "type": {
+                  "categorie": "Wagon",
+                  "modele": "R39",
+                  "longueur": 19.9,
+                  "largeur": 3,
+                  "couleur": "#ff9933"
+                }
+              },
+              {
+                "typeId": "type-12",
+                "type": {
+                  "categorie": "Wagon",
+                  "modele": "R39",
+                  "longueur": 19.9,
+                  "largeur": 3,
+                  "couleur": "#ff9933"
+                }
+              },
+              {
+                "typeId": "type-12",
+                "type": {
+                  "categorie": "Wagon",
+                  "modele": "R39",
+                  "longueur": 19.9,
+                  "largeur": 3,
+                  "couleur": "#ff9933"
+                }
+              },
+              {
+                "typeId": "type-12",
+                "type": {
+                  "categorie": "Wagon",
+                  "modele": "R39",
+                  "longueur": 19.9,
+                  "largeur": 3,
+                  "couleur": "#ff9933"
+                }
+              },
+              {
+                "typeId": "type-12",
+                "type": {
+                  "categorie": "Wagon",
+                  "modele": "R39",
+                  "longueur": 19.9,
+                  "largeur": 3,
+                  "couleur": "#ff9933"
+                }
+              },
+              {
+                "typeId": "type-12",
+                "type": {
+                  "categorie": "Wagon",
+                  "modele": "R39",
+                  "longueur": 19.9,
+                  "largeur": 3,
+                  "couleur": "#ff9933"
+                }
+              }
+            ]
           }
         ],
         "textes": [
@@ -452,6 +866,9 @@
       "largeur": 1600,
       "hauteur": 900,
       "fond": null,
+      "echelle": {
+        "pixelsParMetre": 4
+      },
       "images": [
         {
           "id": "image-1",
@@ -481,6 +898,10 @@
                 "verrouille": false
               },
               "appareils": {
+                "visible": true,
+                "verrouille": false
+              },
+              "engins": {
                 "visible": true,
                 "verrouille": false
               },
@@ -649,6 +1070,206 @@
                   "abscisse": 700
                 },
                 "communication": "com-1"
+              }
+            ],
+            "engins": [
+              {
+                "id": "engin-1",
+                "typeId": "type-8",
+                "type": {
+                  "categorie": "BML",
+                  "modele": "Type 08-32U",
+                  "longueur": 31,
+                  "largeur": 3,
+                  "couleur": "#ff9999"
+                },
+                "couleur": "#ff9999",
+                "numero": "",
+                "position": {
+                  "genre": "voie",
+                  "voieId": "voie-3",
+                  "abscisse": 700
+                }
+              },
+              {
+                "id": "engin-2",
+                "typeId": "type-13",
+                "type": {
+                  "categorie": "Pelle RR",
+                  "modele": "CAT 323",
+                  "longueur": 9.5,
+                  "largeur": 3.2,
+                  "couleur": "#e8a33d"
+                },
+                "couleur": "#e8a33d",
+                "numero": "3",
+                "position": {
+                  "genre": "voie",
+                  "voieId": "voie-4",
+                  "abscisse": 300
+                }
+              },
+              {
+                "id": "engin-3",
+                "typeId": "type-13",
+                "type": {
+                  "categorie": "Pelle RR",
+                  "modele": "CAT 323",
+                  "longueur": 9.5,
+                  "largeur": 3.2,
+                  "couleur": "#e8a33d"
+                },
+                "couleur": "#e8a33d",
+                "numero": "P4",
+                "position": {
+                  "genre": "libre",
+                  "x": 480,
+                  "y": 640,
+                  "angle": 30
+                }
+              }
+            ],
+            "rames": [
+              {
+                "id": "rame-1",
+                "nom": "Rame 1",
+                "numero": "T1",
+                "couleur": "#66ff99",
+                "voieId": "voie-2",
+                "abscisse": 810,
+                "sens": -1,
+                "vehicules": [
+                  {
+                    "typeId": "type-1",
+                    "type": {
+                      "categorie": "Loco",
+                      "modele": "BB 61000",
+                      "longueur": 14.5,
+                      "largeur": 3,
+                      "couleur": "#66ff99"
+                    }
+                  },
+                  {
+                    "typeId": "type-12",
+                    "type": {
+                      "categorie": "Wagon",
+                      "modele": "R39",
+                      "longueur": 19.9,
+                      "largeur": 3,
+                      "couleur": "#ff9933"
+                    }
+                  },
+                  {
+                    "typeId": "type-12",
+                    "type": {
+                      "categorie": "Wagon",
+                      "modele": "R39",
+                      "longueur": 19.9,
+                      "largeur": 3,
+                      "couleur": "#ff9933"
+                    }
+                  },
+                  {
+                    "typeId": "type-12",
+                    "type": {
+                      "categorie": "Wagon",
+                      "modele": "R39",
+                      "longueur": 19.9,
+                      "largeur": 3,
+                      "couleur": "#ff9933"
+                    }
+                  },
+                  {
+                    "typeId": "type-12",
+                    "type": {
+                      "categorie": "Wagon",
+                      "modele": "R39",
+                      "longueur": 19.9,
+                      "largeur": 3,
+                      "couleur": "#ff9933"
+                    }
+                  },
+                  {
+                    "typeId": "type-12",
+                    "type": {
+                      "categorie": "Wagon",
+                      "modele": "R39",
+                      "longueur": 19.9,
+                      "largeur": 3,
+                      "couleur": "#ff9933"
+                    }
+                  },
+                  {
+                    "typeId": "type-12",
+                    "type": {
+                      "categorie": "Wagon",
+                      "modele": "R39",
+                      "longueur": 19.9,
+                      "largeur": 3,
+                      "couleur": "#ff9933"
+                    }
+                  },
+                  {
+                    "typeId": "type-12",
+                    "type": {
+                      "categorie": "Wagon",
+                      "modele": "R39",
+                      "longueur": 19.9,
+                      "largeur": 3,
+                      "couleur": "#ff9933"
+                    }
+                  },
+                  {
+                    "typeId": "type-12",
+                    "type": {
+                      "categorie": "Wagon",
+                      "modele": "R39",
+                      "longueur": 19.9,
+                      "largeur": 3,
+                      "couleur": "#ff9933"
+                    }
+                  },
+                  {
+                    "typeId": "type-12",
+                    "type": {
+                      "categorie": "Wagon",
+                      "modele": "R39",
+                      "longueur": 19.9,
+                      "largeur": 3,
+                      "couleur": "#ff9933"
+                    }
+                  },
+                  {
+                    "typeId": "type-12",
+                    "type": {
+                      "categorie": "Wagon",
+                      "modele": "R39",
+                      "longueur": 19.9,
+                      "largeur": 3,
+                      "couleur": "#ff9933"
+                    }
+                  },
+                  {
+                    "typeId": "type-12",
+                    "type": {
+                      "categorie": "Wagon",
+                      "modele": "R39",
+                      "longueur": 19.9,
+                      "largeur": 3,
+                      "couleur": "#ff9933"
+                    }
+                  },
+                  {
+                    "typeId": "type-12",
+                    "type": {
+                      "categorie": "Wagon",
+                      "modele": "R39",
+                      "longueur": 19.9,
+                      "largeur": 3,
+                      "couleur": "#ff9933"
+                    }
+                  }
+                ]
               }
             ],
             "textes": [
@@ -695,6 +1316,10 @@
                 "visible": true,
                 "verrouille": false
               },
+              "engins": {
+                "visible": true,
+                "verrouille": false
+              },
               "textes": {
                 "visible": true,
                 "verrouille": false
@@ -860,6 +1485,206 @@
                   "abscisse": 700
                 },
                 "communication": "com-1"
+              }
+            ],
+            "engins": [
+              {
+                "id": "engin-1",
+                "typeId": "type-8",
+                "type": {
+                  "categorie": "BML",
+                  "modele": "Type 08-32U",
+                  "longueur": 31,
+                  "largeur": 3,
+                  "couleur": "#ff9999"
+                },
+                "couleur": "#ff9999",
+                "numero": "",
+                "position": {
+                  "genre": "voie",
+                  "voieId": "voie-3",
+                  "abscisse": 700
+                }
+              },
+              {
+                "id": "engin-2",
+                "typeId": "type-13",
+                "type": {
+                  "categorie": "Pelle RR",
+                  "modele": "CAT 323",
+                  "longueur": 9.5,
+                  "largeur": 3.2,
+                  "couleur": "#e8a33d"
+                },
+                "couleur": "#e8a33d",
+                "numero": "3",
+                "position": {
+                  "genre": "voie",
+                  "voieId": "voie-4",
+                  "abscisse": 300
+                }
+              },
+              {
+                "id": "engin-3",
+                "typeId": "type-13",
+                "type": {
+                  "categorie": "Pelle RR",
+                  "modele": "CAT 323",
+                  "longueur": 9.5,
+                  "largeur": 3.2,
+                  "couleur": "#e8a33d"
+                },
+                "couleur": "#e8a33d",
+                "numero": "P4",
+                "position": {
+                  "genre": "libre",
+                  "x": 480,
+                  "y": 640,
+                  "angle": 30
+                }
+              }
+            ],
+            "rames": [
+              {
+                "id": "rame-1",
+                "nom": "Rame 1",
+                "numero": "T1",
+                "couleur": "#66ff99",
+                "voieId": "voie-2",
+                "abscisse": 810,
+                "sens": -1,
+                "vehicules": [
+                  {
+                    "typeId": "type-1",
+                    "type": {
+                      "categorie": "Loco",
+                      "modele": "BB 61000",
+                      "longueur": 14.5,
+                      "largeur": 3,
+                      "couleur": "#66ff99"
+                    }
+                  },
+                  {
+                    "typeId": "type-12",
+                    "type": {
+                      "categorie": "Wagon",
+                      "modele": "R39",
+                      "longueur": 19.9,
+                      "largeur": 3,
+                      "couleur": "#ff9933"
+                    }
+                  },
+                  {
+                    "typeId": "type-12",
+                    "type": {
+                      "categorie": "Wagon",
+                      "modele": "R39",
+                      "longueur": 19.9,
+                      "largeur": 3,
+                      "couleur": "#ff9933"
+                    }
+                  },
+                  {
+                    "typeId": "type-12",
+                    "type": {
+                      "categorie": "Wagon",
+                      "modele": "R39",
+                      "longueur": 19.9,
+                      "largeur": 3,
+                      "couleur": "#ff9933"
+                    }
+                  },
+                  {
+                    "typeId": "type-12",
+                    "type": {
+                      "categorie": "Wagon",
+                      "modele": "R39",
+                      "longueur": 19.9,
+                      "largeur": 3,
+                      "couleur": "#ff9933"
+                    }
+                  },
+                  {
+                    "typeId": "type-12",
+                    "type": {
+                      "categorie": "Wagon",
+                      "modele": "R39",
+                      "longueur": 19.9,
+                      "largeur": 3,
+                      "couleur": "#ff9933"
+                    }
+                  },
+                  {
+                    "typeId": "type-12",
+                    "type": {
+                      "categorie": "Wagon",
+                      "modele": "R39",
+                      "longueur": 19.9,
+                      "largeur": 3,
+                      "couleur": "#ff9933"
+                    }
+                  },
+                  {
+                    "typeId": "type-12",
+                    "type": {
+                      "categorie": "Wagon",
+                      "modele": "R39",
+                      "longueur": 19.9,
+                      "largeur": 3,
+                      "couleur": "#ff9933"
+                    }
+                  },
+                  {
+                    "typeId": "type-12",
+                    "type": {
+                      "categorie": "Wagon",
+                      "modele": "R39",
+                      "longueur": 19.9,
+                      "largeur": 3,
+                      "couleur": "#ff9933"
+                    }
+                  },
+                  {
+                    "typeId": "type-12",
+                    "type": {
+                      "categorie": "Wagon",
+                      "modele": "R39",
+                      "longueur": 19.9,
+                      "largeur": 3,
+                      "couleur": "#ff9933"
+                    }
+                  },
+                  {
+                    "typeId": "type-12",
+                    "type": {
+                      "categorie": "Wagon",
+                      "modele": "R39",
+                      "longueur": 19.9,
+                      "largeur": 3,
+                      "couleur": "#ff9933"
+                    }
+                  },
+                  {
+                    "typeId": "type-12",
+                    "type": {
+                      "categorie": "Wagon",
+                      "modele": "R39",
+                      "longueur": 19.9,
+                      "largeur": 3,
+                      "couleur": "#ff9933"
+                    }
+                  },
+                  {
+                    "typeId": "type-12",
+                    "type": {
+                      "categorie": "Wagon",
+                      "modele": "R39",
+                      "longueur": 19.9,
+                      "largeur": 3,
+                      "couleur": "#ff9933"
+                    }
+                  }
+                ]
               }
             ],
             "textes": [
@@ -906,6 +1731,10 @@
                 "visible": true,
                 "verrouille": false
               },
+              "engins": {
+                "visible": true,
+                "verrouille": false
+              },
               "textes": {
                 "visible": true,
                 "verrouille": false
@@ -1073,6 +1902,206 @@
                 "communication": "com-1"
               }
             ],
+            "engins": [
+              {
+                "id": "engin-1",
+                "typeId": "type-8",
+                "type": {
+                  "categorie": "BML",
+                  "modele": "Type 08-32U",
+                  "longueur": 31,
+                  "largeur": 3,
+                  "couleur": "#ff9999"
+                },
+                "couleur": "#ff9999",
+                "numero": "",
+                "position": {
+                  "genre": "voie",
+                  "voieId": "voie-3",
+                  "abscisse": 700
+                }
+              },
+              {
+                "id": "engin-2",
+                "typeId": "type-13",
+                "type": {
+                  "categorie": "Pelle RR",
+                  "modele": "CAT 323",
+                  "longueur": 9.5,
+                  "largeur": 3.2,
+                  "couleur": "#e8a33d"
+                },
+                "couleur": "#e8a33d",
+                "numero": "3",
+                "position": {
+                  "genre": "voie",
+                  "voieId": "voie-4",
+                  "abscisse": 300
+                }
+              },
+              {
+                "id": "engin-3",
+                "typeId": "type-13",
+                "type": {
+                  "categorie": "Pelle RR",
+                  "modele": "CAT 323",
+                  "longueur": 9.5,
+                  "largeur": 3.2,
+                  "couleur": "#e8a33d"
+                },
+                "couleur": "#e8a33d",
+                "numero": "P4",
+                "position": {
+                  "genre": "libre",
+                  "x": 480,
+                  "y": 640,
+                  "angle": 30
+                }
+              }
+            ],
+            "rames": [
+              {
+                "id": "rame-1",
+                "nom": "Rame 1",
+                "numero": "T1",
+                "couleur": "#66ff99",
+                "voieId": "voie-2",
+                "abscisse": 810,
+                "sens": -1,
+                "vehicules": [
+                  {
+                    "typeId": "type-1",
+                    "type": {
+                      "categorie": "Loco",
+                      "modele": "BB 61000",
+                      "longueur": 14.5,
+                      "largeur": 3,
+                      "couleur": "#66ff99"
+                    }
+                  },
+                  {
+                    "typeId": "type-12",
+                    "type": {
+                      "categorie": "Wagon",
+                      "modele": "R39",
+                      "longueur": 19.9,
+                      "largeur": 3,
+                      "couleur": "#ff9933"
+                    }
+                  },
+                  {
+                    "typeId": "type-12",
+                    "type": {
+                      "categorie": "Wagon",
+                      "modele": "R39",
+                      "longueur": 19.9,
+                      "largeur": 3,
+                      "couleur": "#ff9933"
+                    }
+                  },
+                  {
+                    "typeId": "type-12",
+                    "type": {
+                      "categorie": "Wagon",
+                      "modele": "R39",
+                      "longueur": 19.9,
+                      "largeur": 3,
+                      "couleur": "#ff9933"
+                    }
+                  },
+                  {
+                    "typeId": "type-12",
+                    "type": {
+                      "categorie": "Wagon",
+                      "modele": "R39",
+                      "longueur": 19.9,
+                      "largeur": 3,
+                      "couleur": "#ff9933"
+                    }
+                  },
+                  {
+                    "typeId": "type-12",
+                    "type": {
+                      "categorie": "Wagon",
+                      "modele": "R39",
+                      "longueur": 19.9,
+                      "largeur": 3,
+                      "couleur": "#ff9933"
+                    }
+                  },
+                  {
+                    "typeId": "type-12",
+                    "type": {
+                      "categorie": "Wagon",
+                      "modele": "R39",
+                      "longueur": 19.9,
+                      "largeur": 3,
+                      "couleur": "#ff9933"
+                    }
+                  },
+                  {
+                    "typeId": "type-12",
+                    "type": {
+                      "categorie": "Wagon",
+                      "modele": "R39",
+                      "longueur": 19.9,
+                      "largeur": 3,
+                      "couleur": "#ff9933"
+                    }
+                  },
+                  {
+                    "typeId": "type-12",
+                    "type": {
+                      "categorie": "Wagon",
+                      "modele": "R39",
+                      "longueur": 19.9,
+                      "largeur": 3,
+                      "couleur": "#ff9933"
+                    }
+                  },
+                  {
+                    "typeId": "type-12",
+                    "type": {
+                      "categorie": "Wagon",
+                      "modele": "R39",
+                      "longueur": 19.9,
+                      "largeur": 3,
+                      "couleur": "#ff9933"
+                    }
+                  },
+                  {
+                    "typeId": "type-12",
+                    "type": {
+                      "categorie": "Wagon",
+                      "modele": "R39",
+                      "longueur": 19.9,
+                      "largeur": 3,
+                      "couleur": "#ff9933"
+                    }
+                  },
+                  {
+                    "typeId": "type-12",
+                    "type": {
+                      "categorie": "Wagon",
+                      "modele": "R39",
+                      "longueur": 19.9,
+                      "largeur": 3,
+                      "couleur": "#ff9933"
+                    }
+                  },
+                  {
+                    "typeId": "type-12",
+                    "type": {
+                      "categorie": "Wagon",
+                      "modele": "R39",
+                      "longueur": 19.9,
+                      "largeur": 3,
+                      "couleur": "#ff9933"
+                    }
+                  }
+                ]
+              }
+            ],
             "textes": [
               {
                 "id": "texte-1",
@@ -1087,6 +2116,112 @@
           }
         }
       ]
+    }
+  ],
+  "catalogue": [
+    {
+      "id": "type-1",
+      "categorie": "Loco",
+      "modele": "BB 61000",
+      "longueur": 14.5,
+      "largeur": 3,
+      "couleur": "#66ff99"
+    },
+    {
+      "id": "type-2",
+      "categorie": "Loco",
+      "modele": "V211",
+      "longueur": 12.3,
+      "largeur": 3,
+      "couleur": "#66ff99"
+    },
+    {
+      "id": "type-3",
+      "categorie": "Ballastière",
+      "modele": "D12",
+      "longueur": 14,
+      "largeur": 3,
+      "couleur": "#ff9933"
+    },
+    {
+      "id": "type-4",
+      "categorie": "Ballastière",
+      "modele": "Ex 100",
+      "longueur": 15.64,
+      "largeur": 3,
+      "couleur": "#ff9933"
+    },
+    {
+      "id": "type-5",
+      "categorie": "Ballastière",
+      "modele": "C12",
+      "longueur": 9.64,
+      "largeur": 3,
+      "couleur": "#ff9933"
+    },
+    {
+      "id": "type-6",
+      "categorie": "Bigrue",
+      "modele": "Type DGS82BG",
+      "longueur": 32.6,
+      "largeur": 3,
+      "couleur": "#ccccff"
+    },
+    {
+      "id": "type-7",
+      "categorie": "Bigrue",
+      "modele": "Socofer",
+      "longueur": 19.9,
+      "largeur": 3,
+      "couleur": "#ccccff"
+    },
+    {
+      "id": "type-8",
+      "categorie": "BML",
+      "modele": "Type 08-32U",
+      "longueur": 31,
+      "largeur": 3,
+      "couleur": "#ff9999"
+    },
+    {
+      "id": "type-9",
+      "categorie": "BML",
+      "modele": "Type 08 GV",
+      "longueur": 31.5,
+      "largeur": 3,
+      "couleur": "#ff9999"
+    },
+    {
+      "id": "type-10",
+      "categorie": "BML",
+      "modele": "Type 108-32 U",
+      "longueur": 32.8,
+      "largeur": 3,
+      "couleur": "#ff9999"
+    },
+    {
+      "id": "type-11",
+      "categorie": "Stabilisateur",
+      "modele": "Type DGS82",
+      "longueur": 32.8,
+      "largeur": 3,
+      "couleur": "#3399ff"
+    },
+    {
+      "id": "type-12",
+      "categorie": "Wagon",
+      "modele": "R39",
+      "longueur": 19.9,
+      "largeur": 3,
+      "couleur": "#ff9933"
+    },
+    {
+      "id": "type-13",
+      "categorie": "Pelle RR",
+      "modele": "CAT 323",
+      "longueur": 9.5,
+      "largeur": 3.2,
+      "couleur": "#e8a33d"
     }
   ]
 }

@@ -10,10 +10,16 @@ import {
   type Ancrage,
   type Appareil,
   type Cadre,
+  type DimensionsEngin,
+  type Echelle,
+  type Engin,
   type Fond,
   type Point,
   type Projet,
+  type Rame,
   type Texte,
+  type TypeEngin,
+  type Vehicule,
   type Voie,
   type Zone,
 } from './projet.ts'
@@ -22,9 +28,10 @@ import { longueurPolyligne } from './trace.ts'
 // Lecture et vérification d'un projet enregistré. Les erreurs sont en
 // français, prêtes à afficher ; aucune exception ne sort d'ici.
 //
-// Les fichiers de l'étape 2 (version 2 : fond et voies seulement) s'ouvrent
-// toujours : les listes absentes sont vides, les extrémités prennent leurs
-// noms par défaut (Nord à gauche, Sud à droite).
+// Les fichiers des étapes précédentes s'ouvrent toujours : les listes
+// absentes sont vides, les extrémités prennent leurs noms par défaut (Nord à
+// gauche, Sud à droite), et un plan sans échelle (étapes 2 à 4) reste sans
+// échelle : il faudra la caler pour poser des engins.
 
 export type ResultatLecture = { ok: true; projet: Projet } | { ok: false; erreurs: string[] }
 
@@ -229,6 +236,103 @@ function lireTexte(t: Brut, libelle: string, erreurs: string[]): Texte | null {
   }
 }
 
+// Dimensions d'un type d'engin (catalogue, engin posé, véhicule d'une rame).
+function lireDimensions(d: unknown, libelle: string, erreurs: string[]): DimensionsEngin | null {
+  if (!estObjet(d)) {
+    erreurs.push(`${libelle} : type d'engin illisible.`)
+    return null
+  }
+  const avant = erreurs.length
+  if (typeof d.categorie !== 'string') erreurs.push(`${libelle} : catégorie manquante.`)
+  if (typeof d.modele !== 'string') erreurs.push(`${libelle} : modèle manquant.`)
+  if (!estPositif(d.longueur)) erreurs.push(`${libelle} : la longueur doit être un nombre de mètres positif.`)
+  if (!estPositif(d.largeur)) erreurs.push(`${libelle} : la largeur doit être un nombre de mètres positive.`)
+  verifierCouleur(d.couleur, libelle, erreurs)
+  if (erreurs.length > avant) return null
+  return {
+    categorie: d.categorie as string,
+    modele: d.modele as string,
+    longueur: d.longueur as number,
+    largeur: d.largeur as number,
+    couleur: (d.couleur as string).toLowerCase(),
+  }
+}
+
+// Un type du catalogue d'un chantier.
+export function lireTypeEngin(t: Brut, libelle: string, erreurs: string[]): TypeEngin | null {
+  const dimensions = lireDimensions(t, libelle, erreurs)
+  return dimensions && { id: t.id as string, ...dimensions }
+}
+
+export function lireCatalogue(brut: unknown, erreurs: string[]): TypeEngin[] {
+  return lireListe(brut, "Type d'engin", erreurs, (t, libelle) => lireTypeEngin(t, libelle, erreurs))
+}
+
+const libelleEngin = (e: Brut, libelle: string): string =>
+  estObjet(e.type) && typeof e.type.modele === 'string' ? libelle.replace(/^Engin n°\d+/, (m) => `${m} (« ${(e.type as Brut).modele} »)`) : libelle
+
+function lireEngin(e: Brut, libelleBrut: string, erreurs: string[], voies: Map<string, Voie>): Engin | null {
+  const libelle = libelleEngin(e, libelleBrut)
+  const avant = erreurs.length
+  if (typeof e.typeId !== 'string') erreurs.push(`${libelle} : type du catalogue manquant.`)
+  const type = lireDimensions(e.type, libelle, erreurs)
+  verifierCouleur(e.couleur, libelle, erreurs)
+  const numero = typeof e.numero === 'string' ? e.numero : ''
+  const p = e.position
+  let position: Engin['position'] | null = null
+  if (estObjet(p) && p.genre === 'voie') {
+    verifierSurVoie(p.voieId, [["l'abscisse", p.abscisse]], voies, libelle, erreurs)
+    position = { genre: 'voie', voieId: p.voieId as string, abscisse: p.abscisse as number }
+  } else if (estObjet(p) && p.genre === 'libre') {
+    if (!estNombre(p.x) || !estNombre(p.y) || !estNombre(p.angle)) erreurs.push(`${libelle} : position (x, y, angle) invalide.`)
+    position = { genre: 'libre', x: p.x as number, y: p.y as number, angle: p.angle as number }
+  } else {
+    erreurs.push(`${libelle} : position illisible (sur une voie ou libre).`)
+  }
+  if (erreurs.length > avant || !type || !position) return null
+  return { id: e.id as string, typeId: e.typeId as string, type, couleur: (e.couleur as string).toLowerCase(), numero, position }
+}
+
+function lireRame(r: Brut, libelle: string, erreurs: string[], voies: Map<string, Voie>): Rame | null {
+  const avant = erreurs.length
+  if (typeof r.nom !== 'string') erreurs.push(`${libelle} : nom manquant.`)
+  verifierCouleur(r.couleur, libelle, erreurs)
+  verifierSurVoie(r.voieId, [["l'abscisse", r.abscisse]], voies, libelle, erreurs)
+  if (r.sens !== 1 && r.sens !== -1) erreurs.push(`${libelle} : sens illisible (1 ou -1 attendu).`)
+  const brutes = Array.isArray(r.vehicules) ? r.vehicules : []
+  if (brutes.length === 0) erreurs.push(`${libelle} : une rame doit avoir au moins un véhicule.`)
+  const vehicules: Vehicule[] = []
+  brutes.forEach((v: unknown, i: number) => {
+    const quel = `${libelle}, véhicule ${i + 1}`
+    if (!estObjet(v) || typeof v.typeId !== 'string') {
+      erreurs.push(`${quel} : type du catalogue manquant.`)
+      return
+    }
+    const type = lireDimensions(v.type, quel, erreurs)
+    if (type) vehicules.push({ typeId: v.typeId, type })
+  })
+  if (erreurs.length > avant) return null
+  return {
+    id: r.id as string,
+    nom: r.nom as string,
+    numero: typeof r.numero === 'string' ? r.numero : '',
+    couleur: (r.couleur as string).toLowerCase(),
+    voieId: r.voieId as string,
+    abscisse: r.abscisse as number,
+    sens: r.sens as 1 | -1,
+    vehicules,
+  }
+}
+
+function lireEchelle(brut: unknown, erreurs: string[]): Echelle | null {
+  if (brut === null || brut === undefined) return null
+  if (!estObjet(brut) || !estPositif(brut.pixelsParMetre)) {
+    erreurs.push("L'échelle du plan est illisible (nombre de pixels par mètre positif attendu).")
+    return null
+  }
+  return { pixelsParMetre: brut.pixelsParMetre }
+}
+
 export function lireProjet(texte: string): ResultatLecture {
   let brut: unknown
   try {
@@ -327,6 +431,12 @@ export function lireCorpsProjet(brut: unknown): ResultatLecture {
   verifierCommunications(appareils, erreurs)
   const cadres = lireListe(brut.cadres, 'Cadre', erreurs, (c, libelle) => lireCadre(c, libelle, erreurs))
   const textes = lireListe(brut.textes, 'Texte', erreurs, (t, libelle) => lireTexte(t, libelle, erreurs))
+  const echelle = lireEchelle(brut.echelle, erreurs)
+  const engins = lireListe(brut.engins, 'Engin', erreurs, (e, libelle) => lireEngin(e, libelle, erreurs, parId))
+  const rames = lireListe(brut.rames, 'Rame', erreurs, (r, libelle) => lireRame(r, libelle, erreurs, parId))
+  if (!echelle && brut.echelle == null && engins.length + rames.length > 0) {
+    erreurs.push("Des engins sont posés mais l'échelle du plan manque : leur taille ne peut pas être calculée.")
+  }
 
   if (erreurs.length > 0) return { ok: false, erreurs }
   return {
@@ -336,12 +446,15 @@ export function lireCorpsProjet(brut: unknown): ResultatLecture {
       largeur: brut.largeur as number,
       hauteur: brut.hauteur as number,
       fond,
+      echelle,
       extremites,
       calques,
       cadres,
       voies,
       zones,
       appareils,
+      engins,
+      rames,
       textes,
     },
   }

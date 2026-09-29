@@ -19,12 +19,14 @@ import { ajusterSurRectangle } from '../plan/vue.ts'
 import { ChoixCadrage } from './ChoixCadrage.tsx'
 import { BandeauMessage, BarreNavigation, BoutonsFenetre, ChampInstant, Fenetre } from './commun.tsx'
 import { COULEURS } from './couleurs.ts'
+import { BarreEchelle } from './DessinEngins.tsx'
 import { DessinPlan } from './DessinPlan.tsx'
 import { POLICE, styleAvertissement, styleBouton, styleBoutonDanger, styleBoutonPrincipal, styleChamp, styleDiscret, styleTitreSection } from './styles.ts'
 import type { Message } from './useEditeur.ts'
 
 // Écran d'un synoptique : on feuillette ses images comme un PowerPoint. Chaque
-// image montre le plan figé, limité au cadrage. À cette étape, le contenu des
+// image montre le plan figé (engins compris, à l'échelle), limité au cadrage,
+// avec son échelle graphique. À cette étape, le contenu des
 // images ne se modifie pas ; seuls leurs horaires, leur nombre et les
 // propriétés du synoptique changent — avec Annuler / Rétablir.
 
@@ -54,6 +56,17 @@ function ImageCadree(props: { synoptique: Synoptique; index: number; largeur: nu
       <g clipPath={`url(#${idClip})`}>
         <rect x={cadre.x} y={cadre.y} width={cadre.largeur} height={cadre.hauteur} fill="#ffffff" />
         <DessinPlan projet={projetDeImage(s, image)} zoom={vue.zoom} affiche={cadre} />
+        {/* Échelle graphique de la planche, en bas à droite du cadrage. */}
+        {s.echelle && (
+          <BarreEchelle
+            x={cadre.x + cadre.largeur - cadre.largeur * 0.015}
+            y={cadre.y + cadre.hauteur - cadre.largeur * 0.015}
+            unitesParMetre={s.echelle.pixelsParMetre}
+            longueurMax={cadre.largeur * 0.2}
+            taille={cadre.largeur / 90}
+            ancre="droite"
+          />
+        )}
       </g>
       <rect
         x={cadre.x}

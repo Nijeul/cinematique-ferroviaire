@@ -1,16 +1,50 @@
-import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { parCategorie } from '../plan/catalogue.ts'
+import { descriptionEchelle, formaterMetres } from '../plan/echelle.ts'
+import {
+  ajouterGroupe,
+  avertissementDepassement,
+  changerNombre,
+  composerRame,
+  coteTete,
+  deplacerGroupe,
+  groupeDe,
+  groupesDeVehicules,
+  inverserRame,
+  longueurRame,
+  modifierEngin,
+  modifierRame,
+  NOMBRE_MAX_GROUPE,
+  retirerGroupe,
+  silhouetteEngin,
+  silhouetteRame,
+  texteComposition,
+  tournerEngin,
+  vehiculesDeGroupes,
+  type Groupe,
+} from '../plan/engins.ts'
 import { libelleSens } from '../plan/dessin.ts'
 import type { Genre } from '../plan/detection.ts'
 import { modifierCalque, modifierCalqueFond, modifierExtremites, modifierVoie, retirerFond } from '../plan/edition.ts'
 import { inverserAppareil, jumeau, modifierAppareil, modifierCadre, modifierTexte, modifierZone } from '../plan/elements.ts'
 import { bornerPage } from '../plan/fond.ts'
-import { EPAISSEUR_MAX, EPAISSEUR_MIN, TAILLE_TEXTE_MAX, TAILLE_TEXTE_MIN, type NomCalque } from '../plan/projet.ts'
+import {
+  EPAISSEUR_MAX,
+  EPAISSEUR_MIN,
+  TAILLE_TEXTE_MAX,
+  TAILLE_TEXTE_MIN,
+  type Engin,
+  type NomCalque,
+  type Rame,
+  type TypeEngin,
+} from '../plan/projet.ts'
 import { COULEURS } from './couleurs.ts'
-import { TOUCHES, type Editeur } from './useEditeur.ts'
+import { TOUCHE_ECHELLE, TOUCHES, type Editeur } from './useEditeur.ts'
 
-// Panneau latéral : le plan (nom, extrémités du plan), un calque par type
-// d'élément — Fond, Cadres, Voies, Zones, Appareils, Textes — chacun avec
-// sa liste et les propriétés de ses éléments, et l'aide des raccourcis.
+// Panneau latéral : le plan (nom, échelle, extrémités du plan), l'engin ou la
+// rame à poser quand l'outil est choisi, un calque par type d'élément — Fond,
+// Cadres, Voies, Zones, Appareils, Engins, Textes — chacun avec sa liste et
+// les propriétés de ses éléments, et l'aide des raccourcis.
 
 const styles = {
   section: { borderBottom: `1px solid ${COULEURS.bordure}`, padding: '10px 14px' },
@@ -428,6 +462,351 @@ function CalqueAppareils({ editeur }: { editeur: Editeur }) {
   )
 }
 
+// ——— Engins ———
+
+function Pastille({ couleur }: { couleur: string }) {
+  return <span style={{ display: 'inline-block', width: 12, height: 12, borderRadius: 2, background: couleur, border: `1px solid ${COULEURS.texte}`, flexShrink: 0 }} />
+}
+
+// Outil Engin : le type à poser, dans la liste du catalogue du chantier.
+function ChoixType({ editeur }: { editeur: Editeur }) {
+  const { catalogue, typeChoisi } = editeur
+  return (
+    <Section titre="Engin à poser">
+      {catalogue.length === 0 && <p style={styles.discret}>Catalogue vide : ajoutez des types dans la page du chantier.</p>}
+      <div style={{ maxHeight: 300, overflowY: 'auto' }} data-testid="choix-type">
+        {parCategorie(catalogue).map((groupe) => (
+          <div key={groupe.categorie} style={{ marginBottom: 6 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: COULEURS.discret, textTransform: 'uppercase', letterSpacing: 0.3 }}>{groupe.categorie}</div>
+            {groupe.types.map((type) => {
+              const choisi = typeChoisi?.id === type.id
+              return (
+                <button
+                  key={type.id}
+                  aria-pressed={choisi}
+                  data-testid="type-engin"
+                  onClick={() => editeur.setTypeChoisi(type.id)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    width: '100%',
+                    margin: '2px 0',
+                    padding: '4px 8px',
+                    font: 'inherit',
+                    fontSize: 13,
+                    textAlign: 'left',
+                    borderRadius: 5,
+                    border: `1px solid ${choisi ? COULEURS.selection : COULEURS.bordure}`,
+                    background: choisi ? '#e8f0f9' : '#ffffff',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <Pastille couleur={type.couleur} />
+                  <span style={{ flex: 1, fontWeight: choisi ? 700 : 400 }}>{type.modele}</span>
+                  <span style={{ color: COULEURS.discret, fontSize: 12 }}>{formaterMetres(type.longueur)}</span>
+                </button>
+              )
+            })}
+          </div>
+        ))}
+      </div>
+    </Section>
+  )
+}
+
+// Composition d'une rame : groupes de véhicules identiques (« 10 × R39 »),
+// qu'on ajoute, retire, déplace et dont on change le nombre.
+function Composition(props: { groupes: Groupe[]; changer: (g: Groupe[]) => void; catalogue: TypeEngin[]; auMoinsUn?: boolean }) {
+  const { groupes, changer, catalogue } = props
+  const [ajout, setAjout] = useState(catalogue[0]?.id ?? '')
+  const [nombre, setNombre] = useState('1')
+  const vehicules = vehiculesDeGroupes(groupes)
+  const typeAjout = catalogue.find((t) => t.id === ajout) ?? catalogue[0]
+  return (
+    <div data-testid="composition">
+      {groupes.length === 0 && <p style={styles.discret}>Aucun véhicule : ajoutez-en ci-dessous (la locomotive d'abord).</p>}
+      <ol style={{ listStyle: 'none', margin: '4px 0', padding: 0 }}>
+        {groupes.map((g, i) => (
+          <li key={i} style={{ display: 'flex', alignItems: 'center', gap: 5, margin: '3px 0', fontSize: 13 }} data-testid="groupe">
+            <Pastille couleur={g.type.couleur} />
+            <input
+              type="number"
+              min={1}
+              max={NOMBRE_MAX_GROUPE}
+              value={g.nombre}
+              aria-label={`Nombre de ${g.type.modele}`}
+              style={{ ...styles.champ, width: 46, fontSize: 12 }}
+              onChange={(e) => {
+                if (e.target.value !== '') changer(changerNombre(groupes, i, Number(e.target.value)))
+              }}
+            />
+            <span style={{ flex: 1, minWidth: 0 }}>
+              × <strong>{g.type.modele}</strong> <span style={{ color: COULEURS.discret, fontSize: 12 }}>{formaterMetres(g.type.longueur)}</span>
+            </span>
+            <button style={styles.petitBouton} disabled={i === 0} onClick={() => changer(deplacerGroupe(groupes, i, -1))} title="Vers la tête" aria-label="Monter">
+              ↑
+            </button>
+            <button
+              style={styles.petitBouton}
+              disabled={i === groupes.length - 1}
+              onClick={() => changer(deplacerGroupe(groupes, i, 1))}
+              title="Vers la queue"
+              aria-label="Descendre"
+            >
+              ↓
+            </button>
+            <button
+              style={{ ...styles.petitBouton, color: COULEURS.erreur }}
+              disabled={props.auMoinsUn && groupes.length <= 1}
+              onClick={() => changer(retirerGroupe(groupes, i))}
+              aria-label={`Retirer ${g.type.modele}`}
+              title="Retirer"
+            >
+              ✕
+            </button>
+          </li>
+        ))}
+      </ol>
+      {catalogue.length > 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 6 }}>
+          <input
+            type="number"
+            min={1}
+            max={NOMBRE_MAX_GROUPE}
+            value={nombre}
+            aria-label="Nombre de véhicules à ajouter"
+            style={{ ...styles.champ, width: 46, fontSize: 12 }}
+            onChange={(e) => setNombre(e.target.value)}
+          />
+          <span style={{ fontSize: 13 }}>×</span>
+          <select
+            value={typeAjout?.id}
+            aria-label="Véhicule à ajouter"
+            style={{ ...styles.champ, flex: 1, fontSize: 12 }}
+            onChange={(e) => setAjout(e.target.value)}
+          >
+            {parCategorie(catalogue).map((groupe) => (
+              <optgroup key={groupe.categorie} label={groupe.categorie}>
+                {groupe.types.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.modele} — {formaterMetres(t.longueur)}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+          <button
+            style={styles.petitBouton}
+            onClick={() => {
+              const n = Math.round(Number(nombre))
+              if (typeAjout && n >= 1) changer(ajouterGroupe(groupes, groupeDe(typeAjout, Math.min(NOMBRE_MAX_GROUPE, n))))
+            }}
+          >
+            + Ajouter
+          </button>
+        </div>
+      )}
+      {vehicules.length > 0 && (
+        <p style={{ ...styles.ligne, margin: '8px 0 0' }} data-testid="longueur-composition">
+          <span>
+            Longueur totale : <strong>{formaterMetres(longueurRame(vehicules))}</strong> · {vehicules.length} véhicule{vehicules.length > 1 ? 's' : ''}
+          </span>
+        </p>
+      )}
+    </div>
+  )
+}
+
+function RameAPoser({ editeur }: { editeur: Editeur }) {
+  return (
+    <Section titre="Rame à poser">
+      <Composition groupes={editeur.composition} changer={editeur.setComposition} catalogue={editeur.catalogue} />
+      <p style={styles.discret}>Puis cliquez sur une voie : la rame se pose centrée sur le point cliqué, la tête côté {editeur.projet.extremites.gauche}.</p>
+    </Section>
+  )
+}
+
+function AvertissementDepassement({ texte }: { texte: string | null }) {
+  if (!texte) return null
+  return (
+    <p style={{ ...styles.sousLigne, color: COULEURS.erreur, fontWeight: 600 }} role="alert" data-testid="depassement">
+      ⚠ {texte}
+    </p>
+  )
+}
+
+function LigneEngin({ editeur, engin }: { editeur: Editeur; engin: Engin }) {
+  const { projet, modifier } = editeur
+  const position = engin.position
+  const voie = position.genre === 'voie' ? projet.voies.find((v) => v.id === position.voieId) : undefined
+  const s = silhouetteEngin(projet, engin)
+  return (
+    <Ligne editeur={editeur} genre="engin" id={engin.id}>
+      <div style={enTete}>
+        <ChampCouleur
+          valeur={engin.couleur}
+          libelle={`Couleur de ${engin.type.modele}`}
+          changer={(couleur) => modifier((p) => modifierEngin(p, engin.id, { couleur }), `couleur:${engin.id}`)}
+        />
+        <span style={{ flex: 1, minWidth: 0, fontSize: 13 }}>
+          <strong>{engin.type.modele}</strong> <span style={{ color: COULEURS.discret, fontSize: 12 }}>{engin.type.categorie}</span>
+        </span>
+        <BoutonSupprimer editeur={editeur} genre="engin" id={engin.id} nom={engin.type.modele} />
+      </div>
+      <div style={styles.sousLigne}>
+        <label style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+          N°
+          <input
+            type="text"
+            value={engin.numero}
+            maxLength={6}
+            aria-label={`Numéro de ${engin.type.modele}`}
+            title="Numéro ou court libellé dans la pastille (« 3 », « P4 ») ; vide : pas de pastille"
+            style={{ ...styles.champ, width: 44, fontSize: 12 }}
+            onChange={(e) => {
+              const numero = e.target.value
+              modifier((p) => modifierEngin(p, engin.id, { numero }), `numero:${engin.id}`)
+            }}
+          />
+        </label>
+        <span>
+          {formaterMetres(engin.type.longueur).replace(/ m$/, '')} × {formaterMetres(engin.type.largeur)}
+        </span>
+      </div>
+      <div style={styles.sousLigne}>
+        {engin.position.genre === 'voie' ? (
+          <span>sur « {voie?.nom} »</span>
+        ) : (
+          <label style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+            hors voie · Angle
+            <input
+              type="number"
+              step={5}
+              value={Math.round(engin.position.angle * 10) / 10}
+              aria-label={`Angle de ${engin.type.modele}`}
+              title="En degrés, sens des aiguilles d'une montre ; 0 = horizontal"
+              style={{ ...styles.champ, width: 58, fontSize: 12 }}
+              onChange={(e) => {
+                const angle = Number(e.target.value)
+                if (e.target.value !== '' && Number.isFinite(angle)) modifier((p) => tournerEngin(p, engin.id, angle), `angle:${engin.id}`)
+              }}
+            />
+            °
+          </label>
+        )}
+      </div>
+      <AvertissementDepassement texte={avertissementDepassement(`« ${engin.type.modele} »`, voie, s?.depassement ?? 0)} />
+    </Ligne>
+  )
+}
+
+function LigneRame({ editeur, rame }: { editeur: Editeur; rame: Rame }) {
+  const { projet, modifier } = editeur
+  const choisie = editeur.selection?.genre === 'rame' && editeur.selection.id === rame.id
+  const voie = projet.voies.find((v) => v.id === rame.voieId)
+  const s = silhouetteRame(projet, rame)
+  const cote = coteTete(projet, rame)
+  return (
+    <Ligne editeur={editeur} genre="rame" id={rame.id}>
+      <div style={enTete}>
+        <ChampCouleur
+          valeur={rame.couleur}
+          libelle={`Couleur de la pastille de ${rame.nom}`}
+          changer={(couleur) => modifier((p) => modifierRame(p, rame.id, { couleur }), `couleur:${rame.id}`)}
+        />
+        <input
+          type="text"
+          value={rame.nom}
+          aria-label="Nom de la rame"
+          style={{ ...styles.champ, flex: 1, fontWeight: 600 }}
+          onChange={(e) => {
+            const nom = e.target.value
+            modifier((p) => modifierRame(p, rame.id, { nom }), `nom:${rame.id}`)
+          }}
+        />
+        <BoutonSupprimer editeur={editeur} genre="rame" id={rame.id} nom={rame.nom} />
+      </div>
+      <div style={styles.sousLigne}>
+        <label style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+          N°
+          <input
+            type="text"
+            value={rame.numero}
+            maxLength={6}
+            aria-label={`Numéro de ${rame.nom}`}
+            title="Numéro ou court libellé dans la pastille ; vide : pas de pastille"
+            style={{ ...styles.champ, width: 44, fontSize: 12 }}
+            onChange={(e) => {
+              const numero = e.target.value
+              modifier((p) => modifierRame(p, rame.id, { numero }), `numero:${rame.id}`)
+            }}
+          />
+        </label>
+        <span>
+          <strong style={{ color: COULEURS.texte }} data-testid="longueur-rame">
+            {formaterMetres(longueurRame(rame.vehicules))}
+          </strong>{' '}
+          · {rame.vehicules.length} véhicules
+        </span>
+      </div>
+      <div style={styles.sousLigne}>sur « {voie?.nom} »</div>
+      <div style={styles.sousLigne}>{texteComposition(rame.vehicules)}</div>
+      <AvertissementDepassement texte={avertissementDepassement(`La rame « ${rame.nom} »`, voie, s?.depassement ?? 0)} />
+      {choisie && (
+        <div onClick={(e) => e.stopPropagation()} style={{ cursor: 'default' }}>
+          <div style={styles.sousLigne}>
+            {cote && (
+              <span data-testid="sens-rame">
+                Tête ({rame.vehicules[0].type.modele}) côté <strong style={{ color: COULEURS.texte }}>{cote}</strong>
+              </span>
+            )}
+            <button style={styles.petitBouton} onClick={() => modifier((p) => inverserRame(p, rame.id))} title="La rame reste en place, la tête passe à l'autre bout">
+              ⇄ Inverser le sens
+            </button>
+          </div>
+          <Composition
+            groupes={groupesDeVehicules(rame.vehicules)}
+            changer={(g) => modifier((p) => composerRame(p, rame.id, vehiculesDeGroupes(g)), `composition:${rame.id}`)}
+            catalogue={editeur.catalogue}
+            auMoinsUn
+          />
+          <details style={{ marginTop: 6, fontSize: 12 }}>
+            <summary style={{ cursor: 'pointer', color: COULEURS.discret }}>Détail des {rame.vehicules.length} véhicules, de la tête à la queue</summary>
+            <ol style={{ margin: '4px 0 0', paddingLeft: 22 }} data-testid="detail-vehicules">
+              {rame.vehicules.map((v, i) => (
+                <li key={i}>
+                  {v.type.modele} — {formaterMetres(v.type.longueur)}
+                </li>
+              ))}
+            </ol>
+          </details>
+        </div>
+      )}
+    </Ligne>
+  )
+}
+
+function CalqueEngins({ editeur }: { editeur: Editeur }) {
+  const { projet } = editeur
+  return (
+    <CalqueElements
+      editeur={editeur}
+      nom="engins"
+      titre="Engins"
+      nombre={projet.engins.length + projet.rames.length}
+      vide={projet.echelle ? 'Aucun engin : outils « Engin » et « Rame ».' : "Calez d'abord l'échelle du plan pour poser des engins à la bonne taille."}
+    >
+      {projet.rames.map((rame) => (
+        <LigneRame key={rame.id} editeur={editeur} rame={rame} />
+      ))}
+      {projet.engins.map((engin) => (
+        <LigneEngin key={engin.id} editeur={editeur} engin={engin} />
+      ))}
+    </CalqueElements>
+  )
+}
+
 function CalqueCadres({ editeur }: { editeur: Editeur }) {
   const { projet, modifier } = editeur
   return (
@@ -573,6 +952,9 @@ function Aide() {
     [`Communication (${TOUCHES.communication})`, 'clic sur la première voie, puis sur la seconde : deux BS talon contre talon'],
     [`Cadre (${TOUCHES.cadre})`, 'glisser pour tracer un rectangle'],
     [`Texte (${TOUCHES.texte})`, 'clic sur le plan, puis taper le texte dans le panneau'],
+    [`Échelle… (${TOUCHE_ECHELLE})`, 'caler l’échelle : deux repères sur le plan et leur distance réelle'],
+    [`Engin (${TOUCHES.engin})`, 'choisir le type dans le panneau ; clic sur une voie (il la suit) ou hors voie (libre, poignée ronde pour tourner)'],
+    [`Rame (${TOUCHES.rame})`, 'composer la rame dans le panneau, puis clic sur une voie'],
     [`Sélection (${TOUCHES.selection})`, "clic sur un élément ; glisser l'élément ou ses poignées"],
     ['Suppr', "supprime l'élément choisi (ou le point choisi d'une voie)"],
     ['Molette', 'zoom autour du curseur'],
@@ -606,6 +988,8 @@ export function PanneauCalques({ editeur }: { editeur: Editeur }) {
         borderLeft: `1px solid ${COULEURS.bordure}`,
       }}
     >
+      {editeur.outil === 'engin' && <ChoixType editeur={editeur} />}
+      {editeur.outil === 'rame' && <RameAPoser editeur={editeur} />}
       <Section titre="Plan">
         <input
           type="text"
@@ -617,6 +1001,15 @@ export function PanneauCalques({ editeur }: { editeur: Editeur }) {
             modifier((p) => ({ ...p, nom }), 'nom-projet')
           }}
         />
+        <p style={{ ...styles.discret, marginTop: 8 }} data-testid="echelle-plan">
+          {projet.echelle ? (
+            <>
+              Échelle : {descriptionEchelle(projet.echelle, projet.largeur)}
+            </>
+          ) : (
+            <strong style={{ color: COULEURS.avertissement }}>Échelle non définie</strong>
+          )}
+        </p>
         <p style={{ ...styles.discret, marginTop: 10 }}>Extrémités du plan (sens des appareils) :</p>
         <div style={{ ...styles.ligne, gap: 6 }}>
           <span title="Extrémité gauche du plan">◀</span>
@@ -648,6 +1041,7 @@ export function PanneauCalques({ editeur }: { editeur: Editeur }) {
       <CalqueVoies editeur={editeur} />
       <CalqueZones editeur={editeur} />
       <CalqueAppareils editeur={editeur} />
+      <CalqueEngins editeur={editeur} />
       <CalqueTextes editeur={editeur} />
       <Aide />
     </aside>

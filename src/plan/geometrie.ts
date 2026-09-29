@@ -126,3 +126,11 @@ export function positionNom(voie: Voie): { x: number; y: number; ancre: 'start' 
     ancre: ux >= 0 ? 'end' : 'start',
   }
 }
+
+// Normale « vers le haut » de l'écran d'une direction (vers la gauche si la
+// direction est verticale) : côté des étiquettes et des pastilles.
+export function normaleHaut(d: Point): Point {
+  const n = { x: d.y, y: -d.x }
+  if (Math.abs(n.y) > 1e-9) return n.y < 0 ? n : { x: -n.x, y: -n.y }
+  return n.x < 0 ? n : { x: -n.x, y: -n.y }
+}
