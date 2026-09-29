@@ -1,9 +1,18 @@
 import type { Chantier, PlanDuChantier } from './chantier.ts'
 import type { Rectangle } from './elements.ts'
 import { creerCatalogue } from './catalogue.ts'
-import { avisEnginsRetires, lireCatalogue, lireCorpsProjet, lireEnginsEtRames, lireProjet, type ResultatLecture } from './lecture.ts'
-import { FORMAT_FICHIER, type Calque } from './projet.ts'
-import { CALQUE_ENGINS_PAR_DEFAUT, contenuDe, type ImageSynoptique, type Synoptique } from './synoptique.ts'
+import { creerEtatsVoie, type EtatVoie } from './etatsVoie.ts'
+import type { EtatsZones } from './etatsZones.ts'
+import { avisEnginsRetires, lireCatalogue, lireCorpsProjet, lireEnginsEtRames, lireEtatsVoie, lireProjet, type ResultatLecture } from './lecture.ts'
+import { FORMAT_FICHIER, type Calque, type Zone } from './projet.ts'
+import {
+  CALQUE_ENGINS_PAR_DEFAUT,
+  contenuDe,
+  type EtapePhasage,
+  type HeuresCreneau,
+  type ImageSynoptique,
+  type Synoptique,
+} from './synoptique.ts'
 import { lireInstant } from './temps.ts'
 
 // Fichier d'un chantier entier — plans, synoptiques, fonds et catalogue
@@ -16,9 +25,13 @@ import { lireInstant } from './temps.ts'
 // engins et rames dans les images des synoptiques. Un plan exporté avant la
 // correction de l'étape 5 pouvait porter des engins : ils en sont retirés à
 // la lecture, avec un avis (`avis`) à montrer une fois.
+// Version 3 (étape 6) : états de la voie du chantier ; dans chaque image,
+// état de chaque zone, créneau (titre, heures affichées) et encart PHASAGE ;
+// bandeau de titre de chaque synoptique. Une version 2 s'ouvre toujours :
+// liste d'états par défaut, zones avant travaux, ni titre ni étapes.
 
 export const FORMAT_CHANTIER = 'cinematique-ferroviaire/chantier'
-export const VERSION_CHANTIER = 2
+export const VERSION_CHANTIER = 3
 const EXTENSION_CHANTIER = '.chantier.json'
 
 export function serialiserChantier(c: Chantier): string {
@@ -81,7 +94,68 @@ function lireCadrage(brut: unknown, largeur: number, hauteur: number): Rectangle
   return { x, y, largeur: l, hauteur: h }
 }
 
-function lireSynoptique(brut: unknown, i: number, erreurs: string[]): Synoptique | null {
+const HEURES: readonly HeuresCreneau[] = ['plage', 'debut', 'aucune']
+
+function lirePhasage(brut: unknown, quelle: string, erreurs: string[]): EtapePhasage[] {
+  if (brut === undefined) return []
+  if (!Array.isArray(brut)) {
+    erreurs.push(`${quelle} : l'encart PHASAGE est illisible.`)
+    return []
+  }
+  const etapes: EtapePhasage[] = []
+  brut.forEach((e: unknown, k: number) => {
+    if (!estObjet(e) || !estNombre(e.numero) || !Number.isInteger(e.numero) || typeof e.libelle !== 'string') {
+      erreurs.push(`${quelle}, étape ${k + 1} du phasage : numéro ou libellé illisible.`)
+      return
+    }
+    etapes.push({ numero: e.numero, libelle: e.libelle })
+  })
+  return etapes
+}
+
+// État de chaque zone d'une image : la zone doit exister dans l'image, et ses
+// états dans la liste du chantier.
+function lireEtatsZones(brut: unknown, zones: Zone[], etats: Set<string>, quelle: string, erreurs: string[]): EtatsZones {
+  if (brut === undefined) return {}
+  if (!estObjet(brut)) {
+    erreurs.push(`${quelle} : les états des zones sont illisibles.`)
+    return {}
+  }
+  const resultat: EtatsZones = {}
+  for (const [zoneId, e] of Object.entries(brut)) {
+    const zone = zones.find((z) => z.id === zoneId)
+    const libelle = `${quelle}, zone ${zone ? `« ${zone.nom} »` : `« ${zoneId} »`}`
+    if (!zone) {
+      erreurs.push(`${libelle} : cette zone n'existe pas dans l'image.`)
+      continue
+    }
+    if (!estObjet(e) || typeof e.etat !== 'string' || !etats.has(e.etat)) {
+      erreurs.push(`${libelle} : état inconnu dans la liste des états de la voie.`)
+      continue
+    }
+    const a = e.avancement
+    if (a === null || a === undefined) {
+      resultat[zoneId] = { etat: e.etat, avancement: null }
+      continue
+    }
+    if (
+      !estObjet(a) ||
+      !estNombre(a.pourcentage) ||
+      a.pourcentage < 0 ||
+      a.pourcentage > 100 ||
+      (a.depuis !== 'gauche' && a.depuis !== 'droite') ||
+      typeof a.reste !== 'string' ||
+      !etats.has(a.reste)
+    ) {
+      erreurs.push(`${libelle} : avancement illisible (pourcentage de 0 à 100, côté gauche ou droite, état du reste).`)
+      continue
+    }
+    resultat[zoneId] = { etat: e.etat, avancement: { pourcentage: a.pourcentage, depuis: a.depuis, reste: a.reste } }
+  }
+  return resultat
+}
+
+function lireSynoptique(brut: unknown, i: number, erreurs: string[], etatsVoie: EtatVoie[]): Synoptique | null {
   const nom = estObjet(brut) && typeof brut.nom === 'string' ? ` (« ${brut.nom} »)` : ''
   const libelle = `Synoptique n°${i + 1}${nom}`
   if (!estObjet(brut)) {
@@ -131,7 +205,21 @@ function lireSynoptique(brut: unknown, i: number, erreurs: string[]): Synoptique
       erreurs.push(...erreursEngins.map((e) => `${quelle} : ${e}`))
       return
     }
-    images.push({ id: im.id as string, debut: im.debut, fin: im.fin, contenu: contenuDe(lu.projet, engins) })
+    const avantImage = erreurs.length
+    const etatsZones = lireEtatsZones(contenu.etatsZones, lu.projet.zones, new Set(etatsVoie.map((e) => e.id)), quelle, erreurs)
+    const phasage = lirePhasage(im.phasage, quelle, erreurs)
+    if (im.titre !== undefined && typeof im.titre !== 'string') erreurs.push(`${quelle} : titre du créneau illisible.`)
+    if (im.heures !== undefined && !HEURES.includes(im.heures as HeuresCreneau)) erreurs.push(`${quelle} : heures du créneau illisibles.`)
+    if (erreurs.length > avantImage) return
+    images.push({
+      id: im.id as string,
+      debut: im.debut,
+      fin: im.fin,
+      titre: typeof im.titre === 'string' ? im.titre : '',
+      heures: (im.heures as HeuresCreneau | undefined) ?? 'plage',
+      phasage,
+      contenu: contenuDe(lu.projet, engins, etatsZones),
+    })
   })
   if (erreurs.length > avant || cadrage === undefined) return null
   return {
@@ -146,6 +234,7 @@ function lireSynoptique(brut: unknown, i: number, erreurs: string[]): Synoptique
     fond,
     echelle,
     calqueEngins: lireCalque(brut.calqueEngins),
+    bandeau: typeof brut.bandeau === 'string' ? brut.bandeau : '',
     images,
   }
 }
@@ -178,8 +267,9 @@ export function lireChantier(texte: string): LectureChantier {
   verifierIdentifiants(synoptiquesBruts, (i) => `Synoptique n°${i + 1}`, erreurs)
   const avis: string[] = []
   const plans = plansBruts.map((p: unknown, i: number) => lirePlan(p, i, erreurs, avis))
-  const synoptiques = synoptiquesBruts.map((s: unknown, i: number) => lireSynoptique(s, i, erreurs))
   const catalogue = brut.catalogue === undefined ? creerCatalogue() : lireCatalogue(brut.catalogue, erreurs)
+  const etatsVoie = brut.etatsVoie === undefined ? creerEtatsVoie() : lireEtatsVoie(brut.etatsVoie, erreurs)
+  const synoptiques = synoptiquesBruts.map((s: unknown, i: number) => lireSynoptique(s, i, erreurs, etatsVoie))
   if (erreurs.length > 0) return { ok: false, erreurs }
   return {
     ok: true,
@@ -190,6 +280,7 @@ export function lireChantier(texte: string): LectureChantier {
       plans: plans as PlanDuChantier[],
       synoptiques: synoptiques as Synoptique[],
       catalogue,
+      etatsVoie,
     },
     avis,
   }

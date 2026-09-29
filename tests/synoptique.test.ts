@@ -6,7 +6,6 @@ import { modifierZone } from '../src/plan/elements.ts'
 import { lireProjet } from '../src/plan/lecture.ts'
 import type { Projet } from '../src/plan/projet.ts'
 import {
-  avertissementsImages,
   CADRAGE_MIN,
   creerSynoptique,
   modifierDebut,
@@ -74,7 +73,7 @@ describe('création : copie figée du plan', () => {
     expect(s.images).toHaveLength(1)
     expect(s.images[0]).toMatchObject({ debut: 0, fin: 3360 })
     // Le plan, et une image sans engins : ils se posent ensuite dans l'image.
-    expect({ ...projetDeImage(s, s.images[0]), nom: plan.nom }).toEqual({ ...plan, engins: [], rames: [] })
+    expect({ ...projetDeImage(s, s.images[0]), nom: plan.nom }).toEqual({ ...plan, engins: [], rames: [], etatsZones: {} })
     expect(s.calqueEngins).toEqual({ visible: true, verrouille: false })
   })
 
@@ -196,16 +195,17 @@ describe('horaires des images', () => {
     expect(modifierHorairesImage(s, 0, { debut: 60, fin: 120 }).ok).toBe(true)
   })
 
-  it('avertit, sans bloquer, des chevauchements et des trous', () => {
+  it('permet chevauchements et trous : les horaires sont indicatifs', () => {
     let s = valeur(modifierHorairesImage(synoptique(), 0, { fin: 180 }))
     s = nouvelleImage(s, 0).synoptique // 180 → 360
     s = nouvelleImage(s, 1).synoptique // 360 → 540
-    expect(avertissementsImages(s)).toEqual([])
+    // L'image 2 empiète sur l'image 1, et un trou sépare les images 2 et 3.
     s = valeur(modifierHorairesImage(s, 1, { debut: 150 }))
     s = valeur(modifierHorairesImage(s, 2, { debut: 420 }))
-    expect(avertissementsImages(s)).toEqual([
-      'Les images 1 et 2 se chevauchent (Ve/Sa 01h00 → Ve/Sa 01h30).',
-      'Trou entre les images 2 et 3 : rien de Ve/Sa 04h30 → Ve/Sa 05h30.',
+    expect(s.images.map((im) => [im.debut, im.fin])).toEqual([
+      [0, 180],
+      [150, 360],
+      [420, 540],
     ])
   })
 })

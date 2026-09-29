@@ -1,6 +1,6 @@
 {
   "format": "cinematique-ferroviaire/chantier",
-  "version": 2,
+  "version": 3,
   "id": "chantier-1",
   "nom": "Chantier d’exemple (données fictives)",
   "modifieLe": "2026-09-29T15:00:00.000Z",
@@ -465,11 +465,15 @@
         "visible": true,
         "verrouille": false
       },
+      "bandeau": "",
       "images": [
         {
           "id": "image-1",
           "debut": 0,
           "fin": 180,
+          "titre": "",
+          "heures": "plage",
+          "phasage": [],
           "contenu": {
             "extremites": {
               "gauche": "Nord",
@@ -662,6 +666,17 @@
                   "abscisse": 700
                 },
                 "communication": "com-1"
+              }
+            ],
+            "textes": [
+              {
+                "id": "texte-1",
+                "texte": "Accès base arrière",
+                "x": 1200,
+                "y": 780,
+                "taille": 16,
+                "couleur": "#1c2430",
+                "gras": false
               }
             ],
             "engins": [
@@ -864,23 +879,16 @@
                 ]
               }
             ],
-            "textes": [
-              {
-                "id": "texte-1",
-                "texte": "Accès base arrière",
-                "x": 1200,
-                "y": 780,
-                "taille": 16,
-                "couleur": "#1c2430",
-                "gras": false
-              }
-            ]
+            "etatsZones": {}
           }
         },
         {
           "id": "image-2",
           "debut": 180,
           "fin": 360,
+          "titre": "",
+          "heures": "plage",
+          "phasage": [],
           "contenu": {
             "extremites": {
               "gauche": "Nord",
@@ -1073,6 +1081,17 @@
                   "abscisse": 700
                 },
                 "communication": "com-1"
+              }
+            ],
+            "textes": [
+              {
+                "id": "texte-1",
+                "texte": "Accès base arrière",
+                "x": 1200,
+                "y": 780,
+                "taille": 16,
+                "couleur": "#1c2430",
+                "gras": false
               }
             ],
             "engins": [
@@ -1275,23 +1294,16 @@
                 ]
               }
             ],
-            "textes": [
-              {
-                "id": "texte-1",
-                "texte": "Accès base arrière",
-                "x": 1200,
-                "y": 780,
-                "taille": 16,
-                "couleur": "#1c2430",
-                "gras": false
-              }
-            ]
+            "etatsZones": {}
           }
         },
         {
           "id": "image-3",
           "debut": 360,
           "fin": 3360,
+          "titre": "",
+          "heures": "plage",
+          "phasage": [],
           "contenu": {
             "extremites": {
               "gauche": "Nord",
@@ -1484,6 +1496,17 @@
                   "abscisse": 700
                 },
                 "communication": "com-1"
+              }
+            ],
+            "textes": [
+              {
+                "id": "texte-1",
+                "texte": "Accès base arrière",
+                "x": 1200,
+                "y": 780,
+                "taille": 16,
+                "couleur": "#1c2430",
+                "gras": false
               }
             ],
             "engins": [
@@ -1686,6 +1709,249 @@
                 ]
               }
             ],
+            "etatsZones": {}
+          }
+        }
+      ]
+    },
+    {
+      "id": "synoptique-2",
+      "nom": "Nuit 2 — RVB 50 m (états des zones)",
+      "origine": {
+        "planId": "plan-1",
+        "nomPlan": "Phase définitive",
+        "copieLe": "2026-09-29T15:00:00.000Z"
+      },
+      "t0": "2026-10-16T22:30",
+      "fin": 480,
+      "cadrage": {
+        "x": 160,
+        "y": 200,
+        "largeur": 1000,
+        "hauteur": 460
+      },
+      "largeur": 1600,
+      "hauteur": 900,
+      "fond": null,
+      "echelle": {
+        "pixelsParMetre": 4
+      },
+      "calqueEngins": {
+        "visible": true,
+        "verrouille": false
+      },
+      "bandeau": "RVB V1 sur 50 m — OCP fictive\nDonnées d’exemple",
+      "images": [
+        {
+          "id": "image-1",
+          "debut": 0,
+          "fin": 120,
+          "titre": "Dépose de la voie",
+          "heures": "plage",
+          "phasage": [
+            {
+              "numero": 1,
+              "libelle": "Interception de la V1 et dépose des rails"
+            },
+            {
+              "numero": 2,
+              "libelle": "Dépose des traverses par la pelle RR 1"
+            }
+          ],
+          "contenu": {
+            "extremites": {
+              "gauche": "Nord",
+              "droite": "Sud"
+            },
+            "calques": {
+              "fond": {
+                "visible": true,
+                "opacite": 1,
+                "verrouille": false
+              },
+              "cadres": {
+                "visible": true,
+                "verrouille": false
+              },
+              "voies": {
+                "visible": true,
+                "verrouille": false
+              },
+              "zones": {
+                "visible": true,
+                "verrouille": false
+              },
+              "appareils": {
+                "visible": true,
+                "verrouille": false
+              },
+              "textes": {
+                "visible": true,
+                "verrouille": false
+              }
+            },
+            "cadres": [
+              {
+                "id": "cadre-1",
+                "nom": "Stockage vieilles TBA",
+                "couleur": "#7a8a63",
+                "x": 300,
+                "y": 610,
+                "largeur": 360,
+                "hauteur": 60,
+                "pointille": true,
+                "rempli": true
+              }
+            ],
+            "voies": [
+              {
+                "id": "voie-1",
+                "nom": "V tiroir Nord",
+                "couleur": "#454f59",
+                "epaisseur": 9,
+                "points": [
+                  {
+                    "x": 180,
+                    "y": 240
+                  },
+                  {
+                    "x": 700,
+                    "y": 240
+                  },
+                  {
+                    "x": 760,
+                    "y": 300
+                  }
+                ]
+              },
+              {
+                "id": "voie-2",
+                "nom": "VC",
+                "couleur": "#454f59",
+                "epaisseur": 9,
+                "points": [
+                  {
+                    "x": 180,
+                    "y": 360
+                  },
+                  {
+                    "x": 1440,
+                    "y": 360
+                  }
+                ]
+              },
+              {
+                "id": "voie-3",
+                "nom": "V1",
+                "couleur": "#2f6fb0",
+                "epaisseur": 9,
+                "points": [
+                  {
+                    "x": 180,
+                    "y": 460
+                  },
+                  {
+                    "x": 1440,
+                    "y": 460
+                  }
+                ]
+              },
+              {
+                "id": "voie-4",
+                "nom": "V2",
+                "couleur": "#b8322a",
+                "epaisseur": 12,
+                "points": [
+                  {
+                    "x": 180,
+                    "y": 560
+                  },
+                  {
+                    "x": 1100,
+                    "y": 560
+                  },
+                  {
+                    "x": 1440,
+                    "y": 620
+                  }
+                ]
+              }
+            ],
+            "zones": [
+              {
+                "id": "zone-1",
+                "nom": "RVB 50 m",
+                "couleur": "#33506b",
+                "voieId": "voie-3",
+                "debut": 240,
+                "fin": 390
+              },
+              {
+                "id": "zone-2",
+                "nom": "RR 14 m",
+                "couleur": "#d98b1e",
+                "voieId": "voie-3",
+                "debut": 390,
+                "fin": 450
+              },
+              {
+                "id": "zone-3",
+                "nom": "RVB 63 m",
+                "couleur": "#33506b",
+                "voieId": "voie-2",
+                "debut": 900,
+                "fin": 1080
+              },
+              {
+                "id": "zone-4",
+                "nom": "RVB 41 m",
+                "couleur": "#33506b",
+                "voieId": "voie-4",
+                "debut": 850,
+                "fin": 1050
+              }
+            ],
+            "appareils": [
+              {
+                "id": "bs-1",
+                "nom": "BS 1",
+                "pointe": {
+                  "voieId": "voie-2",
+                  "abscisse": 520
+                },
+                "talon": {
+                  "voieId": "voie-3",
+                  "abscisse": 590
+                },
+                "communication": null
+              },
+              {
+                "id": "bs-2",
+                "nom": "BS 2a",
+                "pointe": {
+                  "voieId": "voie-3",
+                  "abscisse": 700
+                },
+                "talon": {
+                  "voieId": "voie-4",
+                  "abscisse": 770
+                },
+                "communication": "com-1"
+              },
+              {
+                "id": "bs-3",
+                "nom": "BS 2b",
+                "pointe": {
+                  "voieId": "voie-4",
+                  "abscisse": 770
+                },
+                "talon": {
+                  "voieId": "voie-3",
+                  "abscisse": 700
+                },
+                "communication": "com-1"
+              }
+            ],
             "textes": [
               {
                 "id": "texte-1",
@@ -1696,7 +1962,700 @@
                 "couleur": "#1c2430",
                 "gras": false
               }
-            ]
+            ],
+            "engins": [],
+            "rames": [],
+            "etatsZones": {
+              "zone-1": {
+                "etat": "etat-2",
+                "avancement": null
+              }
+            }
+          }
+        },
+        {
+          "id": "image-2",
+          "debut": 120,
+          "fin": 240,
+          "titre": "",
+          "heures": "plage",
+          "phasage": [
+            {
+              "numero": 3,
+              "libelle": "Déballastage côté Sud avec deux pelles RR"
+            }
+          ],
+          "contenu": {
+            "extremites": {
+              "gauche": "Nord",
+              "droite": "Sud"
+            },
+            "calques": {
+              "fond": {
+                "visible": true,
+                "opacite": 1,
+                "verrouille": false
+              },
+              "cadres": {
+                "visible": true,
+                "verrouille": false
+              },
+              "voies": {
+                "visible": true,
+                "verrouille": false
+              },
+              "zones": {
+                "visible": true,
+                "verrouille": false
+              },
+              "appareils": {
+                "visible": true,
+                "verrouille": false
+              },
+              "textes": {
+                "visible": true,
+                "verrouille": false
+              }
+            },
+            "cadres": [
+              {
+                "id": "cadre-1",
+                "nom": "Stockage vieilles TBA",
+                "couleur": "#7a8a63",
+                "x": 300,
+                "y": 610,
+                "largeur": 360,
+                "hauteur": 60,
+                "pointille": true,
+                "rempli": true
+              }
+            ],
+            "voies": [
+              {
+                "id": "voie-1",
+                "nom": "V tiroir Nord",
+                "couleur": "#454f59",
+                "epaisseur": 9,
+                "points": [
+                  {
+                    "x": 180,
+                    "y": 240
+                  },
+                  {
+                    "x": 700,
+                    "y": 240
+                  },
+                  {
+                    "x": 760,
+                    "y": 300
+                  }
+                ]
+              },
+              {
+                "id": "voie-2",
+                "nom": "VC",
+                "couleur": "#454f59",
+                "epaisseur": 9,
+                "points": [
+                  {
+                    "x": 180,
+                    "y": 360
+                  },
+                  {
+                    "x": 1440,
+                    "y": 360
+                  }
+                ]
+              },
+              {
+                "id": "voie-3",
+                "nom": "V1",
+                "couleur": "#2f6fb0",
+                "epaisseur": 9,
+                "points": [
+                  {
+                    "x": 180,
+                    "y": 460
+                  },
+                  {
+                    "x": 1440,
+                    "y": 460
+                  }
+                ]
+              },
+              {
+                "id": "voie-4",
+                "nom": "V2",
+                "couleur": "#b8322a",
+                "epaisseur": 12,
+                "points": [
+                  {
+                    "x": 180,
+                    "y": 560
+                  },
+                  {
+                    "x": 1100,
+                    "y": 560
+                  },
+                  {
+                    "x": 1440,
+                    "y": 620
+                  }
+                ]
+              }
+            ],
+            "zones": [
+              {
+                "id": "zone-1",
+                "nom": "RVB 50 m",
+                "couleur": "#33506b",
+                "voieId": "voie-3",
+                "debut": 240,
+                "fin": 390
+              },
+              {
+                "id": "zone-2",
+                "nom": "RR 14 m",
+                "couleur": "#d98b1e",
+                "voieId": "voie-3",
+                "debut": 390,
+                "fin": 450
+              },
+              {
+                "id": "zone-3",
+                "nom": "RVB 63 m",
+                "couleur": "#33506b",
+                "voieId": "voie-2",
+                "debut": 900,
+                "fin": 1080
+              },
+              {
+                "id": "zone-4",
+                "nom": "RVB 41 m",
+                "couleur": "#33506b",
+                "voieId": "voie-4",
+                "debut": 850,
+                "fin": 1050
+              }
+            ],
+            "appareils": [
+              {
+                "id": "bs-1",
+                "nom": "BS 1",
+                "pointe": {
+                  "voieId": "voie-2",
+                  "abscisse": 520
+                },
+                "talon": {
+                  "voieId": "voie-3",
+                  "abscisse": 590
+                },
+                "communication": null
+              },
+              {
+                "id": "bs-2",
+                "nom": "BS 2a",
+                "pointe": {
+                  "voieId": "voie-3",
+                  "abscisse": 700
+                },
+                "talon": {
+                  "voieId": "voie-4",
+                  "abscisse": 770
+                },
+                "communication": "com-1"
+              },
+              {
+                "id": "bs-3",
+                "nom": "BS 2b",
+                "pointe": {
+                  "voieId": "voie-4",
+                  "abscisse": 770
+                },
+                "talon": {
+                  "voieId": "voie-3",
+                  "abscisse": 700
+                },
+                "communication": "com-1"
+              }
+            ],
+            "textes": [
+              {
+                "id": "texte-1",
+                "texte": "Accès base arrière",
+                "x": 1200,
+                "y": 780,
+                "taille": 16,
+                "couleur": "#1c2430",
+                "gras": false
+              }
+            ],
+            "engins": [],
+            "rames": [],
+            "etatsZones": {
+              "zone-1": {
+                "etat": "etat-3",
+                "avancement": {
+                  "pourcentage": 40,
+                  "depuis": "droite",
+                  "reste": "etat-2"
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": "image-3",
+          "debut": 240,
+          "fin": 360,
+          "titre": "",
+          "heures": "plage",
+          "phasage": [
+            {
+              "numero": 4,
+              "libelle": "Déchargement et compactage de la sous-couche ballast"
+            }
+          ],
+          "contenu": {
+            "extremites": {
+              "gauche": "Nord",
+              "droite": "Sud"
+            },
+            "calques": {
+              "fond": {
+                "visible": true,
+                "opacite": 1,
+                "verrouille": false
+              },
+              "cadres": {
+                "visible": true,
+                "verrouille": false
+              },
+              "voies": {
+                "visible": true,
+                "verrouille": false
+              },
+              "zones": {
+                "visible": true,
+                "verrouille": false
+              },
+              "appareils": {
+                "visible": true,
+                "verrouille": false
+              },
+              "textes": {
+                "visible": true,
+                "verrouille": false
+              }
+            },
+            "cadres": [
+              {
+                "id": "cadre-1",
+                "nom": "Stockage vieilles TBA",
+                "couleur": "#7a8a63",
+                "x": 300,
+                "y": 610,
+                "largeur": 360,
+                "hauteur": 60,
+                "pointille": true,
+                "rempli": true
+              }
+            ],
+            "voies": [
+              {
+                "id": "voie-1",
+                "nom": "V tiroir Nord",
+                "couleur": "#454f59",
+                "epaisseur": 9,
+                "points": [
+                  {
+                    "x": 180,
+                    "y": 240
+                  },
+                  {
+                    "x": 700,
+                    "y": 240
+                  },
+                  {
+                    "x": 760,
+                    "y": 300
+                  }
+                ]
+              },
+              {
+                "id": "voie-2",
+                "nom": "VC",
+                "couleur": "#454f59",
+                "epaisseur": 9,
+                "points": [
+                  {
+                    "x": 180,
+                    "y": 360
+                  },
+                  {
+                    "x": 1440,
+                    "y": 360
+                  }
+                ]
+              },
+              {
+                "id": "voie-3",
+                "nom": "V1",
+                "couleur": "#2f6fb0",
+                "epaisseur": 9,
+                "points": [
+                  {
+                    "x": 180,
+                    "y": 460
+                  },
+                  {
+                    "x": 1440,
+                    "y": 460
+                  }
+                ]
+              },
+              {
+                "id": "voie-4",
+                "nom": "V2",
+                "couleur": "#b8322a",
+                "epaisseur": 12,
+                "points": [
+                  {
+                    "x": 180,
+                    "y": 560
+                  },
+                  {
+                    "x": 1100,
+                    "y": 560
+                  },
+                  {
+                    "x": 1440,
+                    "y": 620
+                  }
+                ]
+              }
+            ],
+            "zones": [
+              {
+                "id": "zone-1",
+                "nom": "RVB 50 m",
+                "couleur": "#33506b",
+                "voieId": "voie-3",
+                "debut": 240,
+                "fin": 390
+              },
+              {
+                "id": "zone-2",
+                "nom": "RR 14 m",
+                "couleur": "#d98b1e",
+                "voieId": "voie-3",
+                "debut": 390,
+                "fin": 450
+              },
+              {
+                "id": "zone-3",
+                "nom": "RVB 63 m",
+                "couleur": "#33506b",
+                "voieId": "voie-2",
+                "debut": 900,
+                "fin": 1080
+              },
+              {
+                "id": "zone-4",
+                "nom": "RVB 41 m",
+                "couleur": "#33506b",
+                "voieId": "voie-4",
+                "debut": 850,
+                "fin": 1050
+              }
+            ],
+            "appareils": [
+              {
+                "id": "bs-1",
+                "nom": "BS 1",
+                "pointe": {
+                  "voieId": "voie-2",
+                  "abscisse": 520
+                },
+                "talon": {
+                  "voieId": "voie-3",
+                  "abscisse": 590
+                },
+                "communication": null
+              },
+              {
+                "id": "bs-2",
+                "nom": "BS 2a",
+                "pointe": {
+                  "voieId": "voie-3",
+                  "abscisse": 700
+                },
+                "talon": {
+                  "voieId": "voie-4",
+                  "abscisse": 770
+                },
+                "communication": "com-1"
+              },
+              {
+                "id": "bs-3",
+                "nom": "BS 2b",
+                "pointe": {
+                  "voieId": "voie-4",
+                  "abscisse": 770
+                },
+                "talon": {
+                  "voieId": "voie-3",
+                  "abscisse": 700
+                },
+                "communication": "com-1"
+              }
+            ],
+            "textes": [
+              {
+                "id": "texte-1",
+                "texte": "Accès base arrière",
+                "x": 1200,
+                "y": 780,
+                "taille": 16,
+                "couleur": "#1c2430",
+                "gras": false
+              }
+            ],
+            "engins": [],
+            "rames": [],
+            "etatsZones": {
+              "zone-1": {
+                "etat": "etat-4",
+                "avancement": null
+              }
+            }
+          }
+        },
+        {
+          "id": "image-4",
+          "debut": 360,
+          "fin": 480,
+          "titre": "",
+          "heures": "debut",
+          "phasage": [
+            {
+              "numero": 5,
+              "libelle": "Pose de la voie neuve et restitution"
+            }
+          ],
+          "contenu": {
+            "extremites": {
+              "gauche": "Nord",
+              "droite": "Sud"
+            },
+            "calques": {
+              "fond": {
+                "visible": true,
+                "opacite": 1,
+                "verrouille": false
+              },
+              "cadres": {
+                "visible": true,
+                "verrouille": false
+              },
+              "voies": {
+                "visible": true,
+                "verrouille": false
+              },
+              "zones": {
+                "visible": true,
+                "verrouille": false
+              },
+              "appareils": {
+                "visible": true,
+                "verrouille": false
+              },
+              "textes": {
+                "visible": true,
+                "verrouille": false
+              }
+            },
+            "cadres": [
+              {
+                "id": "cadre-1",
+                "nom": "Stockage vieilles TBA",
+                "couleur": "#7a8a63",
+                "x": 300,
+                "y": 610,
+                "largeur": 360,
+                "hauteur": 60,
+                "pointille": true,
+                "rempli": true
+              }
+            ],
+            "voies": [
+              {
+                "id": "voie-1",
+                "nom": "V tiroir Nord",
+                "couleur": "#454f59",
+                "epaisseur": 9,
+                "points": [
+                  {
+                    "x": 180,
+                    "y": 240
+                  },
+                  {
+                    "x": 700,
+                    "y": 240
+                  },
+                  {
+                    "x": 760,
+                    "y": 300
+                  }
+                ]
+              },
+              {
+                "id": "voie-2",
+                "nom": "VC",
+                "couleur": "#454f59",
+                "epaisseur": 9,
+                "points": [
+                  {
+                    "x": 180,
+                    "y": 360
+                  },
+                  {
+                    "x": 1440,
+                    "y": 360
+                  }
+                ]
+              },
+              {
+                "id": "voie-3",
+                "nom": "V1",
+                "couleur": "#2f6fb0",
+                "epaisseur": 9,
+                "points": [
+                  {
+                    "x": 180,
+                    "y": 460
+                  },
+                  {
+                    "x": 1440,
+                    "y": 460
+                  }
+                ]
+              },
+              {
+                "id": "voie-4",
+                "nom": "V2",
+                "couleur": "#b8322a",
+                "epaisseur": 12,
+                "points": [
+                  {
+                    "x": 180,
+                    "y": 560
+                  },
+                  {
+                    "x": 1100,
+                    "y": 560
+                  },
+                  {
+                    "x": 1440,
+                    "y": 620
+                  }
+                ]
+              }
+            ],
+            "zones": [
+              {
+                "id": "zone-1",
+                "nom": "RVB 50 m",
+                "couleur": "#33506b",
+                "voieId": "voie-3",
+                "debut": 240,
+                "fin": 390
+              },
+              {
+                "id": "zone-2",
+                "nom": "RR 14 m",
+                "couleur": "#d98b1e",
+                "voieId": "voie-3",
+                "debut": 390,
+                "fin": 450
+              },
+              {
+                "id": "zone-3",
+                "nom": "RVB 63 m",
+                "couleur": "#33506b",
+                "voieId": "voie-2",
+                "debut": 900,
+                "fin": 1080
+              },
+              {
+                "id": "zone-4",
+                "nom": "RVB 41 m",
+                "couleur": "#33506b",
+                "voieId": "voie-4",
+                "debut": 850,
+                "fin": 1050
+              }
+            ],
+            "appareils": [
+              {
+                "id": "bs-1",
+                "nom": "BS 1",
+                "pointe": {
+                  "voieId": "voie-2",
+                  "abscisse": 520
+                },
+                "talon": {
+                  "voieId": "voie-3",
+                  "abscisse": 590
+                },
+                "communication": null
+              },
+              {
+                "id": "bs-2",
+                "nom": "BS 2a",
+                "pointe": {
+                  "voieId": "voie-3",
+                  "abscisse": 700
+                },
+                "talon": {
+                  "voieId": "voie-4",
+                  "abscisse": 770
+                },
+                "communication": "com-1"
+              },
+              {
+                "id": "bs-3",
+                "nom": "BS 2b",
+                "pointe": {
+                  "voieId": "voie-4",
+                  "abscisse": 770
+                },
+                "talon": {
+                  "voieId": "voie-3",
+                  "abscisse": 700
+                },
+                "communication": "com-1"
+              }
+            ],
+            "textes": [
+              {
+                "id": "texte-1",
+                "texte": "Accès base arrière",
+                "x": 1200,
+                "y": 780,
+                "taille": 16,
+                "couleur": "#1c2430",
+                "gras": false
+              }
+            ],
+            "engins": [],
+            "rames": [],
+            "etatsZones": {
+              "zone-1": {
+                "etat": "etat-5",
+                "avancement": null
+              }
+            }
           }
         }
       ]
@@ -1806,6 +2765,43 @@
       "longueur": 9.5,
       "largeur": 3.2,
       "couleur": "#e8a33d"
+    }
+  ],
+  "etatsVoie": [
+    {
+      "id": "etat-1",
+      "nom": "Avant travaux",
+      "rendu": "zone",
+      "couleur": "#33506b",
+      "voile": false
+    },
+    {
+      "id": "etat-2",
+      "nom": "Déposée",
+      "rendu": "ballast",
+      "couleur": "#9a9893",
+      "voile": false
+    },
+    {
+      "id": "etat-3",
+      "nom": "Déballastée",
+      "rendu": "aplat",
+      "couleur": "#f4b183",
+      "voile": false
+    },
+    {
+      "id": "etat-4",
+      "nom": "Sous-couche ballast",
+      "rendu": "aplat",
+      "couleur": "#a07c52",
+      "voile": false
+    },
+    {
+      "id": "etat-5",
+      "nom": "Voie neuve posée",
+      "rendu": "ballast",
+      "couleur": "#e8dc3c",
+      "voile": true
     }
   ]
 }

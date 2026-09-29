@@ -20,6 +20,7 @@ import {
 } from './projet.ts'
 import type { DimensionsEngin, TypeEngin } from './catalogue.ts'
 import type { Engin, EnginsEtRames, Rame, Vehicule } from './engins.ts'
+import type { EtatVoie, RenduEtat } from './etatsVoie.ts'
 import { longueurPolyligne } from './trace.ts'
 
 // Lecture et vérification d'un projet enregistré. Les erreurs sont en
@@ -289,6 +290,27 @@ export function lireTypeEngin(t: Brut, libelle: string, erreurs: string[]): Type
 
 export function lireCatalogue(brut: unknown, erreurs: string[]): TypeEngin[] {
   return lireListe(brut, "Type d'engin", erreurs, (t, libelle) => lireTypeEngin(t, libelle, erreurs))
+}
+
+const RENDUS: readonly RenduEtat[] = ['zone', 'aplat', 'ballast']
+
+// La liste des états de la voie d'un chantier : le premier (Avant travaux)
+// garde la couleur propre de chaque zone, et lui seul.
+export function lireEtatsVoie(brut: unknown, erreurs: string[]): EtatVoie[] {
+  const avant = erreurs.length
+  const liste = lireListe(brut, 'État de la voie', erreurs, (e, libelle): EtatVoie | null => {
+    const debut = erreurs.length
+    if (typeof e.nom !== 'string' || e.nom.trim() === '') erreurs.push(`${libelle} : nom manquant.`)
+    if (!RENDUS.includes(e.rendu as RenduEtat)) erreurs.push(`${libelle} : rendu illisible (zone, aplat ou ballast attendu).`)
+    verifierCouleur(e.couleur, libelle, erreurs)
+    if (erreurs.length > debut) return null
+    return { id: e.id as string, nom: e.nom as string, rendu: e.rendu as RenduEtat, couleur: (e.couleur as string).toLowerCase(), voile: e.voile === true }
+  })
+  if (erreurs.length > avant) return liste
+  if (liste.length === 0) erreurs.push('La liste des états de la voie est vide : il faut au moins l’état « Avant travaux ».')
+  else if (liste[0].rendu !== 'zone') erreurs.push(`Le premier état de la voie (« ${liste[0].nom} ») doit garder la couleur propre des zones.`)
+  else if (liste.slice(1).some((e) => e.rendu === 'zone')) erreurs.push('Seul le premier état de la voie garde la couleur propre des zones.')
+  return liste
 }
 
 const libelleEngin = (e: Brut, libelle: string): string =>

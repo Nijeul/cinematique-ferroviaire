@@ -14,14 +14,18 @@ import {
   type PositionEngin,
   type ReferenceEngin,
 } from '../plan/engins.ts'
+import type { EtatVoie } from '../plan/etatsVoie.ts'
+import { basculerAvancement, choisirEtatZone, etatDeZone, modifierAvancement, type Avancement } from '../plan/etatsZones.ts'
 import type { Point } from '../plan/projet.ts'
 import { modifierCalqueEngins, modifierImage, projetDeImage, type PlanImage, type Synoptique } from '../plan/synoptique.ts'
 import type { Vue } from '../plan/vue.ts'
 import type { Message } from './useEditeur.ts'
 
 // Édition de l'image courante d'un synoptique : on y pose, choisit, glisse et
-// supprime des engins et des rames, à l'échelle du synoptique. Seule l'image
-// courante change ; l'historique (Annuler / Rétablir) est celui du synoptique.
+// supprime des engins et des rames, à l'échelle du synoptique ; on y choisit
+// une zone de travaux pour changer son état (elle ne se déplace pas). Seule
+// l'image courante change ; l'historique (Annuler / Rétablir) est celui du
+// synoptique.
 
 export type OutilImage = 'selection' | 'engin' | 'rame' | 'main'
 
@@ -39,11 +43,13 @@ export function useEditeurImage(args: {
   // voir l'historique.
   enregistrer: (suivant: Synoptique, cle?: string | null) => void
   catalogue: TypeEngin[]
+  etatsVoie: EtatVoie[]
   setMessage: (m: Message | null) => void
 }) {
-  const { synoptique: s, index, enregistrer, catalogue, setMessage } = args
+  const { synoptique: s, index, enregistrer, catalogue, etatsVoie, setMessage } = args
   const [outil, setOutil] = useState<OutilImage>('selection')
-  const [selectionBrute, setSelection] = useState<ReferenceEngin | null>(null)
+  const [selectionBrute, setSelectionBrute] = useState<ReferenceEngin | null>(null)
+  const [zoneBrute, setZoneBrute] = useState<string | null>(null)
   const [typeChoisiId, setTypeChoisi] = useState<string | null>(catalogue[0]?.id ?? null)
   const [composition, setComposition] = useState<Groupe[]>([])
   const [vue, setVue] = useState<Vue | null>(null)
@@ -54,6 +60,18 @@ export function useEditeurImage(args: {
   // Un engin choisi sur une image reste choisi sur les autres images où il
   // est (même identifiant, copié par « Nouvelle image ») ; ailleurs, rien.
   const selection = selectionBrute && existeEngin(planche, selectionBrute) ? selectionBrute : null
+  // Une zone choisie le reste d'une image à l'autre (mêmes zones, plan figé).
+  const zone = zoneBrute ? (planche.zones.find((z) => z.id === zoneBrute) ?? null) : null
+  const etatZone = zone ? etatDeZone(planche.etatsZones, etatsVoie, zone.id) : null
+  // Choisir un engin libère la zone, et inversement.
+  const setSelection = (ref: ReferenceEngin | null) => {
+    setSelectionBrute(ref)
+    if (ref) setZoneBrute(null)
+  }
+  const choisirZone = (id: string | null) => {
+    setZoneBrute(id)
+    if (id) setSelectionBrute(null)
+  }
   const typeChoisi = catalogue.find((t) => t.id === typeChoisiId) ?? catalogue[0]
   const erreur = (texte: string) => setMessage({ genre: 'erreur', texte })
 
@@ -141,6 +159,23 @@ export function useEditeurImage(args: {
 
   const supprimerSelection = () => {
     if (selection) supprimer(selection)
+    else if (zone) setMessage({ genre: 'info', texte: `Les zones viennent du plan figé : elles ne se suppriment pas ici, seul leur état change.` })
+  }
+
+  // État de la zone choisie. `cle` : glisser le curseur du pourcentage ne
+  // fait qu'un Annuler.
+  const choisirEtat = (etatId: string) => {
+    if (zone) enregistrer(choisirEtatZone(s, index, zone.id, etatId, etatsVoie))
+  }
+  const choisirEtatNumero = (n: number) => {
+    const etat = etatsVoie[n - 1]
+    if (zone && etat) choisirEtat(etat.id)
+  }
+  const changerAvancement = (actif: boolean) => {
+    if (zone) enregistrer(basculerAvancement(s, index, zone.id, actif, etatsVoie))
+  }
+  const reglerAvancement = (champs: Partial<Avancement>, cle: string | null = null) => {
+    if (zone) enregistrer(modifierAvancement(s, index, zone.id, champs, etatsVoie), cle)
   }
 
   return {
@@ -154,6 +189,18 @@ export function useEditeurImage(args: {
     selection,
     setSelection,
     choisir: (ref: ReferenceEngin) => setSelection(ref),
+    zone,
+    etatZone,
+    choisirZone,
+    etatsVoie,
+    choisirEtat,
+    choisirEtatNumero,
+    changerAvancement,
+    reglerAvancement,
+    toutDeselectionner: () => {
+      setSelectionBrute(null)
+      setZoneBrute(null)
+    },
     catalogue,
     typeChoisi,
     setTypeChoisi,

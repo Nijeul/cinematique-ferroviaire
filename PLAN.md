@@ -34,12 +34,13 @@ Jamais deux étapes d'avance. Chaque étape est une PR courte qui dit quoi regar
 | 2 | Fond de plan importé (image ou PDF, choix de la page) ; tracé des voies à la main au calque ; nom, couleur et épaisseur par voie ; enregistrer / ouvrir | le commanditaire trace les voies de son site sur son propre plan | **validé** |
 | 3 | Éléments du plan au calque : zones de travaux, appareils (BS et communications), cadres, textes, extrémités du plan (détail ci-dessous) | le plan de base d'une planche est complet | **validé** |
 | 4 | Organisation : accueil et chantiers, plusieurs plans par chantier, synoptiques et images (détail ci-dessous) | on crée un synoptique à partir d'un plan et on feuillette ses images | **validé** |
-| 5 | Échelle du plan, obligatoire à la création ; catalogue d'engins par chantier ; engins et rames posés à l'échelle **dans les images des synoptiques** (pas sur le plan), couleurs et numéros ; « Nouvelle image » emporte les engins (détail ci-dessous) | les engins se posent à la bonne taille dans une image, se reconnaissent et avancent d'une image à l'autre | **en cours** (corrigée) |
-| 6 | Contenu de chaque image, suite : couleurs de zones qui changent d'une image à l'autre, encart phasage, horloge, légende | une image se lit comme une planche actuelle | à faire |
-| 7 | Exports PowerPoint et PDF des images d'un synoptique | un jeu de planches équivalent à l'actuel | à faire |
+| 5 | Échelle du plan, obligatoire à la création ; catalogue d'engins par chantier ; engins et rames posés à l'échelle **dans les images des synoptiques** (pas sur le plan), couleurs et numéros ; « Nouvelle image » emporte les engins (détail ci-dessous) | les engins se posent à la bonne taille dans une image, se reconnaissent et avancent d'une image à l'autre | **validé** |
+| 6 | États de la voie par chantier ; état et avancement partiel de chaque zone dans chaque image ; encart PHASAGE ; créneau horaire et bandeau de titre (détail ci-dessous) | une image se lit comme une planche actuelle (hors flèches et légende) | **en cours** |
+| 7 | Flèches (sens de travail, sens d'avancement TTX, cheminement, chemin de roule) et **légende** propre à chaque image : numéros d'engins (« 1 = pelle RR 1 »), états présents, trains, flèches | la planche s'explique d'elle-même, sans les carrés noirs numérotés | à faire |
+| 8 | Exports PowerPoint et PDF des images d'un synoptique | un jeu de planches équivalent à l'actuel | à faire |
 
 Les besoins au-delà (vidéo, orthophoto calée, import DXF, 3D en option) seront rediscutés une
-fois l'étape 7 validée — pas avant.
+fois l'étape 8 validée — pas avant.
 
 ### Étape 3 — éléments du plan au calque
 
@@ -95,8 +96,9 @@ s'annule / se rétablit, s'enregistre et revient au rechargement, comme les voie
 
 Questions ouvertes de l'étape 4 (réponses attendues du commanditaire) :
 
-- Deux images qui se chevauchent ou laissent un trou : simple avertissement pour l'instant.
-  Faut-il l'interdire, ou est-ce parfois voulu ?
+- ~~Deux images qui se chevauchent ou laissent un trou : faut-il l'interdire ?~~ **Tranché** :
+  « Les horaires sont indicatifs. » Chevauchements et trous sont permis, sans avertissement
+  (étape 6) ; seul « la fin après le début » est contrôlé.
 - Quand l'image courante va jusqu'à la fin du synoptique, la nouvelle image reprend ses
   horaires (à ajuster). Faut-il plutôt couper l'image courante en deux ?
 - Changer l'heure de début du synoptique garde chaque image à son heure réelle (et refuse si
@@ -179,6 +181,60 @@ Questions ouvertes de l'étape 5 (choix provisoires en place) :
 - **Propagation aux images suivantes** : poser ou déplacer un engin ne change que l'image
   courante. Faut-il pouvoir propager un ajout ou un déplacement aux images suivantes ?
 
+### Étape 6 — états des zones, encart PHASAGE, créneau et bandeau de titre
+
+Le commanditaire a fourni un synoptique PowerPoint réel (19 planches). Il a été analysé pour
+cette étape mais **n'est pas versionné** : ce sont des données réelles. On y voit, sur chaque
+planche (un créneau horaire) : le bandeau de titre en haut sur fond bleu clair, le créneau en
+haut à droite (fond gris clair, bord rouge), l'encart PHASAGE en bas à gauche (bandeau gris
+foncé, étapes numérotées de façon continue sur tout le document), et des zones de travaux
+dont l'aspect change avec l'état de la voie, parfois sur une partie seulement.
+
+- **États de la voie, par chantier** (comme le catalogue d'engins), dans la page du chantier :
+  nom, rendu (couleur propre de la zone — réservé au premier état —, aplat de couleur, ou
+  texture ballast avec ou sans voile de couleur semi-transparent), couleur, aperçu ; modifier,
+  ajouter, réordonner, supprimer. Liste par défaut, dans l'ordre : **Avant travaux** (couleur
+  propre de la zone), **Déposée** (texture gris ballast), **Déballastée** (aplat saumon),
+  **Sous-couche ballast** (aplat brun clair, à confirmer), **Voie neuve posée** (texture et
+  voile jaune : jaune tacheté). Changer la couleur d'un état change toutes les images qui
+  l'utilisent. Supprimer un état utilisé demande une confirmation qui dit combien d'images
+  sont concernées ; leurs zones reviennent à l'état précédent de la liste. Le premier état ne
+  se supprime pas et reste en tête. La liste voyage avec l'export du chantier ; les
+  chantiers existants reçoivent la liste par défaut.
+- **État de chaque zone, dans chaque image** (Avant travaux par défaut). Mode Sélection :
+  cliquer une zone la choisit (elle ne se déplace pas) ; le panneau montre son nom, la
+  palette des états (touches 1 à 9) et la case « En partie » : pourcentage fait, côté de
+  départ (« ◀ Nord » ou « Sud ▶ », avec les noms d'extrémités du plan), état du reste. La
+  bande est coupée à la bonne distance le long de la voie, courbes comprises, et un trait
+  marque le front. Annuler / Rétablir ; les vignettes montrent les états ; « Nouvelle image »
+  recopie les états.
+- **Encart PHASAGE, propre à chaque image** : étapes numérotées (« 3 – Dépose des rails… »),
+  libellés sur une ou plusieurs lignes, qui vont à la ligne ; ajouter (numéro proposé : le plus
+  grand déjà donné jusqu'à cette image, plus 1), modifier, réordonner, supprimer. Un encart
+  vide ne s'affiche pas. « Nouvelle image » ne recopie pas les étapes (à confirmer).
+- **Créneau horaire** en haut à droite : les heures de l'image (« Ve/Sa » puis
+  « 00h30 – 03h30 »), ou le début seul (« Sa 20h00 »), et un titre facultatif au-dessus
+  (« Phase avant travaux »), qui peut aussi remplacer les heures.
+- **Bandeau de titre** du synoptique, sur une ou plusieurs lignes, en haut de chaque image ;
+  vide par défaut, et alors absent.
+- Le bandeau et le créneau sont posés dans une bande au-dessus du plan, l'encart PHASAGE
+  dans une bande au-dessous, comme sur ses planches : ils ne masquent jamais les voies. Ces
+  bandes ont la même hauteur sur toutes les images d'un synoptique (le plan ne saute pas
+  quand on feuillette).
+- Hors étape 6 : flèches et légende (étape 7), exports (étape 8), découpage du site en bandes
+  (pas demandé).
+
+Questions ouvertes de l'étape 6 (choix provisoires en place) :
+
+- **Couleur de la sous-couche ballast** : brun clair (#a07c52), choisi pour se distinguer du
+  saumon (déballastée) et du jaune (voie neuve). Modifiable dans la page du chantier.
+  Convient-elle ?
+- **« Nouvelle image » ne recopie pas les étapes du PHASAGE** (ni le titre du créneau) : sur
+  vos planches, chaque créneau a ses propres étapes. L'encart de la nouvelle image est vide
+  et « + Étape » propose le numéro suivant. Est-ce bien ce qu'il faut ?
+- Bandeau, créneau et encart sont placés **autour** du plan (au-dessus et au-dessous), comme
+  sur vos planches, plutôt que par-dessus. Cela vous convient-il ?
+
 ## Décisions du commanditaire
 
 - Appareils de voie : **seulement le BS et la communication** pour l'instant, pas d'autres ADV.
@@ -197,9 +253,19 @@ Questions ouvertes de l'étape 5 (choix provisoires en place) :
   pointe, bouton « Inverser le sens ».
 - **Plan et synoptiques sont indépendants après création** : un synoptique est une copie
   figée du plan.
+- **États des zones** : « Il faut une étape pour la sous-couche ballast. » États par défaut,
+  dans l'ordre : Avant travaux, Déposée, Déballastée, Sous-couche ballast, Voie neuve posée.
+- **Avancement partiel d'une zone** (déballastée sur 40 % depuis un côté) : « C'est bien de
+  pouvoir le faire. »
+- **Horaires indicatifs** : deux images peuvent se chevaucher ou laisser un trou.
+- **Pas de découpage du site en deux bandes** : « Pas besoin. »
+- **Numéros des pelles** (carrés noirs numérotés de ses planches) : « Il faut faire mieux, par
+  exemple une légende. » → légende de l'étape 7.
 
 ## Synoptiques réels
 
-Plus bloquant : le commanditaire importe directement ses propres plans (PDF ou images) dans
-l'application. Un ou deux synoptiques PowerPoint réels déposés dans `sources/` resteront
-utiles pour caler le style des étapes 5 et 6 (engins, légende, encart phasage).
+Le commanditaire importe directement ses propres plans (PDF ou images) dans l'application. Il
+a aussi fourni un synoptique PowerPoint réel, analysé pour caler le style de l'étape 6 (encart
+PHASAGE, créneau, bandeau, états des zones) et qui servira aux étapes 7 et 8. **Il n'est pas
+versionné** (données réelles) : `sources/` reste vide dans le dépôt, et les fixtures restent
+fictives.

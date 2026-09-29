@@ -50,16 +50,22 @@ export function instantDepuisT0(t0: string, minutes: number): string {
   return ecrireInstant((lireInstant(t0) ?? 0) + minutes)
 }
 
-// « Ve 22h30 », ou « Ve/Sa 01h30 » la nuit (avant 6 h).
-export function formaterHoraire(t0: string, minutes: number): string {
+// Le jour (« Ve », ou « Ve/Sa » la nuit, avant 6 h) et l'heure (« 01h30 »)
+// d'un instant, séparés : le créneau d'une planche les écrit sur deux lignes.
+export function partiesHoraire(t0: string, minutes: number): { jour: string; heure: string } | null {
   const origine = lireInstant(t0)
-  if (origine === null) return '?'
+  if (origine === null) return null
   const d = new Date((origine + Math.round(minutes)) * 60000)
   const heures = d.getUTCHours()
   const heure = `${deuxChiffres(heures)}h${deuxChiffres(d.getUTCMinutes())}`
   const jour = d.getUTCDay()
-  if (heures < HEURE_FIN_DE_NUIT) return `${JOURS[(jour + 6) % 7]}/${JOURS[jour]} ${heure}`
-  return `${JOURS[jour]} ${heure}`
+  return { jour: heures < HEURE_FIN_DE_NUIT ? `${JOURS[(jour + 6) % 7]}/${JOURS[jour]}` : JOURS[jour], heure }
+}
+
+// « Ve 22h30 », ou « Ve/Sa 01h30 » la nuit (avant 6 h).
+export function formaterHoraire(t0: string, minutes: number): string {
+  const p = partiesHoraire(t0, minutes)
+  return p ? `${p.jour} ${p.heure}` : '?'
 }
 
 // « Ve 22h30 → Ve/Sa 01h30 »

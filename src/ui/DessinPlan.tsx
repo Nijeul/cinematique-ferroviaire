@@ -14,6 +14,8 @@ import {
 } from '../plan/dessin.ts'
 import { boiteTexte, type Genre } from '../plan/detection.ts'
 import type { Rectangle } from '../plan/elements.ts'
+import type { EtatVoie } from '../plan/etatsVoie.ts'
+import { etatDeZone, type EtatsZones } from '../plan/etatsZones.ts'
 import { positionNom, tailleNom } from '../plan/geometrie.ts'
 import {
   COULEUR_VOIE_PAR_DEFAUT,
@@ -27,6 +29,7 @@ import {
 } from '../plan/projet.ts'
 import { bandeAutour, sousPolyligne } from '../plan/trace.ts'
 import { COULEURS } from './couleurs.ts'
+import { ZoneSelonEtat } from './DessinEtats.tsx'
 
 // Le dessin d'un plan, sans interaction : la feuille et le fond, puis au
 // calque, du dessous vers le dessus : cadres, voies, zones, appareils,
@@ -253,13 +256,16 @@ function DessinTexte({ texte, choisi, zoom }: { texte: Texte; choisi: boolean; z
 }
 
 // `affiche` : la partie montrée (le cadrage d'un synoptique), pour y garder les
-// repères d'extrémités ; toute la feuille par défaut.
+// repères d'extrémités ; toute la feuille par défaut. `etats` : dans une image
+// de synoptique, la liste des états de la voie du chantier et l'état de
+// chaque zone (sur le plan, les zones gardent leur couleur propre).
 export function DessinPlan(props: {
   projet: Projet
   zoom: number
   affiche?: Rectangle
   estChoisi?: (genre: Genre, id: string) => boolean
   engins?: ReactNode
+  etats?: { liste: EtatVoie[]; parZone: EtatsZones }
 }) {
   const { projet } = props
   // Même nom que dans le plan de travail : les tailles « / vue.zoom » restent constantes à l'écran.
@@ -340,6 +346,20 @@ export function DessinPlan(props: {
       {calques.zones.visible &&
         projet.zones.map((zone) => {
           const voie = voiesParId.get(zone.voieId)
+          const etat = voie && props.etats ? etatDeZone(props.etats.parZone, props.etats.liste, zone.id) : null
+          if (voie && etat) {
+            return (
+              <ZoneSelonEtat
+                key={zone.id}
+                voie={voie}
+                zone={zone}
+                cote={cotes.get(zone.id) ?? 'dessus'}
+                etat={etat}
+                choisie={estChoisi('zone', zone.id)}
+                zoom={vue.zoom}
+              />
+            )
+          }
           return voie ? (
             <DessinZone
               key={zone.id}
