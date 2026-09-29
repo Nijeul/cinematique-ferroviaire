@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react'
 import { ecrireAdresse, lireAdresse, type Route } from './plan/adresse.ts'
 import { Accueil } from './ui/Accueil.tsx'
+import { BarriereErreur } from './ui/BarriereErreur.tsx'
 import { BarreNavigation, Page } from './ui/commun.tsx'
 import { COULEURS } from './ui/couleurs.ts'
 import { EcranChantier } from './ui/EcranChantier.tsx'
@@ -170,8 +171,15 @@ export default function App() {
   const messageLu = useCallback(() => setMessageDepart(null), [])
 
   if (!pret) return null
-  if (route.ecran === 'accueil') {
-    return <Accueil aller={aller} messageInitial={messageDepart} messageLu={messageLu} />
-  }
-  return <EspaceChantier key={route.chantierId} route={route} />
+  // Un écran qui plante affiche un message et le détail de l'erreur, jamais
+  // une page blanche.
+  return (
+    <BarriereErreur route={route}>
+      {route.ecran === 'accueil' ? (
+        <Accueil aller={aller} messageInitial={messageDepart} messageLu={messageLu} />
+      ) : (
+        <EspaceChantier key={route.chantierId} route={route} />
+      )}
+    </BarriereErreur>
+  )
 }
