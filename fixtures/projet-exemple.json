@@ -1,0 +1,42 @@
+{
+  "format": "cinematique-ferroviaire/projet",
+  "version": 2,
+  "nom": "Projet d'exemple (données fictives)",
+  "largeur": 1600,
+  "hauteur": 900,
+  "fond": null,
+  "calques": {
+    "fond": { "visible": true, "opacite": 1, "verrouille": false },
+    "voies": { "visible": true }
+  },
+  "voies": [
+    {
+      "id": "voie-1",
+      "nom": "V tiroir Nord",
+      "couleur": "#454f59",
+      "epaisseur": 9,
+      "points": [{ "x": 180, "y": 240 }, { "x": 700, "y": 240 }, { "x": 760, "y": 300 }]
+    },
+    {
+      "id": "voie-2",
+      "nom": "VC",
+      "couleur": "#454f59",
+      "epaisseur": 9,
+      "points": [{ "x": 180, "y": 360 }, { "x": 1440, "y": 360 }]
+    },
+    {
+      "id": "voie-3",
+      "nom": "V1",
+      "couleur": "#2f6fb0",
+      "epaisseur": 9,
+      "points": [{ "x": 180, "y": 460 }, { "x": 1440, "y": 460 }]
+    },
+    {
+      "id": "voie-4",
+      "nom": "V2",
+      "couleur": "#b8322a",
+      "epaisseur": 12,
+      "points": [{ "x": 180, "y": 560 }, { "x": 1100, "y": 560 }, { "x": 1440, "y": 620 }]
+    }
+  ]
+}

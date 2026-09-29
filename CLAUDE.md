@@ -51,10 +51,13 @@ Le commanditaire fait le contrôle visuel — c'est le cœur de la méthode.
 
 ```
 src/
-  plan/       mise en page et calculs des planches (ni React ni DOM, testé)
-  ui/         composants React (SVG des planches, panneaux)
+  plan/       modèle du projet, fichier, vue (zoom), géométrie du tracé, annuler
+              (ni React ni DOM, testé)
+  ui/         composants React (plan de travail SVG, panneau Calques) et accès au
+              navigateur (pdf.js, sauvegarde automatique, téléchargement)
 fixtures/     jeux de données d'exemple, anonymisés
-sources/      synoptiques réels fournis par le commanditaire (encore vide)
+sources/      synoptiques réels fournis par le commanditaire (facultatif : il importe
+              ses propres plans dans l'application)
 ```
 
 ## Vocabulaire métier
