@@ -1,0 +1,42 @@
+{
+  "nom": "OCP RVB — site d'exemple (données fictives)",
+  "longueurMetres": 640,
+  "voies": [
+    { "id": "vt-n", "nom": "V tiroir Nord", "de": 0, "a": 240, "rang": 0 },
+    { "id": "vc", "nom": "VC", "de": 0, "a": 640, "rang": 1 },
+    { "id": "v1", "nom": "V1", "de": 0, "a": 640, "rang": 2 },
+    { "id": "vt-s", "nom": "V tiroir Sud", "de": 420, "a": 640, "rang": 3 },
+    { "id": "v2", "nom": "V2", "de": 0, "a": 640, "rang": 4 }
+  ],
+  "zones": [
+    { "id": "z-bs-a", "nom": "Zone BS A", "voie": "vc", "de": 84, "a": 116 },
+    { "id": "z-rr14", "nom": "RR 14 m", "voie": "vc", "de": 116, "a": 130 },
+    { "id": "z-rvb50", "nom": "RVB 50 m", "voie": "vc", "de": 130, "a": 180 },
+    { "id": "z-bs-c", "nom": "Zone BS C", "voie": "vc", "de": 319, "a": 351 },
+    { "id": "z-rvb54", "nom": "RVB 54 m", "voie": "v1", "de": 86, "a": 140 },
+    { "id": "z-rvb55", "nom": "RVB 55 m", "voie": "v1", "de": 140, "a": 195 },
+    { "id": "z-bs-b", "nom": "Zone BS B", "voie": "v1", "de": 195, "a": 227 },
+    { "id": "z-rvb63", "nom": "RVB 63 m", "voie": "v1", "de": 240, "a": 303 },
+    { "id": "z-rvb41", "nom": "RVB 41 m", "voie": "v1", "de": 310, "a": 351 },
+    { "id": "z-rvb27", "nom": "RVB 27 m", "voie": "v1", "de": 390, "a": 417 },
+    { "id": "z-bs-d", "nom": "Zone BS D", "voie": "v1", "de": 444, "a": 476 },
+    { "id": "z-rvb15", "nom": "RVB 15 m", "voie": "v1", "de": 476, "a": 491 }
+  ],
+  "appareils": [
+    { "id": "bs-a", "nom": "BS A", "voieDirecte": "vc", "voieDeviee": "v1", "position": 100 },
+    { "id": "bs-b", "nom": "BS B", "voieDirecte": "vc", "voieDeviee": "vt-n", "position": 210 },
+    { "id": "bs-c", "nom": "BS C", "voieDirecte": "vc", "voieDeviee": "v1", "position": 335 },
+    { "id": "bs-d", "nom": "BS D", "voieDirecte": "v1", "voieDeviee": "vt-s", "position": 460 }
+  ],
+  "lieux": [
+    { "id": "st-adv", "nom": "Stockage panneaux ADV", "type": "stockage", "sous": "vt-n", "de": 6, "a": 110 },
+    { "id": "st-tba-n", "nom": "Stockage vieilles TBA Nord", "type": "stockage", "sous": "vc", "de": 105, "a": 205 },
+    { "id": "st-tba-s", "nom": "Stockage vieilles TBA Sud", "type": "stockage", "sous": "v1", "de": 290, "a": 390 },
+    { "id": "st-tvn", "nom": "Stockage traverses neuves", "type": "stockage", "sous": "vt-s", "de": 490, "a": 600 },
+    { "id": "pont", "nom": "Pont", "type": "ouvrage", "de": 228, "a": 248 }
+  ],
+  "horsPlan": [
+    { "cote": "gauche", "nom": "Zone Nord" },
+    { "cote": "droite", "nom": "Base arrière Sud" }
+  ]
+}
