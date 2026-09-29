@@ -1,10 +1,10 @@
 # CLAUDE.md
 
-Application web de cinématiques 3D de chantiers ferroviaires. Elle remplace les synoptiques
-PowerPoint que le commanditaire produit aujourd'hui à la main pour la maîtrise d'œuvre.
-
-Lis `FORMAT.md` avant toute tâche : il définit le format de données, qui est le contrat
-central du projet. `SPEC.md` donne l'architecture et le découpage en lots.
+Application web qui remplace les synoptiques PowerPoint de phasage que le commanditaire
+produit à la main pour la maîtrise d'œuvre. **Version 2 : rendu 2D, image par image, dans le
+style des planches existantes.** `PLAN.md` est la feuille de route ; `FORMAT.md` décrit le
+format de données de la version 1 — il servira de base quand le besoin d'un format complet
+reviendra, mais il n'est plus contractuel tant que les étapes du plan ne l'exigent pas.
 
 ## Contexte
 
@@ -17,77 +17,49 @@ Le commanditaire est conducteur de travaux ferroviaire, pas développeur. Il con
 - Il ne lira pas le code. Il regardera l'application déployée. Ce qui n'est pas visible ou
   testé n'existe pas.
 
-## Ce qu'on construit
+## Méthode — non négociable depuis l'échec de la V1
 
-Un **outil**, réutilisable pour n'importe quel chantier. Pas la cinématique d'un chantier
-particulier.
+- **Une étape du `PLAN.md` à la fois.** Jamais deux étapes d'avance, même si c'est demandé
+  vite : chaque étape attend la validation visuelle du commanditaire.
+- Une PR courte par étape, en français : ce qui a été fait, ce qui est visible, comment le
+  vérifier, ce qui reste ouvert.
+- `npm run build`, `npm run test` et `npm run lint` passent avant d'ouvrir la PR — vérifier
+  sur le **code de sortie**, pas en lisant la fin des logs.
+- Commits en français.
+- La V1 (3D) vit dans l'historique Git. Ne pas la restaurer sans demande explicite.
 
-`fixtures/ocp1-sud.cinef` est un chantier réel qui sert de **cas de test**. Il n'est pas le
-livrable. `fixtures/chantier-test.cinef` est un second jeu de données, volontairement sans
-rapport avec le premier : il existe pour que toute spécialisation du code au chantier de
-Châtellerault casse immédiatement un test.
+## Règles de fond
 
-Aucun nom de zone, aucun identifiant d'appareil, aucun chemin d'orthophoto, aucune durée et
-aucun PK d'un chantier réel ne doit apparaître ailleurs que dans les fichiers de `fixtures/`.
-Si une valeur d'un jeu de données se retrouve dans `src/`, c'est un défaut à corriger.
-
-## Règles non négociables
-
-1. **`etatAt(projet, t)` est une fonction pure.** Elle renvoie l'état complet du chantier à
-   l'instant `t` : état des six couches de chaque zone, avancement des fronts, position et mode
-   de chaque engin, contenu de chaque stock, opérations actives. Elle ne dépend ni de React, ni
-   de Three.js, ni de l'instant précédent. Tout le rendu en découle.
-2. **Aucune animation manuelle.** Rien n'est keyframé. Un objet bouge parce qu'une opération le
-   dit, jamais parce qu'une animation a été écrite pour lui.
-3. **Aucun objet ferroviaire ne stocke de XYZ.** Position = `(voie, pk, offset)`. Les
-   coordonnées sont calculées par `pose()`.
-4. **Le temps est en minutes depuis T0.** Jamais en heures absolues : un OCP de 56 h franchit
-   trois fois minuit. La conversion en `Ve/Sa 01h30` est faite à l'affichage uniquement.
-5. **La liste des verbes d'opération et la table des six couches sont fermées.** Ajouter une
-   valeur se fait dans `FORMAT.md` d'abord, en le signalant, jamais en douce dans le code.
-6. **Instancing obligatoire** pour tout élément répété : traverses, attaches, ballast.
-7. **Pas de backend.** Le projet est un fichier `.cinef` que l'utilisateur enregistre.
+1. **La logique est pure et testée sans navigateur.** Ce qui s'affiche sur une planche se
+   calcule dans des fonctions sans React ni DOM ; les tests Vitest s'écrivent avec le code.
+2. **Le temps est en minutes depuis T0** (un OCP franchit plusieurs minuits). Conversion en
+   `Ve/Sa 01h30` à l'affichage uniquement.
+3. **La couleur porte l'information**, comme dans les synoptiques. Lisibilité avant tout ;
+   jamais de recherche d'effet.
+4. **Pas de backend.** Le projet reste un fichier que l'utilisateur enregistre et transmet.
+5. **Aucune valeur d'un chantier réel hors de `fixtures/`** (les données y sont anonymisées).
+6. Pas de dépendance lourde sans justification, pas de code mort, pas de fonctionnalité hors
+   plan sans demander.
 
 ## Ce que tu ne peux pas voir
 
-Tu travailles dans un environnement distant sans écran. Tu ne verras jamais la scène 3D.
-Par conséquent :
-
-- `domain/`, `geometry/` et `state/` doivent être testables sans navigateur. Écris les tests
-  Vitest en même temps que le code, pas après.
-- Les deux jeux de données de `fixtures/` sont tes cas de test de référence. Ils doivent
-  toujours se charger et se résoudre sans erreur, tous les deux. Un test qui ne passe que sur
-  l'un des deux signale une spécialisation du code à corriger.
-- Pour tout ce qui est visuel, décris précisément dans la PR ce qui devrait apparaître à
-  l'écran et comment le vérifier. Le commanditaire fera le contrôle visuel.
-- En cas de doute sur un rendu, préfère un affichage simple et lisible à un effet que tu ne
-  peux pas contrôler.
-
-## Méthode
-
-- Un lot à la fois, dans l'ordre de `SPEC.md`. Ne pas anticiper les lots suivants.
-- Une branche et une PR par lot : `lot-04-etats-de-zone`.
-- La PR doit dire, en français et en clair : ce qui a été fait, ce qui est visible à l'écran,
-  comment le vérifier, et ce qui reste ouvert.
-- `npm run build`, `npm run test` et `npm run lint` doivent passer avant d'ouvrir la PR.
-- Commits en français.
+Environnement distant sans écran : la planche ne sera jamais visible ici. Donc : logique
+testée, rendu SVG simple, et description précise dans la PR de ce qui doit apparaître.
+Le commanditaire fait le contrôle visuel — c'est le cœur de la méthode.
 
 ## Structure
 
 ```
 src/
-  domain/     types et schémas Zod du format .cinef      (ni React ni Three)
-  geometry/   courbes de voie, référencement PK, pose()  (ni React ni Three)
-  state/      etatAt(t) — le moteur                      (ni React ni Three)
-  render/     composants react-three-fiber
-  editor/     édition du site et du phasage
-  export/     vidéo, PDF, PPTX
-  ui/         panneaux, curseur temporel, encart phasage
-fixtures/     jeux de données, dont ocp1-sud.cinef
+  plan/       modèle du projet, lecture du fichier, vue (zoom), géométrie du tracé
+              et le long des voies, zones / appareils / cadres / textes, détection
+              sous le pointeur, annuler (ni React ni DOM, testé)
+  ui/         composants React (plan de travail SVG, panneau Calques) et accès au
+              navigateur (pdf.js, sauvegarde automatique, téléchargement)
+fixtures/     jeux de données d'exemple, anonymisés
+sources/      synoptiques réels fournis par le commanditaire (facultatif : il importe
+              ses propres plans dans l'application)
 ```
-
-Les trois premiers dossiers contiennent toute la logique. Le reste n'est que de l'affichage.
-Si une règle métier se retrouve dans `render/`, elle est au mauvais endroit.
 
 ## Vocabulaire métier
 
@@ -117,23 +89,9 @@ Si une règle métier se retrouve dans `render/`, elle est au mauvais endroit.
 
 ## Pièges connus
 
-- **`base` dans `vite.config.ts`** : le site est déployé sur Vercel, qui sert à la racine du
-  domaine : `base` doit valoir `/`. (Un retour à GitHub Pages exigerait `/<nom-du-depot>/`.)
-  Une mauvaise valeur rend la page déployée blanche, avec les assets en 404.
-- **WebCodecs** n'existe ni sur Safari ni sur Firefox. Détecter et prévenir clairement ;
-  fallback WebM via MediaRecorder.
-- **Traverses** : 200 m de voie à 0,60 m = 333 traverses par voie. `InstancedMesh` obligatoire
-  dès le premier rendu de voie, pas en optimisation ultérieure.
-- **Fronts de progression** : une opération linéaire n'applique pas son effet d'un coup. À `t`,
-  la fraction écoulée de la zone est dans le nouvel état, le reste dans l'ancien, dans le sens
-  indiqué. C'est le comportement attendu, pas un raffinement optionnel.
-- **Opérations simultanées sur une même zone** : c'est autorisé et ça arrive dans le chantier
-  réel. `etatAt` doit les composer, pas en choisir une.
-
-## Ce qu'il ne faut pas faire
-
-- Chercher le photoréalisme. L'objectif est la lisibilité du phasage. La couleur porte
-  l'information, comme dans les synoptiques existants.
-- Ajouter des fonctionnalités hors périmètre sans demander.
-- Introduire une dépendance lourde sans la justifier.
-- Laisser du code mort ou des composants « au cas où ».
+- **`base` dans `vite.config.ts`** : le site est déployé sur Vercel, qui sert à la racine :
+  `base` doit valoir `/`. Une mauvaise valeur rend la page déployée blanche.
+- **Nord à gauche, Sud à droite** sur toutes les planches : ce sont les repères du
+  commanditaire, ne jamais les inverser.
+- **tsconfig.node.json** couvre `tests/` : tout module importé par un test doit compiler avec
+  ses `lib`/`types` (DOM et vite/client y sont déjà).

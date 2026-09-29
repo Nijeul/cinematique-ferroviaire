@@ -1,0 +1,100 @@
+{
+  "format": "cinematique-ferroviaire/projet",
+  "version": 3,
+  "nom": "Projet d'exemple (données fictives)",
+  "largeur": 1600,
+  "hauteur": 900,
+  "fond": null,
+  "extremites": { "gauche": "Nord", "droite": "Sud" },
+  "calques": {
+    "fond": { "visible": true, "opacite": 1, "verrouille": false },
+    "cadres": { "visible": true, "verrouille": false },
+    "voies": { "visible": true, "verrouille": false },
+    "zones": { "visible": true, "verrouille": false },
+    "appareils": { "visible": true, "verrouille": false },
+    "textes": { "visible": true, "verrouille": false }
+  },
+  "cadres": [
+    {
+      "id": "cadre-1",
+      "nom": "Stockage vieilles TBA",
+      "couleur": "#7a8a63",
+      "x": 300,
+      "y": 610,
+      "largeur": 360,
+      "hauteur": 60,
+      "pointille": true,
+      "rempli": true
+    }
+  ],
+  "voies": [
+    {
+      "id": "voie-1",
+      "nom": "V tiroir Nord",
+      "couleur": "#454f59",
+      "epaisseur": 9,
+      "points": [{ "x": 180, "y": 240 }, { "x": 700, "y": 240 }, { "x": 760, "y": 300 }]
+    },
+    {
+      "id": "voie-2",
+      "nom": "VC",
+      "couleur": "#454f59",
+      "epaisseur": 9,
+      "points": [{ "x": 180, "y": 360 }, { "x": 1440, "y": 360 }]
+    },
+    {
+      "id": "voie-3",
+      "nom": "V1",
+      "couleur": "#2f6fb0",
+      "epaisseur": 9,
+      "points": [{ "x": 180, "y": 460 }, { "x": 1440, "y": 460 }]
+    },
+    {
+      "id": "voie-4",
+      "nom": "V2",
+      "couleur": "#b8322a",
+      "epaisseur": 12,
+      "points": [{ "x": 180, "y": 560 }, { "x": 1100, "y": 560 }, { "x": 1440, "y": 620 }]
+    }
+  ],
+  "zones": [
+    { "id": "zone-1", "nom": "RVB 50 m", "couleur": "#33506b", "voieId": "voie-3", "debut": 240, "fin": 390 },
+    { "id": "zone-2", "nom": "RR 14 m", "couleur": "#d98b1e", "voieId": "voie-3", "debut": 390, "fin": 450 },
+    { "id": "zone-3", "nom": "RVB 63 m", "couleur": "#33506b", "voieId": "voie-2", "debut": 900, "fin": 1080 },
+    { "id": "zone-4", "nom": "RVB 41 m", "couleur": "#33506b", "voieId": "voie-4", "debut": 850, "fin": 1050 }
+  ],
+  "appareils": [
+    {
+      "id": "bs-1",
+      "nom": "BS 1",
+      "pointe": { "voieId": "voie-2", "abscisse": 520 },
+      "talon": { "voieId": "voie-3", "abscisse": 590 },
+      "communication": null
+    },
+    {
+      "id": "bs-2",
+      "nom": "BS 2a",
+      "pointe": { "voieId": "voie-3", "abscisse": 700 },
+      "talon": { "voieId": "voie-4", "abscisse": 770 },
+      "communication": "com-1"
+    },
+    {
+      "id": "bs-3",
+      "nom": "BS 2b",
+      "pointe": { "voieId": "voie-4", "abscisse": 770 },
+      "talon": { "voieId": "voie-3", "abscisse": 700 },
+      "communication": "com-1"
+    }
+  ],
+  "textes": [
+    {
+      "id": "texte-1",
+      "texte": "Accès base arrière",
+      "x": 1200,
+      "y": 780,
+      "taille": 16,
+      "couleur": "#1c2430",
+      "gras": false
+    }
+  ]
+}
