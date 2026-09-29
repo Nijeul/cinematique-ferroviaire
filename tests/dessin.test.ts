@@ -133,4 +133,32 @@ describe('extrémités du plan', () => {
     expect(pos.gauche).toEqual({ x: 0, y: pos.taille * 1.2 })
     expect(pos.droite.x).toBe(1600)
   })
+
+  it('restent dans le cadrage d’un synoptique qui coupe les voies', () => {
+    const projet = exemple()
+    const cadrage = { x: 400, y: 300, largeur: 600, hauteur: 300 }
+    const pos = positionsExtremites(projet, cadrage)
+    for (const p of [pos.gauche, pos.droite]) {
+      expect(p.x).toBeGreaterThan(cadrage.x)
+      expect(p.x).toBeLessThan(cadrage.x + cadrage.largeur)
+      expect(p.y).toBeGreaterThan(cadrage.y)
+      expect(p.y).toBeLessThan(cadrage.y + cadrage.hauteur)
+    }
+    expect(pos.gauche.x).toBeLessThan(pos.droite.x)
+  })
+
+  it('cadrage qui contient tout le dessin : même place que sur le plan', () => {
+    const projet = exemple()
+    expect(positionsExtremites(projet, { x: 100, y: 100, largeur: 1400, hauteur: 700 })).toEqual(positionsExtremites(projet))
+  })
+
+  it('cadrage hors de tout dessin : repères aux deux bords du cadrage', () => {
+    const projet = exemple()
+    const cadrage = { x: 0, y: 700, largeur: 150, hauteur: 100 }
+    const pos = positionsExtremites(projet, cadrage)
+    expect(pos.gauche.x).toBeGreaterThan(0)
+    expect(pos.droite.x).toBeLessThan(150)
+    expect(pos.gauche.x).toBeLessThan(pos.droite.x)
+    expect(pos.gauche.y).toBeGreaterThan(700)
+  })
 })

@@ -1,25 +1,6 @@
 import { useEffect, useRef, useState, type PointerEvent as EvenementPointeur } from 'react'
-import {
-  boutsAppareil,
-  cotesEtiquettesZones,
-  etiquetteAppareil,
-  etiquetteZone,
-  largeurBandeZone,
-  positionsExtremites,
-  tailleEtiquetteZone,
-  tailleNomAppareil,
-  triangleDePointe,
-  type Cote,
-} from '../plan/dessin.ts'
-import {
-  accrocherVoie,
-  boiteTexte,
-  calqueActif,
-  elementSousPointeur,
-  poigneesDe,
-  poigneeSousPointeur,
-  type Reference,
-} from '../plan/detection.ts'
+import { enPoints } from '../plan/dessin.ts'
+import { accrocherVoie, calqueActif, elementSousPointeur, poigneesDe, poigneeSousPointeur, type Genre, type Reference } from '../plan/detection.ts'
 import { deplacerPoint } from '../plan/edition.ts'
 import {
   deplacerBoutAppareil,
@@ -31,27 +12,17 @@ import {
   normaliserRectangle,
   redimensionnerCadre,
 } from '../plan/elements.ts'
-import { contraindre, positionNom, tailleNom } from '../plan/geometrie.ts'
-import {
-  COULEUR_VOIE_PAR_DEFAUT,
-  COULEUR_ZONE_PAR_DEFAUT,
-  epaisseurParDefaut,
-  type Appareil,
-  type Cadre,
-  type Point,
-  type Projet,
-  type Texte,
-  type Voie,
-  type Zone,
-} from '../plan/projet.ts'
-import { bandeAutour, pointAAbscisse, projeterSurPolyligne, sousPolyligne } from '../plan/trace.ts'
+import { contraindre } from '../plan/geometrie.ts'
+import { COULEUR_VOIE_PAR_DEFAUT, COULEUR_ZONE_PAR_DEFAUT, epaisseurParDefaut, type Point, type Projet } from '../plan/projet.ts'
+import { pointAAbscisse, projeterSurPolyligne } from '../plan/trace.ts'
 import { deplacer, facteurMolette, recadrer, versPlan, zoomerAutour, type Vue } from '../plan/vue.ts'
 import { COULEURS } from './couleurs.ts'
+import { DessinPlan, DessinZone } from './DessinPlan.tsx'
 import type { Editeur } from './useEditeur.ts'
 
-// Le plan de travail : le fond dessous, puis au calque, du dessous vers le
-// dessus : cadres, voies, zones, appareils, textes. Tolérances de sélection
-// en pixels d'écran, donc identiques à tout zoom.
+// Le plan de travail : le dessin du plan (DessinPlan), et par-dessus tout ce
+// qui sert à le modifier — poignées, tracé ou pose en cours. Tolérances de
+// sélection en pixels d'écran, donc identiques à tout zoom.
 const TOLERANCE_ELEMENT = 6
 const TOLERANCE_ACCROCHE = 12
 const TOLERANCE_POIGNEE = 9
@@ -67,224 +38,6 @@ type Glisser =
 
 let compteurGlisser = 0
 
-const enPoints = (points: Point[]) => points.map((p) => `${p.x},${p.y}`).join(' ')
-
-const halo = { stroke: '#ffffff', paintOrder: 'stroke', strokeLinejoin: 'round', style: { userSelect: 'none' } } as const
-
-// Une voie dans le style de l'aperçu : deux filets (trait épais de la couleur
-// de la voie, trait blanc plus fin par-dessus), nom en gras au départ.
-function TraceVoie({ voie, choisie, zoom }: { voie: Voie; choisie: boolean; zoom: number }) {
-  const points = enPoints(voie.points)
-  const nom = positionNom(voie)
-  const taille = tailleNom(voie.epaisseur)
-  return (
-    <g>
-      {choisie && (
-        <polyline
-          points={points}
-          fill="none"
-          stroke={COULEURS.selection}
-          strokeOpacity={0.3}
-          strokeWidth={voie.epaisseur + 14 / zoom}
-          strokeLinejoin="round"
-          strokeLinecap="round"
-        />
-      )}
-      <polyline points={points} fill="none" stroke={voie.couleur} strokeWidth={voie.epaisseur} strokeLinejoin="miter" />
-      <polyline points={points} fill="none" stroke="#ffffff" strokeWidth={voie.epaisseur * 0.4} strokeLinejoin="miter" />
-      <text
-        x={nom.x}
-        y={nom.y}
-        fontSize={taille}
-        fontWeight={700}
-        textAnchor={nom.ancre}
-        fill={COULEURS.nomVoie}
-        strokeWidth={taille * 0.28}
-        {...halo}
-      >
-        {voie.nom}
-      </text>
-    </g>
-  )
-}
-
-// Zone : bande colorée semi-transparente qui épouse la portion de voie,
-// bordée de sa couleur, nom au-dessus ou au-dessous.
-function DessinZone(props: { voie: Voie; zone: Zone; cote: Cote; choisie: boolean; zoom: number; apercu?: boolean }) {
-  const { voie, zone, cote, choisie, zoom, apercu } = props
-  const contour = bandeAutour(sousPolyligne(voie.points, zone.debut, zone.fin), largeurBandeZone(voie) / 2)
-  if (contour.length === 0) return null
-  const etiquette = etiquetteZone(voie, zone, cote)
-  const taille = tailleEtiquetteZone(voie)
-  return (
-    <g opacity={apercu ? 0.7 : 1}>
-      {choisie && (
-        <polygon
-          points={enPoints(contour)}
-          fill="none"
-          stroke={COULEURS.selection}
-          strokeOpacity={0.45}
-          strokeWidth={10 / zoom}
-          strokeLinejoin="round"
-        />
-      )}
-      <polygon
-        points={enPoints(contour)}
-        fill={zone.couleur}
-        fillOpacity={0.3}
-        stroke={zone.couleur}
-        strokeWidth={Math.max(1 / zoom, voie.epaisseur * 0.16)}
-        strokeLinejoin="miter"
-      />
-      {!apercu && (
-        <text
-          x={etiquette.x}
-          y={etiquette.y}
-          fontSize={taille}
-          fontWeight={600}
-          textAnchor={etiquette.ancre}
-          fill={COULEURS.texte}
-          strokeWidth={taille * 0.25}
-          {...halo}
-        >
-          {zone.nom}
-        </text>
-      )}
-    </g>
-  )
-}
-
-// Appareil : biais en double filet de la pointe au talon, triangle plein à
-// la pointe, nom en gras. Une communication (deux BS talon contre talon) se
-// dessine en un seul biais, avec un triangle à chaque pointe.
-function DessinAppareil(props: { projet: Projet; appareil: Appareil; jumeau?: Appareil; choisi: boolean; zoom: number }) {
-  const { projet, appareil, jumeau, choisi, zoom } = props
-  const bouts = boutsAppareil(projet, appareil)
-  if (!bouts) return null
-  const { pointe, talon, epaisseur } = bouts
-  const taille = tailleNomAppareil(epaisseur)
-  const noms = jumeau
-    ? [
-        { nom: appareil.nom, pos: etiquetteAppareil(pointe, talon, epaisseur, 0.2) },
-        { nom: jumeau.nom, pos: etiquetteAppareil(pointe, talon, epaisseur, 0.8) },
-      ]
-    : [{ nom: appareil.nom, pos: etiquetteAppareil(pointe, talon, epaisseur) }]
-  const triangles = [triangleDePointe(pointe, talon, epaisseur)]
-  if (jumeau) triangles.push(triangleDePointe(talon, pointe, epaisseur))
-  return (
-    <g>
-      {choisi && (
-        <line
-          x1={pointe.x}
-          y1={pointe.y}
-          x2={talon.x}
-          y2={talon.y}
-          stroke={COULEURS.selection}
-          strokeOpacity={0.3}
-          strokeWidth={epaisseur + 14 / zoom}
-          strokeLinecap="round"
-        />
-      )}
-      <line x1={pointe.x} y1={pointe.y} x2={talon.x} y2={talon.y} stroke={COULEUR_VOIE_PAR_DEFAUT} strokeWidth={epaisseur * 0.8} />
-      <line x1={pointe.x} y1={pointe.y} x2={talon.x} y2={talon.y} stroke="#ffffff" strokeWidth={epaisseur * 0.32} />
-      {triangles.map((t, i) => (
-        <polygon key={i} points={enPoints(t)} fill={COULEURS.nomVoie} stroke="#ffffff" strokeWidth={epaisseur * 0.12} />
-      ))}
-      {noms.map(({ nom, pos }, i) => (
-        <text
-          key={i}
-          x={pos.x}
-          y={pos.y}
-          fontSize={taille}
-          fontWeight={700}
-          textAnchor={pos.ancre}
-          fill={COULEURS.nomVoie}
-          strokeWidth={taille * 0.28}
-          {...halo}
-        >
-          {nom}
-        </text>
-      ))}
-    </g>
-  )
-}
-
-// Cadre : rectangle en pointillés ou plein, remplissage léger, nom centré.
-function DessinCadre(props: { cadre: Cadre; choisi: boolean; zoom: number; trait: number; tailleNom: number }) {
-  const { cadre, choisi, zoom, trait } = props
-  // Nom à la taille des noms de zones, réduit s'il ne tient pas dans le cadre.
-  const taille = Math.min(props.tailleNom, cadre.hauteur * 0.45, (cadre.largeur * 0.9) / (Math.max(1, cadre.nom.length) * 0.6))
-  return (
-    <g>
-      {choisi && (
-        <rect
-          x={cadre.x}
-          y={cadre.y}
-          width={cadre.largeur}
-          height={cadre.hauteur}
-          fill="none"
-          stroke={COULEURS.selection}
-          strokeOpacity={0.45}
-          strokeWidth={8 / zoom}
-        />
-      )}
-      <rect
-        x={cadre.x}
-        y={cadre.y}
-        width={cadre.largeur}
-        height={cadre.hauteur}
-        rx={trait * 2}
-        fill={cadre.couleur}
-        fillOpacity={cadre.rempli ? 0.14 : 0}
-        stroke={cadre.couleur}
-        strokeWidth={trait}
-        strokeDasharray={cadre.pointille ? `${trait * 3.5} ${trait * 2.2}` : undefined}
-      />
-      <text
-        x={cadre.x + cadre.largeur / 2}
-        y={cadre.y + cadre.hauteur / 2 + taille * 0.35}
-        fontSize={taille}
-        textAnchor="middle"
-        fill={COULEURS.texte}
-        strokeWidth={taille * 0.2}
-        {...halo}
-      >
-        {cadre.nom}
-      </text>
-    </g>
-  )
-}
-
-function DessinTexte({ texte, choisi, zoom }: { texte: Texte; choisi: boolean; zoom: number }) {
-  const boite = boiteTexte(texte)
-  return (
-    <g>
-      {choisi && (
-        <rect
-          x={boite.x - 4 / zoom}
-          y={boite.y - 3 / zoom}
-          width={boite.largeur + 8 / zoom}
-          height={boite.hauteur + 6 / zoom}
-          fill="none"
-          stroke={COULEURS.selection}
-          strokeWidth={1.5 / zoom}
-          strokeDasharray={`${4 / zoom} ${3 / zoom}`}
-        />
-      )}
-      <text
-        x={texte.x}
-        y={texte.y}
-        fontSize={texte.taille}
-        fontWeight={texte.gras ? 700 : 400}
-        fill={texte.couleur}
-        strokeWidth={texte.taille * 0.22}
-        {...halo}
-      >
-        {texte.texte}
-      </text>
-    </g>
-  )
-}
 
 export function PlanDeTravail({ editeur }: { editeur: Editeur }) {
   const { projet, outil, selection, trace, pose, espace } = editeur
@@ -491,15 +244,11 @@ export function PlanDeTravail({ editeur }: { editeur: Editeur }) {
           ? 'default'
           : 'crosshair'
 
-  const fond = projet.fond
-  const calques = projet.calques
   const epaisseurTrace = epaisseurParDefaut(projet)
   const fantome = trace && trace.length > 0 && curseur ? pointTrace(curseur.p, curseur.maj) : null
   const pointsTrace = trace ? enPoints(trace) : ''
-  const cotes = cotesEtiquettesZones(projet)
   const voiesParId = new Map(projet.voies.map((v) => [v.id, v]))
-  const estChoisi = (genre: Reference['genre'], id: string) => selection?.genre === genre && selection.id === id
-  const extremites = positionsExtremites(projet)
+  const estChoisi = (genre: Genre, id: string) => selection?.genre === genre && selection.id === id
 
   // Pose en cours (zone, BS, communication) : où le pointeur s'accrocherait.
   const tolerance = TOLERANCE_ACCROCHE / vue.zoom
@@ -512,9 +261,6 @@ export function PlanDeTravail({ editeur }: { editeur: Editeur }) {
   const voiePose = pose ? voiesParId.get(pose.voieId) : undefined
   const pointPose = voiePose && pose ? pointAAbscisse(voiePose.points, pose.abscisse).point : null
   const rectangleEnCours = nouveauCadre ? normaliserRectangle(nouveauCadre.a, nouveauCadre.b) : null
-
-  // Appareils : une communication se dessine une fois, depuis son premier BS.
-  const dejaDessinees = new Set<string>()
 
   return (
     <svg
@@ -531,107 +277,7 @@ export function PlanDeTravail({ editeur }: { editeur: Editeur }) {
     >
       <rect width="100%" height="100%" fill={COULEURS.autourDuPlan} />
       <g transform={`translate(${vue.dx} ${vue.dy}) scale(${vue.zoom})`}>
-        {/* La feuille : blanche, bordée, à la taille du fond. */}
-        <rect
-          x={0}
-          y={0}
-          width={projet.largeur}
-          height={projet.hauteur}
-          fill="#ffffff"
-          stroke={COULEURS.bordFeuille}
-          strokeWidth={1 / vue.zoom}
-        />
-        {fond && calques.fond.visible && fond.image && (
-          <image
-            href={fond.image}
-            x={0}
-            y={0}
-            width={fond.largeur}
-            height={fond.hauteur}
-            opacity={calques.fond.opacite}
-            preserveAspectRatio="none"
-            style={{ pointerEvents: 'none' }}
-          />
-        )}
-        {fond && !fond.image && (
-          <text
-            x={projet.largeur / 2}
-            y={projet.hauteur / 2}
-            fontSize={16 / vue.zoom}
-            textAnchor="middle"
-            fill={COULEURS.discret}
-          >
-            Fond « {fond.nomFichier} » à réimporter
-          </text>
-        )}
-
-        {/* Extrémités du plan : Nord à gauche, Sud à droite (ou leurs noms). */}
-        <g fill={COULEURS.discret} fontSize={extremites.taille} fontWeight={600} style={{ userSelect: 'none' }} data-testid="extremites">
-          <text x={extremites.gauche.x} y={extremites.gauche.y} textAnchor="start">
-            ◀ {projet.extremites.gauche}
-          </text>
-          <text x={extremites.droite.x} y={extremites.droite.y} textAnchor="end">
-            {projet.extremites.droite} ▶
-          </text>
-        </g>
-
-        {calques.cadres.visible &&
-          projet.cadres.map((cadre) => (
-            <DessinCadre
-              key={cadre.id}
-              cadre={cadre}
-              choisi={estChoisi('cadre', cadre.id)}
-              zoom={vue.zoom}
-              trait={Math.max(1, epaisseurTrace * 0.22)}
-              tailleNom={tailleEtiquetteZone({ epaisseur: epaisseurTrace })}
-            />
-          ))}
-
-        {voiesVisibles &&
-          projet.voies.map((voie) => (
-            <TraceVoie key={voie.id} voie={voie} choisie={estChoisi('voie', voie.id)} zoom={vue.zoom} />
-          ))}
-
-        {calques.zones.visible &&
-          projet.zones.map((zone) => {
-            const voie = voiesParId.get(zone.voieId)
-            return voie ? (
-              <DessinZone
-                key={zone.id}
-                voie={voie}
-                zone={zone}
-                cote={cotes.get(zone.id) ?? 'dessus'}
-                choisie={estChoisi('zone', zone.id)}
-                zoom={vue.zoom}
-              />
-            ) : null
-          })}
-
-        {calques.appareils.visible &&
-          projet.appareils.map((appareil) => {
-            if (appareil.communication) {
-              if (dejaDessinees.has(appareil.communication)) return null
-              dejaDessinees.add(appareil.communication)
-            }
-            const jumeau = appareil.communication
-              ? projet.appareils.find((a) => a.communication === appareil.communication && a.id !== appareil.id)
-              : undefined
-            return (
-              <DessinAppareil
-                key={appareil.id}
-                projet={projet}
-                appareil={appareil}
-                jumeau={jumeau}
-                choisi={estChoisi('appareil', appareil.id) || (jumeau !== undefined && estChoisi('appareil', jumeau.id))}
-                zoom={vue.zoom}
-              />
-            )
-          })}
-
-        {calques.textes.visible &&
-          projet.textes.map((texte) => (
-            <DessinTexte key={texte.id} texte={texte} choisi={estChoisi('texte', texte.id)} zoom={vue.zoom} />
-          ))}
+        <DessinPlan projet={projet} zoom={vue.zoom} estChoisi={estChoisi} />
 
         {/* Poignées de l'élément choisi. */}
         {poignees.map(({ cle, point }) => (

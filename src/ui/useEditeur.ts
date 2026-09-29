@@ -6,14 +6,16 @@ import { bornerPage, typeDeFond } from '../plan/fond.ts'
 import { terminerTrace } from '../plan/geometrie.ts'
 import { annuler, creerHistorique, enregistrer, peutAnnuler, peutRetablir, retablir } from '../plan/historique.ts'
 import { lireProjet } from '../plan/lecture.ts'
-import { creerProjet, nomDeFichier, serialiserProjet, type Point, type Projet } from '../plan/projet.ts'
+import { nomDeFichier, serialiserProjet, type Point, type Projet } from '../plan/projet.ts'
 import type { Vue } from '../plan/vue.ts'
 import { fermerPdf, lireImage, ouvrirPdf, rendrePage, type PdfOuvert } from './fondDePlan.ts'
-import { chargerSauvegarde, sauvegarder, telecharger, type EtatSauvegarde } from './navigateur.ts'
+import { telecharger } from './navigateur.ts'
 
-// L'état de l'éditeur et toutes ses actions : projet et historique, outil,
-// sélection, tracé ou pose en cours, vue, fond PDF ouvert, messages,
-// raccourcis.
+// L'état de l'éditeur d'un plan et toutes ses actions : projet et historique,
+// outil, sélection, tracé ou pose en cours, vue, fond PDF ouvert, messages,
+// raccourcis. Le plan vient du chantier ; chaque changement lui est renvoyé
+// (`surChangement`), et c'est le chantier qui l'enregistre dans le navigateur.
+// `suspendu` : une fenêtre est ouverte par-dessus, les raccourcis se taisent.
 
 export type Outil = 'selection' | 'voie' | 'zone' | 'bs' | 'communication' | 'cadre' | 'texte' | 'main'
 // Élément choisi ; pour une voie, `point` désigne en plus le point choisi.
@@ -47,9 +49,8 @@ const estChampDeSaisie = (cible: EventTarget | null): boolean =>
 
 const pluriel = (n: number, mot: string) => `${n} ${mot}${n > 1 ? 's' : ''}`
 
-export function useEditeur() {
-  const [initial] = useState(() => chargerSauvegarde())
-  const [historique, setHistorique] = useState(() => creerHistorique(initial?.projet ?? creerProjet()))
+export function useEditeur(projetInitial: Projet, surChangement: (projet: Projet) => void, suspendu: boolean) {
+  const [historique, setHistorique] = useState(() => creerHistorique(projetInitial))
   const [outil, setOutil] = useState<Outil>('voie')
   const [selectionBrute, setSelection] = useState<Selection>(null)
   const [trace, setTrace] = useState<Point[] | null>(null)
@@ -59,15 +60,7 @@ export function useEditeur() {
   const [espace, setEspace] = useState(false)
   const [pdf, setPdf] = useState<PdfOuvert | null>(null)
   const [occupe, setOccupe] = useState<string | null>(null)
-  const [message, setMessage] = useState<Message | null>(() =>
-    initial?.fondManquant
-      ? {
-          genre: 'erreur',
-          texte: `Le fond « ${initial.projet.fond?.nomFichier} » était trop lourd pour être gardé par le navigateur : votre travail est là, mais ouvrez votre fichier enregistré ou réimportez le fond.`,
-        }
-      : null,
-  )
-  const [etatSauvegarde, setEtatSauvegarde] = useState<EtatSauvegarde>('ok')
+  const [message, setMessage] = useState<Message | null>(null)
   const jetonPage = useRef(0)
 
   const projet = historique.present
@@ -88,17 +81,14 @@ export function useEditeur() {
 
   const choisir = (genre: Genre, id: string) => setSelection({ genre, id, point: null })
 
-  // Sauvegarde automatique, un court instant après la dernière modification,
-  // et au moment de quitter la page.
+  // Chaque nouvel état du plan part au chantier (qui l'enregistre).
+  const rappel = useRef(surChangement)
   useEffect(() => {
-    const minuterie = setTimeout(() => setEtatSauvegarde(sauvegarder(projet)), 400)
-    const enQuittant = () => sauvegarder(projet)
-    window.addEventListener('pagehide', enQuittant)
-    return () => {
-      clearTimeout(minuterie)
-      window.removeEventListener('pagehide', enQuittant)
-    }
-  }, [projet])
+    rappel.current = surChangement
+  })
+  useEffect(() => {
+    if (projet !== projetInitial) rappel.current(projet)
+  }, [projet, projetInitial])
 
   const erreur = (texte: string) => setMessage({ genre: 'erreur', texte })
 
@@ -272,7 +262,7 @@ export function useEditeur() {
   // Raccourcis clavier, hors des champs de saisie.
   useEffect(() => {
     const surTouche = (e: KeyboardEvent) => {
-      if (estChampDeSaisie(e.target)) return
+      if (suspendu || estChampDeSaisie(e.target)) return
       const ctrl = e.ctrlKey || e.metaKey
       const touche = e.key.toLowerCase()
       if (e.key === ' ') {
@@ -392,13 +382,13 @@ export function useEditeur() {
     setPose(null)
     setSelection(null)
     setVue(null)
-    setMessage({ genre: 'info', texte: `Projet « ${lu.projet.nom} » ouvert (Annuler pour revenir au précédent).` })
+    setMessage({ genre: 'info', texte: `Plan « ${lu.projet.nom} » ouvert à la place du précédent (Annuler pour revenir en arrière).` })
   }
 
   const enregistrerProjet = () => {
     telecharger(nomDeFichier(projet.nom), serialiserProjet(projet))
     if (projet.fond && !projet.fond.image) {
-      erreur('Enregistré sans le fond de plan, qui manque : réimportez-le puis enregistrez à nouveau.')
+      erreur('Exporté sans le fond de plan, qui manque : réimportez-le puis exportez à nouveau.')
     }
   }
 
@@ -433,7 +423,6 @@ export function useEditeur() {
     occupe,
     message,
     setMessage,
-    etatSauvegarde,
     importerFond,
     changerPage,
     retirerFondPdf,

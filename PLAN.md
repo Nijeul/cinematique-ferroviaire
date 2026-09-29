@@ -30,8 +30,8 @@ Jamais deux étapes d'avance. Chaque étape est une PR courte qui dit quoi regar
 |---|---|---|---|
 | 1 | Style de planche : aperçu SVG (voies en double filet, noms, zones, BS, stockages, cartouche) | « C'est le style de mes synoptiques » | **validé** |
 | 2 | Fond de plan importé (image ou PDF, choix de la page) ; tracé des voies à la main au calque ; nom, couleur et épaisseur par voie ; enregistrer / ouvrir | le commanditaire trace les voies de son site sur son propre plan | **validé** |
-| 3 | Éléments du plan au calque : zones de travaux, appareils (BS et communications), cadres, textes, extrémités du plan (détail ci-dessous) | le plan de base d'une planche est complet | **en cours** |
-| 4 | Organisation : accueil et chantiers, plusieurs plans par chantier, synoptiques et images (détail ci-dessous) | on crée un synoptique à partir d'un plan et on feuillette ses images | à faire |
+| 3 | Éléments du plan au calque : zones de travaux, appareils (BS et communications), cadres, textes, extrémités du plan (détail ci-dessous) | le plan de base d'une planche est complet | **validé** |
+| 4 | Organisation : accueil et chantiers, plusieurs plans par chantier, synoptiques et images (détail ci-dessous) | on crée un synoptique à partir d'un plan et on feuillette ses images | **en cours** |
 | 5 | Bibliothèque d'engins à placer (locomotive, wagon, bourreuse, pelle RR, TTX, PEM LEM… liste à confirmer avec le commanditaire), couleurs et numéros | les engins se posent et se reconnaissent | à faire |
 | 6 | Contenu de chaque image : couleurs de zones qui changent d'une image à l'autre, engins déplacés, encart phasage, horloge, légende | une image se lit comme une planche actuelle | à faire |
 | 7 | Exports PowerPoint et PDF des images d'un synoptique | un jeu de planches équivalent à l'actuel | à faire |
@@ -66,16 +66,42 @@ s'annule / se rétablit, s'enregistre et revient au rechargement, comme les voie
   avec un message ; un seul Annuler rétablit tout.
 - Les fichiers et sauvegardes de l'étape 2 s'ouvrent toujours.
 
-### Étape 4 — organisation (décisions prises, à détailler au moment de l'étape)
+### Étape 4 — organisation
 
-- **Page d'accueil** avec la liste des chantiers. Les chantiers sont gardés dans le
-  navigateur ; export et import d'un chantier en fichier pour le transmettre.
-- **Plusieurs plans par chantier** : un par phase (définitive, provisoire, transitoire…).
-- **« Nouveau synoptique »** depuis un plan : **copie figée** du plan (modifier le plan
-  ensuite ne change pas les synoptiques déjà créés), avec **cadrage sur une partie du plan**
-  (zoom sur un secteur), un nom, une heure de début et une heure de fin.
-- Un synoptique est une **suite d'images**, chacune avec son heure de début et de fin ;
-  **une nouvelle image est la copie de la précédente** ; défilement ◀ ▶.
+- **Accueil** : la liste des chantiers gardés dans le navigateur (nom, nombre de plans et de
+  synoptiques, date de modification). Nouveau chantier, ouvrir, renommer, supprimer (la
+  confirmation dit ce qui sera perdu). « Exporter » crée un fichier avec tout le chantier,
+  fonds compris ; « Importer un chantier » le relit ; « Importer un plan » accepte un fichier
+  de plan des étapes 2 et 3, dans un chantier existant ou nouveau.
+- **Chantier** : « Accueil › chantier ». Les plans (nouveau plan vierge, copie d'un plan pour
+  une autre phase, ouvrir, renommer, supprimer, importer) et les synoptiques (nom, plan
+  d'origine, début → fin, nombre d'images ; ouvrir, renommer, supprimer).
+- **Plan** : l'éditeur des étapes 2 et 3, inchangé, et le bouton **« Nouveau synoptique… »** :
+  nom, heure de début et de fin (date et heure), **cadrage** glissé sur le plan (« Tout le
+  plan » par défaut). Le synoptique est une copie figée du plan, avec une première image qui
+  couvre tout le synoptique.
+- **Synoptique** : l'image courante, limitée au cadrage ; « Image n / N » et ses horaires
+  (« Ve 22h30 → Ve/Sa 01h30 ») ; ◀ ▶, flèches du clavier et vignettes. « Nouvelle image »
+  copie l'image courante juste après (elle commence à sa fin et dure autant, sans dépasser la
+  fin du synoptique). Horaires de l'image, suppression (jamais la dernière), nom, horaires et
+  cadrage du synoptique ; Annuler / Rétablir sur tout.
+- Le contenu des images ne se modifie pas encore : c'est l'étape 6.
+- Adresse par écran (le bouton Précédent et le rechargement de la page fonctionnent).
+- Au premier lancement, la sauvegarde automatique des étapes 2 et 3 devient le
+  « Chantier récupéré ».
+
+Questions ouvertes (réponses attendues du commanditaire) :
+
+- Deux images qui se chevauchent ou laissent un trou : simple avertissement pour l'instant.
+  Faut-il l'interdire, ou est-ce parfois voulu ?
+- Quand l'image courante va jusqu'à la fin du synoptique, la nouvelle image reprend ses
+  horaires (à ajuster). Faut-il plutôt couper l'image courante en deux ?
+- Changer l'heure de début du synoptique garde chaque image à son heure réelle (et refuse si
+  une image se retrouverait avant le début). Faut-il plutôt décaler toutes les images avec ?
+- Un cadrage qui coupe une voie cache son nom (écrit à son extrémité). Faut-il répéter le nom
+  au bord du cadre ? (Les repères « ◀ Nord » / « Sud ▶ », eux, restent toujours dans le cadre.)
+- Heures de nuit (avant 6 h) écrites « Ve/Sa 01h30 », y compris en fin de plage
+  (« Ve 22h30 → Ve/Sa 01h30 ») : ce format convient-il ?
 
 ## Décisions du commanditaire
 

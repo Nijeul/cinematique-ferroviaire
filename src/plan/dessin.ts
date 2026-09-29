@@ -17,6 +17,9 @@ export const tailleNomAppareil = (epaisseur: number): number => Math.round(taill
 export const largeurTexteEstimee = (texte: string, taille: number, gras = false): number =>
   Math.max(1, texte.length) * taille * (gras ? 0.64 : 0.6)
 
+// Liste de points au format attendu par <polyline points="…"> en SVG.
+export const enPoints = (points: Point[]): string => points.map((p) => `${p.x},${p.y}`).join(' ')
+
 export type Cote = 'dessus' | 'dessous'
 
 // Étiquettes des zones d'une même voie : au-dessus, sauf si elle chevaucherait
@@ -163,14 +166,28 @@ export function emprise(projet: Pick<Projet, 'voies' | 'cadres' | 'largeur' | 'h
 }
 
 // « ◀ Paris » en haut à gauche de l'emprise, « Poitiers ▶ » en haut à droite,
-// sans sortir de la feuille.
-export function positionsExtremites(projet: Pick<Projet, 'voies' | 'cadres' | 'largeur' | 'hauteur'>): {
+// sans sortir de la partie affichée : la feuille, ou le cadrage d'un
+// synoptique (les repères restent visibles même si le cadrage coupe les voies).
+export function positionsExtremites(
+  projet: Pick<Projet, 'voies' | 'cadres' | 'largeur' | 'hauteur'>,
+  affiche: Rectangle = { x: 0, y: 0, largeur: projet.largeur, hauteur: projet.hauteur },
+): {
   taille: number
   gauche: Point
   droite: Point
 } {
   const taille = tailleNom(epaisseurParDefaut(projet))
   const e = emprise(projet)
-  const y = Math.max(taille * 1.2, e.y - taille * 1.8)
-  return { taille, gauche: { x: Math.max(0, e.x), y }, droite: { x: Math.min(projet.largeur, e.x + e.largeur), y } }
+  const a = affiche
+  const retrait = taille * 0.5
+  let gauche = e.x < a.x ? a.x + retrait : e.x
+  let droite = e.x + e.largeur > a.x + a.largeur ? a.x + a.largeur - retrait : e.x + e.largeur
+  // Emprise entièrement hors du cadrage : les repères prennent ses deux bords.
+  if (gauche >= droite) {
+    gauche = a.x + retrait
+    droite = a.x + a.largeur - retrait
+  }
+  let y = Math.max(a.y + taille * 1.2, e.y - taille * 1.8)
+  if (y > a.y + a.hauteur - taille * 0.3) y = a.y + taille * 1.2
+  return { taille, gauche: { x: gauche, y }, droite: { x: droite, y } }
 }

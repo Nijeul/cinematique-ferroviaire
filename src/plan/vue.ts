@@ -33,19 +33,23 @@ export function deplacer(vue: Vue, dxEcran: number, dyEcran: number): Vue {
   return { zoom: vue.zoom, dx: vue.dx + dxEcran, dy: vue.dy + dyEcran }
 }
 
-// Vue d'ensemble : tout le plan visible et centré, avec une marge à l'écran.
-export function recadrer(
-  plan: { largeur: number; hauteur: number },
-  ecran: { largeur: number; hauteur: number },
-  marge = 24,
-): Vue {
+type Taille = { largeur: number; hauteur: number }
+
+// Vue ajustée sur une partie du plan (le cadrage d'un synoptique) : le
+// rectangle entier visible, le plus grand possible, centré, avec une marge.
+export function ajusterSurRectangle(rect: Taille & Point, ecran: Taille, marge = 24): Vue {
   const largeurUtile = ecran.largeur - 2 * marge
   const hauteurUtile = ecran.hauteur - 2 * marge
-  if (largeurUtile <= 0 || hauteurUtile <= 0) return { zoom: 1, dx: 0, dy: 0 }
-  const zoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.min(largeurUtile / plan.largeur, hauteurUtile / plan.hauteur)))
+  if (largeurUtile <= 0 || hauteurUtile <= 0 || !(rect.largeur > 0) || !(rect.hauteur > 0)) return { zoom: 1, dx: 0, dy: 0 }
+  const zoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.min(largeurUtile / rect.largeur, hauteurUtile / rect.hauteur)))
   return {
     zoom,
-    dx: (ecran.largeur - plan.largeur * zoom) / 2,
-    dy: (ecran.hauteur - plan.hauteur * zoom) / 2,
+    dx: (ecran.largeur - rect.largeur * zoom) / 2 - rect.x * zoom,
+    dy: (ecran.hauteur - rect.hauteur * zoom) / 2 - rect.y * zoom,
   }
+}
+
+// Vue d'ensemble : tout le plan visible et centré, avec une marge à l'écran.
+export function recadrer(plan: Taille, ecran: Taille, marge = 24): Vue {
+  return ajusterSurRectangle({ x: 0, y: 0, largeur: plan.largeur, hauteur: plan.hauteur }, ecran, marge)
 }
