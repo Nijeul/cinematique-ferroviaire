@@ -1,5 +1,6 @@
 import type { Chantier, PlanDuChantier } from './chantier.ts'
 import type { Rectangle } from './elements.ts'
+import { lireCartouche } from './cartouche.ts'
 import { creerCatalogue } from './catalogue.ts'
 import { creerEtatsVoie, type EtatVoie } from './etatsVoie.ts'
 import type { EtatsZones } from './etatsZones.ts'
@@ -46,9 +47,11 @@ import { lireInstant } from './temps.ts'
 // rames ; calque « Flèches » et case « Afficher la légende » de chaque
 // synoptique. Une version 3 s'ouvre toujours : types de flèches par défaut,
 // images sans flèches, légende affichée en entier.
+// Version 5 (étape 8) : cartouche de chaque synoptique (page de garde des
+// exports). Une version 4 s'ouvre toujours : cartouches vides.
 
 export const FORMAT_CHANTIER = 'cinematique-ferroviaire/chantier'
-export const VERSION_CHANTIER = 4
+export const VERSION_CHANTIER = 5
 const EXTENSION_CHANTIER = '.chantier.json'
 
 export function serialiserChantier(c: Chantier): string {
@@ -268,6 +271,7 @@ function lireSynoptique(brut: unknown, i: number, erreurs: string[], etatsVoie: 
     calqueFleches: lireCalque(brut.calqueFleches, CALQUE_FLECHES_PAR_DEFAUT),
     afficherLegende: typeof brut.afficherLegende === 'boolean' ? brut.afficherLegende : true,
     bandeau: typeof brut.bandeau === 'string' ? brut.bandeau : '',
+    cartouche: lireCartouche(brut.cartouche),
     images,
   }
 }

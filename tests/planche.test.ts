@@ -165,6 +165,18 @@ describe('mise en page de la planche', () => {
     expect(b.y + b.hauteur).toBeLessThan(p.carte.y)
   })
 
+  it('le bandeau s’arrête avant le plus large des créneaux, sur toutes les images', () => {
+    let s = { ...troisImages(), bandeau: 'RVB V1 sur 50 m — OCP fictive, dépose et repose de la voie' }
+    s = { ...s, images: s.images.map((im, i) => (i === 1 ? { ...im, titre: 'Dépose de la voie et déballastage' } : im)) }
+    const pages = [0, 1, 2].map((i) => miseEnPage(s, i, LISTES))
+    const larges = Math.min(...pages.map((p) => p.creneau.boite.x))
+    for (const p of pages) {
+      expect(p.bandeau!.boite).toEqual(pages[0].bandeau!.boite)
+      expect(p.bandeau!.boite.x + p.bandeau!.boite.largeur).toBeLessThan(larges)
+      expect(p.bandeau!.boite.x + p.bandeau!.boite.largeur / 2).toBeCloseTo(p.carte.x + p.carte.largeur / 2)
+    }
+  })
+
   it('encart PHASAGE sous le plan, à gauche ; même hauteur de bande sur toutes les images', () => {
     let s = troisImages()
     s = avecEtape(s, 0, 'Dépose des rails et des traverses sur le RVB 80 m. Les rails seront positionnés aux extrémités des traverses.')

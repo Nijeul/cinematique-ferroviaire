@@ -11,7 +11,9 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "jspdf": "^4.2.1",
     "pdfjs-dist": "^6.3.289",
+    "pptxgenjs": "^4.0.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },

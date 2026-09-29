@@ -23,7 +23,7 @@ import {
   supprimerEngin,
   vehiculesDeGroupes,
 } from '../src/plan/engins.ts'
-import { lireChantier, lirePlanImporte, serialiserChantier } from '../src/plan/fichierChantier.ts'
+import { lireChantier, lirePlanImporte, serialiserChantier, VERSION_CHANTIER } from '../src/plan/fichierChantier.ts'
 import { avisEnginsRetires, lireProjet } from '../src/plan/lecture.ts'
 import { creerProjet, FORMAT_FICHIER, serialiserProjet } from '../src/plan/projet.ts'
 import { calerEchelleSynoptique, modifierCalqueEngins, modifierImage, nouvelleImage, projetDeImage, type Synoptique } from '../src/plan/synoptique.ts'
@@ -334,7 +334,7 @@ describe('export et import du chantier', () => {
     expect(relu).toEqual({ ok: true, chantier: c, avis: [] })
     expect(relu.ok && relu.chantier.catalogue.map((t) => t.modele)).toContain('Essai')
     expect(relu.ok && relu.chantier.synoptiques[0].images.map((im) => im.contenu.rames.length)).toEqual([1, 1, 0])
-    expect(JSON.parse(serialiserChantier(c)).version).toBe(4)
+    expect(JSON.parse(serialiserChantier(c)).version).toBe(VERSION_CHANTIER)
   })
 
   it('un catalogue abîmé est refusé, avec le type fautif', () => {

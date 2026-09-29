@@ -2,7 +2,8 @@ import { recomposer, type Restauration } from '../plan/sauvegarde.ts'
 
 // Ce qui touche au navigateur hors des chantiers : la sauvegarde automatique
 // des étapes 2 et 3 (localStorage), lue une seule fois pour être reprise, et
-// le téléchargement d'un fichier. Rien ici ne doit faire planter l'application.
+// le téléchargement d'un fichier (chantier, plan, export PowerPoint ou PDF).
+// Rien ici ne doit faire planter l'application.
 
 const CLE_PROJET = 'cinematique-ferroviaire/projet'
 const CLE_FOND = 'cinematique-ferroviaire/fond'
@@ -29,8 +30,10 @@ export function oublierAncienneSauvegarde(): void {
   }
 }
 
-export function telecharger(nomFichier: string, contenu: string): void {
-  const url = URL.createObjectURL(new Blob([contenu], { type: 'application/json' }))
+// Enregistre un fichier dans les téléchargements : un texte JSON (chantier,
+// plan) ou un fichier déjà construit (PowerPoint, PDF).
+export function telecharger(nomFichier: string, contenu: string | Blob): void {
+  const url = URL.createObjectURL(typeof contenu === 'string' ? new Blob([contenu], { type: 'application/json' }) : contenu)
   const lien = document.createElement('a')
   lien.href = url
   lien.download = nomFichier

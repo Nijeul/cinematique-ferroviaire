@@ -1,6 +1,6 @@
 {
   "format": "cinematique-ferroviaire/chantier",
-  "version": 4,
+  "version": 5,
   "id": "chantier-1",
   "nom": "Chantier d’exemple (données fictives)",
   "modifieLe": "2026-09-29T15:00:00.000Z",
@@ -471,6 +471,16 @@
       },
       "afficherLegende": true,
       "bandeau": "",
+      "cartouche": {
+        "emetteur": "",
+        "typeDocument": "Synoptique",
+        "indice": "",
+        "date": "",
+        "etabliPar": "",
+        "validePar": "",
+        "approuvePar": "",
+        "modification": ""
+      },
       "images": [
         {
           "id": "image-1",
@@ -1769,6 +1779,16 @@
       },
       "afficherLegende": true,
       "bandeau": "RVB V1 sur 50 m — OCP fictive\nDonnées d’exemple",
+      "cartouche": {
+        "emetteur": "",
+        "typeDocument": "Synoptique",
+        "indice": "",
+        "date": "",
+        "etabliPar": "",
+        "validePar": "",
+        "approuvePar": "",
+        "modification": ""
+      },
       "images": [
         {
           "id": "image-1",
@@ -2728,6 +2748,16 @@
       },
       "afficherLegende": true,
       "bandeau": "RVB V1 sur 50 m — OCP fictive\nFlèches et légende",
+      "cartouche": {
+        "emetteur": "Entreprise fictive",
+        "typeDocument": "Synoptique",
+        "indice": "B",
+        "date": "23/10/2026",
+        "etabliPar": "A. Exemple",
+        "validePar": "B. Modèle",
+        "approuvePar": "C. Fictif",
+        "modification": "Création du synoptique (données fictives)"
+      },
       "images": [
         {
           "id": "image-1",

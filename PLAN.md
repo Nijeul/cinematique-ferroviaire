@@ -36,11 +36,11 @@ Jamais deux étapes d'avance. Chaque étape est une PR courte qui dit quoi regar
 | 4 | Organisation : accueil et chantiers, plusieurs plans par chantier, synoptiques et images (détail ci-dessous) | on crée un synoptique à partir d'un plan et on feuillette ses images | **validé** |
 | 5 | Échelle du plan, obligatoire à la création ; catalogue d'engins par chantier ; engins et rames posés à l'échelle **dans les images des synoptiques** (pas sur le plan), couleurs et numéros ; « Nouvelle image » emporte les engins (détail ci-dessous) | les engins se posent à la bonne taille dans une image, se reconnaissent et avancent d'une image à l'autre | **validé** |
 | 6 | États de la voie par chantier ; état et avancement partiel de chaque zone dans chaque image ; encart PHASAGE ; créneau horaire et bandeau de titre (détail ci-dessous) | une image se lit comme une planche actuelle (hors flèches et légende) | **validé** |
-| 7 | Types de flèches par chantier ; flèches tracées dans les images (sens de travail, sens d'avancement TTX, cheminement, chemin de roule) ; **légende** propre à chaque image, construite d'après ce qu'elle montre : engins numérotés (« 1 — Pelle RR »), rames, états présents, flèches (détail ci-dessous) | la planche s'explique d'elle-même, sans les carrés noirs numérotés | **en cours** |
-| 8 | Exports PowerPoint et PDF des images d'un synoptique | un jeu de planches équivalent à l'actuel | à faire |
+| 7 | Types de flèches par chantier ; flèches tracées dans les images (sens de travail, sens d'avancement TTX, cheminement, chemin de roule) ; **légende** propre à chaque image, construite d'après ce qu'elle montre : engins numérotés (« 1 — Pelle RR »), rames, états présents, flèches (détail ci-dessous) | la planche s'explique d'elle-même, sans les carrés noirs numérotés | **validé** |
+| 8 | Exports PowerPoint et PDF des images d'un synoptique : une diapositive ou une page par image, textes du bandeau, du créneau et du PHASAGE modifiables dans PowerPoint, page de garde avec cartouche (détail ci-dessous) | un jeu de planches équivalent à l'actuel | **en cours** |
 
-Les besoins au-delà (vidéo, orthophoto calée, import DXF, 3D en option) seront rediscutés une
-fois l'étape 8 validée — pas avant.
+**L'étape 8 est la dernière du plan.** Les besoins au-delà (vidéo, orthophoto calée, import
+DXF, 3D en option…) seront rediscutés une fois l'étape 8 validée — pas avant.
 
 ### Étape 3 — éléments du plan au calque
 
@@ -281,7 +281,8 @@ les numéros des pelles (carrés noirs) : « il faut faire mieux, par exemple un
   seulement.
 - Hors étape 7 : exports PowerPoint et PDF (étape 8).
 
-Questions ouvertes de l'étape 7 (choix provisoires en place) :
+Questions de l'étape 7 — **tranchées** : « C'est bon, passe à l'étape suivante » ; les choix
+en place sont gardés :
 
 - **« Nouvelle image » recopie les flèches** (et les lignes masquées de la légende), comme
   les engins : il ne reste qu'à déplacer ce qui change. Est-ce ce qu'il faut, ou chaque
@@ -300,6 +301,67 @@ Questions ouvertes de l'étape 7 (choix provisoires en place) :
 - **Épaisseurs par défaut** : Sens de travail 2, Sens avancement TTX 12, Cheminement 3,
   Chemin de roule 2 (une voie = 8), relevées à l'œil sur vos planches ; modifiables dans la
   page du chantier.
+
+### Étape 8 — exports PowerPoint et PDF
+
+Aujourd'hui, le commanditaire produit ses synoptiques dans PowerPoint : une page de garde
+(titre, plan, cartouche : indice, date, établi par, validé par, approuvé par, émetteur, type
+de document), puis une planche 16/9 par créneau, qu'il retouche à la main. L'export doit
+donner un jeu de planches équivalent, sans qu'il ait à tout refaire.
+
+- **Bouton « Exporter… »** dans l'écran du synoptique. La fenêtre propose :
+  - le **format** : PowerPoint (.pptx) ou PDF ;
+  - les **images** : toutes, l'image affichée, ou « de l'image n à m » (numéros vérifiés,
+    message en français sinon) ;
+  - la **page de garde**, cochée par défaut, avec un lien « remplir le cartouche… » ;
+  - pour PowerPoint : **« Textes modifiables »** (par défaut) ou **« Tout en image »** ;
+  - pour le PDF : la **taille de page** : 16/9 comme les diapositives (par défaut), A4
+    paysage, A3 paysage ;
+  - puis « Exporter » : les images sont rendues une à une, avec l'avancement et un bouton
+    « Annuler l'export » ; message de fin (nom du fichier, nombre de pages) ou d'erreur.
+- **Même dessin que l'écran** : chaque planche est rendue en image haute définition (environ
+  2 400 pixels de large) à partir du dessin de l'écran, sans rien de l'édition (sélection,
+  poignées, consignes) : fond, états et texture ballast, engins, flèches, légende compris.
+  Dans les exports, tous les textes sont en Arial, la police des zones de texte PowerPoint.
+- **PowerPoint** : une diapositive 16/9 par image, dans l'ordre. En « Textes modifiables »,
+  l'image de la planche est posée **sans** le bandeau de titre, le créneau et l'encart PHASAGE,
+  et ces trois textes sont des **zones de texte PowerPoint** placées exactement à leur place, dans
+  le même style (bandeau bleu clair bordé de bleu, créneau gris bordé de rouge, bandeau
+  « PHASAGE » gris foncé et étapes sur fond gris clair). La légende reste dans l'image, à cause
+  de ses échantillons. « Tout en image » pose la planche entière, non modifiable.
+- **PDF** : une page par image ; la planche est centrée et ajustée à la page sans déformation,
+  avec une petite marge (2,5 % du petit côté : 5 mm en 16/9 et en A4, 7 mm en A3). Tout est en
+  image, sauf la page de garde (textes et tableau vectoriels).
+- **Page de garde** : nom du chantier et du synoptique dans un cadre bleu foncé, vignette de la
+  première image exportée, et le **cartouche** en tableau (tableau PowerPoint natif dans le
+  .pptx) : Émetteur, Type de document (« Synoptique » par défaut), Indice, Date, Établi par,
+  Validé par, Approuvé par, Modification.
+- **Cartouche** : il se remplit dans les propriétés du synoptique (« Cartouche (page de
+  garde) : Remplir… ») ou depuis la fenêtre d'export ; il s'enregistre avec le synoptique
+  (Annuler / Rétablir) et voyage avec l'export du chantier (fichier de chantier version 5 ; les
+  versions 1 à 4 s'ouvrent toujours, avec des cartouches vides).
+- **Nom du fichier** : `<nom du synoptique>.pptx` ou `.pdf`, sans les caractères interdits.
+- **Exporter ne modifie pas le chantier** : aucune entrée dans Annuler / Rétablir.
+- **Correction de la planche** : le bandeau de titre s'arrête désormais avant le plus large
+  des créneaux du synoptique ; avec un titre de créneau long, il pouvait le chevaucher.
+- Hors étape 8 : vidéo, import de PowerPoint, toute nouvelle fonction d'édition.
+
+Questions ouvertes de l'étape 8 (choix provisoires en place) :
+
+- **Textes modifiables dans PowerPoint** : seuls le bandeau de titre, le créneau et l'encart
+  PHASAGE sont des zones de texte ; le reste (plan, noms, engins, flèches, légende) est une
+  image. Est-ce ce qu'il faut pour vos retouches, ou faut-il aussi la légende en texte (ses
+  échantillons resteraient des images) ?
+- **Page de garde et cartouche** : un seul tableau (Émetteur, Type de document, Indice, Date,
+  Établi par, Validé par, Approuvé par, Modification), une seule ligne d'indice. Vos documents
+  ont un historique des indices (A, puis B…) et un second cartouche (phase, émetteur, type,
+  indice, date) : faut-il plusieurs lignes d'indice, ou d'autres champs (phase, logo) ?
+- **Format du PDF par défaut** : 16/9, comme vos diapositives. Préférez-vous l'A3 paysage pour
+  l'impression ?
+- **Police** : Arial partout dans les exports. PowerPoint écrit les zones de texte avec ses
+  propres mesures : un libellé peut passer à la ligne à un autre endroit qu'à l'écran.
+- **Forme de la planche** : sur une diapositive 16/9, une planche plus haute (cadrage étroit)
+  laisse des marges blanches sur les côtés ; le cadrage du synoptique permet de s'en approcher.
 
 ## Décisions du commanditaire
 
@@ -329,12 +391,13 @@ Questions ouvertes de l'étape 7 (choix provisoires en place) :
   exemple une légende. » → légende de l'étape 7.
 - **Questions de l'étape 6** (couleur de la sous-couche, PHASAGE non recopié, bandeau,
   créneau et encart autour du plan) : « C'est bon. » Les choix en place sont gardés.
+- **Étape 7** (flèches, légende et ses choix provisoires) : « C'est bon, passe à l'étape
+  suivante. » Les choix en place sont gardés.
 
 ## Synoptiques réels
 
 Le commanditaire importe directement ses propres plans (PDF ou images) dans l'application. Il
 a aussi fourni un synoptique PowerPoint réel, analysé pour caler le style de l'étape 6 (encart
-PHASAGE, créneau, bandeau, états des zones) et de l'étape 7 (flèches, légende), et qui servira
-à l'étape 8. **Il n'est pas
-versionné** (données réelles) : `sources/` reste vide dans le dépôt, et les fixtures restent
-fictives.
+PHASAGE, créneau, bandeau, états des zones), de l'étape 7 (flèches, légende) et de l'étape 8
+(diapositives 16/9, page de garde et cartouche). **Il n'est pas versionné** (données réelles) :
+`sources/` reste vide dans le dépôt, et les fixtures restent fictives.

@@ -1,3 +1,4 @@
+import { lireCartouche } from './cartouche.ts'
 import { ajouterType, creerCatalogue, modifierType, supprimerType, type ChampsType, type DimensionsEngin, type TypeEngin } from './catalogue.ts'
 import type { Resultat } from './echelle.ts'
 import { nomParDefaut, nouvelIdentifiant, remplacerFond } from './edition.ts'
@@ -298,10 +299,12 @@ export function chantierRecupere(id: string, projet: Projet, maintenant: string)
 // toutes ses zones sont avant travaux. Avant l'étape 7, il n'a ni types de
 // flèches, ni flèches, ni description d'engins, ni réglages de légende : il
 // reçoit la liste de flèches par défaut, ses images n'ont pas de flèche et
-// leur légende s'affiche en entier. Un chantier rangé avant la correction de l'étape 5 peut avoir des
-// engins sur ses plans : ils en sont retirés, avec un avis par plan à montrer
-// une fois (le chantier corrigé est aussitôt réenregistré). Les engins de ses
-// synoptiques restent dans leurs images.
+// leur légende s'affiche en entier. Avant l'étape 8, ses synoptiques n'ont
+// pas de cartouche : ils en reçoivent un vide. Un chantier rangé avant la
+// correction de l'étape 5 peut avoir des engins sur ses plans : ils en sont
+// retirés, avec un avis par plan à montrer une fois (le chantier corrigé est
+// aussitôt réenregistré). Les engins de ses synoptiques restent dans leurs
+// images.
 type Souple = Record<string, unknown>
 
 // Calques d'un plan ou d'une image : ceux d'aujourd'hui, sans le calque
@@ -339,6 +342,7 @@ export function migrerChantier(brut: Chantier): { chantier: Chantier; avis: stri
       afficherLegende: true,
       bandeau: '',
       ...s,
+      cartouche: lireCartouche(s.cartouche),
       images: s.images.map((im) => ({
         titre: '',
         heures: 'plage',
