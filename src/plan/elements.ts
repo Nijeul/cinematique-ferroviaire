@@ -295,7 +295,7 @@ export function glisserTexte(projet: Projet, id: string, decalage: Point): Proje
 
 // ——— Suppression ———
 
-// Supprime un élément ; une voie part avec ce qui est posé dessus, un BS
+// Supprime un élément ; une voie part avec ses zones et ses appareils, un BS
 // de communication avec son jumeau.
 export function supprimerElement(projet: Projet, ref: Reference): Projet {
   switch (ref.genre) {
@@ -309,9 +309,5 @@ export function supprimerElement(projet: Projet, ref: Reference): Projet {
       return { ...projet, cadres: projet.cadres.filter((c) => c.id !== ref.id) }
     case 'texte':
       return { ...projet, textes: projet.textes.filter((t) => t.id !== ref.id) }
-    case 'engin':
-      return { ...projet, engins: projet.engins.filter((e) => e.id !== ref.id) }
-    case 'rame':
-      return { ...projet, rames: projet.rames.filter((r) => r.id !== ref.id) }
   }
 }

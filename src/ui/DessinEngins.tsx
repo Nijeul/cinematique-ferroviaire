@@ -1,22 +1,26 @@
 import { formaterMetres, longueurGraduee } from '../plan/echelle.ts'
 import {
-  coteEtiquetteRame,
   couleurTexteSur,
   etiquetteRame,
   libelleARetourner,
+  positionEtiquetteRame,
   positionPastille,
   rayonPastille,
   silhouetteEngin,
   silhouetteRame,
   tailleLibelle,
+  type Engin,
+  type Planche,
+  type Rame,
+  type ReferenceEngin,
   type Silhouette,
 } from '../plan/engins.ts'
-import { enPoints } from '../plan/dessin.ts'
-import { normaleHaut, tailleNom } from '../plan/geometrie.ts'
-import { epaisseurParDefaut, type Engin, type Point, type Projet, type Rame } from '../plan/projet.ts'
+import { enPoints, largeurTexteEstimee } from '../plan/dessin.ts'
+import { tailleNom } from '../plan/geometrie.ts'
+import { epaisseurParDefaut, type Point } from '../plan/projet.ts'
 import { COULEURS } from './couleurs.ts'
 
-// Dessin des engins et des rames, à l'échelle du plan : rectangle de la
+// Dessin des engins et des rames d'une image de synoptique, à l'échelle : rectangle de la
 // couleur de la catégorie, contour sombre fin, modèle écrit dedans quand il
 // tient, pastille ronde à numéro au-dessus. Et l'échelle graphique « 0 — 50 m ».
 
@@ -91,7 +95,7 @@ function Choix({ coins, zoom }: { coins: Point[]; zoom: number }) {
   )
 }
 
-export function DessinEngin(props: { projet: Projet; engin: Engin; choisi: boolean; zoom: number; apercu?: boolean }) {
+export function DessinEngin(props: { projet: Planche; engin: Engin; choisi: boolean; zoom: number; apercu?: boolean }) {
   const { projet, engin, choisi, zoom } = props
   const s = silhouetteEngin(projet, engin)
   if (!s) return null
@@ -106,19 +110,17 @@ export function DessinEngin(props: { projet: Projet; engin: Engin; choisi: boole
   )
 }
 
-export function DessinRame(props: { projet: Projet; rame: Rame; choisie: boolean; zoom: number; apercu?: boolean }) {
+export function DessinRame(props: { projet: Planche; rame: Rame; choisie: boolean; zoom: number; apercu?: boolean }) {
   const { projet, rame, choisie, zoom } = props
   const s = silhouetteRame(projet, rame)
   if (!s) return null
   const rayon = rayonPastille(projet)
   const taille = tailleNom(epaisseurParDefaut(projet)) * 0.72
-  // Étiquette au milieu de la rame, à l'extérieur de la courbe ; sous une
-  // rame droite (la pastille est au-dessus de la tête).
-  const largeur = Math.max(...s.vehicules.map((v) => v.largeur))
-  const haut = normaleHaut(s.milieu.direction)
-  const dessus = coteEtiquetteRame(s) === 'dessus'
-  const ecart = (largeur / 2 + taille * 0.35) * (dessus ? 1 : -1)
-  const etiquette = { x: s.milieu.centre.x + haut.x * ecart, y: s.milieu.centre.y + haut.y * ecart + (dessus ? -taille * 0.1 : taille * 0.8) }
+  // Étiquette au milieu de la rame, à l'extérieur de la courbe, sans
+  // chevaucher de véhicule ; sous une rame droite (la pastille est au-dessus
+  // de la tête).
+  const texte = etiquetteRame(rame)
+  const etiquette = positionEtiquetteRame(s, taille, largeurTexteEstimee(texte, taille, true))
   return (
     <g opacity={props.apercu ? 0.65 : 1} data-testid={props.apercu ? 'apercu-rame' : 'rame'} data-rame={rame.id}>
       {choisie && s.vehicules.map((v, i) => <Choix key={i} coins={v.coins} zoom={zoom} />)}
@@ -137,13 +139,36 @@ export function DessinRame(props: { projet: Projet; rame: Rame; choisie: boolean
           data-testid="etiquette-rame"
           {...halo}
         >
-          {etiquetteRame(rame)}
+          {texte}
           {s.depassement > 0 ? ' ⚠' : ''}
         </text>
       )}
       {rame.numero.trim() !== '' && (
         <Pastille centre={positionPastille(s.vehicules[0], rayon)} rayon={rayon} couleur={rame.couleur} texte={rame.numero.trim()} />
       )}
+    </g>
+  )
+}
+
+// Tous les engins et rames d'une image (les rames dessous, les engins
+// dessus) ; rien sans échelle ou quand le calque « Engins » est masqué.
+export function DessinEnginsImage(props: {
+  projet: Planche
+  visible: boolean
+  zoom: number
+  estChoisi?: (ref: ReferenceEngin) => boolean
+}) {
+  const { projet, zoom } = props
+  const estChoisi = props.estChoisi ?? (() => false)
+  if (!props.visible || !projet.echelle) return null
+  return (
+    <g data-testid="calque-engins-dessin">
+      {projet.rames.map((rame) => (
+        <DessinRame key={rame.id} projet={projet} rame={rame} choisie={estChoisi({ genre: 'rame', id: rame.id })} zoom={zoom} />
+      ))}
+      {projet.engins.map((engin) => (
+        <DessinEngin key={engin.id} projet={projet} engin={engin} choisi={estChoisi({ genre: 'engin', id: engin.id })} zoom={zoom} />
+      ))}
     </g>
   )
 }

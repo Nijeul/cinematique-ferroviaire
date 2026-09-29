@@ -1,14 +1,13 @@
 import { useState, type CSSProperties } from 'react'
-import { couleurDeCategorie, LARGEUR_PAR_DEFAUT_M, parCategorie, type ChampsType } from '../plan/catalogue.ts'
-import { ajouterTypeChantier, enginsDuType, modifierTypeChantier, supprimerTypeChantier, type Chantier } from '../plan/chantier.ts'
+import { couleurDeCategorie, LARGEUR_PAR_DEFAUT_M, parCategorie, type ChampsType, type TypeEngin } from '../plan/catalogue.ts'
+import { ajouterTypeChantier, modifierTypeChantier, supprimerTypeChantier, synoptiquesDuType, type Chantier } from '../plan/chantier.ts'
 import { formaterNombre, lireNombre } from '../plan/echelle.ts'
-import type { TypeEngin } from '../plan/projet.ts'
 import { COULEURS } from './couleurs.ts'
 import { styleBouton, styleBoutonPrincipal, styleChamp, styleDiscret, styleTitreSection } from './styles.ts'
 import type { Message } from './useEditeur.ts'
 
 // Section « Catalogue d'engins » de la page du chantier : les types qu'on
-// pose sur les plans, groupés par catégorie. On modifie catégorie, modèle,
+// pose dans les images des synoptiques, groupés par catégorie. On modifie catégorie, modèle,
 // longueur, largeur et couleur ; on ajoute et on supprime des types (PEM LEM,
 // TTX, régaleuse… à ajouter avec leurs vraies dimensions).
 
@@ -163,11 +162,13 @@ export function CatalogueEngins(props: { chantier: Chantier; modifierChantier: (
       const suivant = modifierTypeChantier(c, type.id, champs)
       return suivant.ok ? suivant.valeur : c
     })
-    const poses = enginsDuType(chantier, type.id)
-    if (poses > 0 && (champs.longueur !== undefined || champs.largeur !== undefined)) {
+    const synoptiques = synoptiquesDuType(chantier, type.id)
+    if (synoptiques > 0 && (champs.longueur !== undefined || champs.largeur !== undefined || champs.couleur !== undefined)) {
       message({
         genre: 'info',
-        texte: `« ${type.modele} » modifié : les ${poses} engin(s) déjà posé(s) sur les plans de ce chantier ont pris les nouvelles dimensions. Les synoptiques, copies figées, ne changent pas.`,
+        texte: `« ${type.modele} » modifié : les prochains engins posés auront ces valeurs. Ceux déjà posés dans ${
+          synoptiques > 1 ? `${synoptiques} synoptiques` : 'un synoptique'
+        } gardent les leurs (copies figées).`,
       })
     }
     return true
@@ -185,11 +186,11 @@ export function CatalogueEngins(props: { chantier: Chantier; modifierChantier: (
   }
 
   const supprimer = (type: TypeEngin) => {
-    const poses = enginsDuType(chantier, type.id)
+    const synoptiques = synoptiquesDuType(chantier, type.id)
     modifierChantier((c) => supprimerTypeChantier(c, type.id))
     message({
       genre: 'info',
-      texte: `« ${type.modele} » retiré du catalogue.${poses > 0 ? ` Les ${poses} engin(s) déjà posé(s) restent sur les plans, avec leurs dimensions.` : ''}`,
+      texte: `« ${type.modele} » retiré du catalogue.${synoptiques > 0 ? ' Les engins déjà posés dans les synoptiques restent, avec leurs dimensions.' : ''}`,
     })
   }
 
@@ -197,8 +198,9 @@ export function CatalogueEngins(props: { chantier: Chantier; modifierChantier: (
     <section style={{ marginTop: 28 }} data-testid="section-catalogue">
       <h2 style={styleTitreSection}>Catalogue d'engins</h2>
       <p style={styleDiscret}>
-        Les engins qu'on pose sur les plans de ce chantier, à l'échelle. Longueur et largeur en mètres ; la couleur est celle de la
-        catégorie. Modifier un type met à jour les engins déjà posés sur les plans (pas les synoptiques, qui sont figés).
+        Les engins qu'on pose dans les images des synoptiques de ce chantier, à l'échelle. Longueur et largeur en mètres ; la couleur
+        est celle de la catégorie. Modifier un type vaut pour les prochains engins posés : ceux déjà posés dans les synoptiques
+        gardent leurs valeurs (copies figées).
       </p>
       <table style={{ borderCollapse: 'collapse', background: '#ffffff', border: `1px solid ${COULEURS.bordure}`, borderRadius: 6 }} data-testid="table-catalogue">
         <thead>
@@ -208,7 +210,9 @@ export function CatalogueEngins(props: { chantier: Chantier; modifierChantier: (
             <th style={entete}>Modèle</th>
             <th style={{ ...entete, textAlign: 'right' }}>Longueur (m)</th>
             <th style={{ ...entete, textAlign: 'right' }}>Largeur (m)</th>
-            <th style={entete}>Posés</th>
+            <th style={entete} title="Nombre de synoptiques où ce type est posé">
+              Synoptiques
+            </th>
             <th style={entete} />
           </tr>
         </thead>
@@ -249,7 +253,7 @@ export function CatalogueEngins(props: { chantier: Chantier; modifierChantier: (
                     valider={(t) => modifier(type, { largeur: lireNombre(t) ?? NaN })}
                   />
                 </td>
-                <td style={{ ...cellule, color: COULEURS.discret, textAlign: 'center' }}>{enginsDuType(chantier, type.id) || ''}</td>
+                <td style={{ ...cellule, color: COULEURS.discret, textAlign: 'center' }}>{synoptiquesDuType(chantier, type.id) || ''}</td>
                 <td style={cellule}>
                   <button
                     style={{ ...styleBouton(), color: COULEURS.erreur, padding: '2px 8px' }}

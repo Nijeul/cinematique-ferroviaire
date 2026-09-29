@@ -44,7 +44,7 @@ function Introuvable({ chemin, texte, retour }: { chemin: string; texte: string;
 }
 
 function EspaceChantier({ route }: { route: Exclude<Route, { ecran: 'accueil' }> }) {
-  const { chantier, charge, erreurLecture, modifier, enregistrement } = useChantier(route.chantierId)
+  const { chantier, charge, erreurLecture, modifier, enregistrement, avis, avisLu } = useChantier(route.chantierId)
   const etat = <EtatEnregistrement enregistrement={enregistrement} />
   const alerte =
     enregistrement.genre === 'erreur' ? (
@@ -104,6 +104,47 @@ function EspaceChantier({ route }: { route: Exclude<Route, { ecran: 'accueil' }>
     <>
       {ecran}
       {alerte}
+      {avis.length > 0 && (
+        <div
+          role="status"
+          data-testid="avis-migration"
+          style={{
+            position: 'fixed',
+            left: '50%',
+            top: 52,
+            transform: 'translateX(-50%)',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: 12,
+            maxWidth: 720,
+            padding: '10px 14px',
+            fontSize: 14,
+            lineHeight: 1.45,
+            fontFamily: POLICE,
+            color: COULEURS.texte,
+            background: '#e8f0f9',
+            border: `1px solid ${COULEURS.selection}`,
+            borderRadius: 6,
+            boxShadow: '0 4px 14px rgba(0,0,0,0.18)',
+            zIndex: 20,
+          }}
+        >
+          <div>
+            {avis.map((texte) => (
+              <p key={texte} style={{ margin: '2px 0' }}>
+                {texte}
+              </p>
+            ))}
+          </div>
+          <button
+            onClick={avisLu}
+            aria-label="Fermer le message"
+            style={{ font: 'inherit', border: 'none', background: 'none', cursor: 'pointer', fontSize: 16, color: COULEURS.discret }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
     </>
   )
 }

@@ -82,57 +82,10 @@ export type Fond = {
 // Échelle du plan : combien d'unités du plan (pixels du fond) font un mètre
 // réel. Calée à la création du plan (deux points dont on connaît l'écart, ou
 // la largeur réelle de la toile) ; null pour les plans des étapes 2 à 4, qui
-// n'en avaient pas.
+// n'en avaient pas. Elle est copiée dans les synoptiques créés depuis le plan :
+// c'est là que les engins se posent, à la bonne taille. Le plan lui-même ne
+// contient aucun engin.
 export type Echelle = { pixelsParMetre: number }
-
-// Un type d'engin tel qu'il est posé : ses dimensions réelles en mètres et la
-// couleur de sa catégorie. Le catalogue du chantier en garde la liste ; chaque
-// engin posé en garde une copie, pour que le plan exporté seul et les
-// synoptiques (copies figées) restent complets.
-export type DimensionsEngin = {
-  categorie: string
-  modele: string
-  longueur: number
-  largeur: number
-  couleur: string
-}
-export type TypeEngin = DimensionsEngin & { id: string }
-
-// Où est un engin : sur une voie (abscisse de son milieu, il suit la voie) ou
-// libre sur le plan (milieu et angle en degrés, sens des aiguilles d'une
-// montre, 0 = horizontal).
-export type PositionEngin =
-  | { genre: 'voie'; voieId: string; abscisse: number }
-  | { genre: 'libre'; x: number; y: number; angle: number }
-
-export type Engin = {
-  id: string
-  // Type du catalogue dont il vient, et copie de ses dimensions.
-  typeId: string
-  type: DimensionsEngin
-  couleur: string
-  // Numéro ou court libellé affiché dans une pastille (« 3 », « P4 ») ; vide :
-  // pas de pastille.
-  numero: string
-  position: PositionEngin
-}
-
-export type Vehicule = { typeId: string; type: DimensionsEngin }
-
-// Rame : des véhicules bout à bout sur une voie. `abscisse` est le milieu de
-// la rame ; `sens` = 1 si la tête (premier véhicule) est du côté des abscisses
-// croissantes de la voie, -1 sinon.
-export type Rame = {
-  id: string
-  nom: string
-  numero: string
-  // Couleur de la pastille ; chaque véhicule garde la couleur de sa catégorie.
-  couleur: string
-  voieId: string
-  abscisse: number
-  sens: 1 | -1
-  vehicules: Vehicule[]
-}
 
 // Noms des deux bouts du plan : Nord à gauche, Sud à droite par défaut (repère
 // du commanditaire), renommables (« Paris » / « Poitiers »…).
@@ -144,7 +97,7 @@ export type CalqueFond = { visible: boolean; opacite: number; verrouille: boolea
 export type Calque = { visible: boolean; verrouille: boolean }
 
 // Calques dans l'ordre d'affichage, du dessous vers le dessus.
-export const CALQUES_ELEMENTS = ['cadres', 'voies', 'zones', 'appareils', 'engins', 'textes'] as const
+export const CALQUES_ELEMENTS = ['cadres', 'voies', 'zones', 'appareils', 'textes'] as const
 export type NomCalque = (typeof CALQUES_ELEMENTS)[number]
 
 export type Calques = { fond: CalqueFond } & Record<NomCalque, Calque>
@@ -162,15 +115,15 @@ export type Projet = {
   voies: Voie[]
   zones: Zone[]
   appareils: Appareil[]
-  engins: Engin[]
-  rames: Rame[]
   textes: Texte[]
 }
 
 // Marque et version du fichier enregistré, pour reconnaître nos projets.
 // Version 2 : fond et voies (étape 2). Version 3 : zones, appareils, cadres,
-// textes et extrémités (étape 3). Version 4 : échelle, engins et rames
-// (étape 5).
+// textes et extrémités (étape 3). Version 4 : échelle (étape 5). Les
+// fichiers de version 4 enregistrés avant la correction de l'étape 5
+// pouvaient contenir des engins : ils en sont retirés à la lecture, car les
+// engins se posent désormais dans les synoptiques.
 export const FORMAT_FICHIER = 'cinematique-ferroviaire/projet'
 export const VERSION_FICHIER = 4
 export const EXTENSION_FICHIER = '.cinematique.json'
@@ -195,7 +148,6 @@ export function creerCalques(): Calques {
     voies: { visible: true, verrouille: false },
     zones: { visible: true, verrouille: false },
     appareils: { visible: true, verrouille: false },
-    engins: { visible: true, verrouille: false },
     textes: { visible: true, verrouille: false },
   }
 }
@@ -213,8 +165,6 @@ export function creerProjet(nom = 'Nouveau projet'): Projet {
     voies: [],
     zones: [],
     appareils: [],
-    engins: [],
-    rames: [],
     textes: [],
   }
 }

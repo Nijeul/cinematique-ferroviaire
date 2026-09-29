@@ -12,29 +12,12 @@ import {
   normaliserRectangle,
   redimensionnerCadre,
 } from '../plan/elements.ts'
-import {
-  ajouterEngin,
-  ajouterRame,
-  angleVers,
-  glisserEnginLibre,
-  placerEnginSurVoie,
-  placerRame,
-  tournerEngin,
-  vehiculesDeGroupes,
-} from '../plan/engins.ts'
 import { contraindre } from '../plan/geometrie.ts'
-import {
-  COULEUR_VOIE_PAR_DEFAUT,
-  COULEUR_ZONE_PAR_DEFAUT,
-  epaisseurParDefaut,
-  type Point,
-  type PositionEngin,
-  type Projet,
-} from '../plan/projet.ts'
+import { COULEUR_VOIE_PAR_DEFAUT, COULEUR_ZONE_PAR_DEFAUT, epaisseurParDefaut, type Point, type Projet } from '../plan/projet.ts'
 import { pointAAbscisse, projeterSurPolyligne } from '../plan/trace.ts'
 import { deplacer, facteurMolette, recadrer, versPlan, zoomerAutour, type Vue } from '../plan/vue.ts'
 import { COULEURS } from './couleurs.ts'
-import { BarreEchelle, DessinEngin, DessinRame } from './DessinEngins.tsx'
+import { BarreEchelle } from './DessinEngins.tsx'
 import { DessinPlan, DessinZone } from './DessinPlan.tsx'
 import type { Editeur } from './useEditeur.ts'
 
@@ -127,12 +110,6 @@ export function PlanDeTravail({ editeur }: { editeur: Editeur }) {
       case 'communication':
         editeur.poserSurVoie(p, TOLERANCE_ACCROCHE / vue.zoom)
         return
-      case 'engin':
-        editeur.poserEngin(p, TOLERANCE_ACCROCHE / vue.zoom)
-        return
-      case 'rame':
-        editeur.poserRame(p, TOLERANCE_ACCROCHE / vue.zoom)
-        return
       case 'texte': {
         const ref = elementSousPointeur(projet, p, TOLERANCE_ELEMENT / vue.zoom)
         if (ref?.genre === 'texte') editeur.editerTexte(ref.id)
@@ -192,20 +169,6 @@ export function PlanDeTravail({ editeur }: { editeur: Editeur }) {
           return glisserCadre(origine, ref.id, decalage)
         case 'texte':
           return glisserTexte(origine, ref.id, decalage)
-        case 'engin': {
-          const engin = origine.engins.find((e) => e.id === ref.id)
-          if (engin?.position.genre !== 'voie') return glisserEnginLibre(origine, ref.id, decalage)
-          const points = voieDe(engin.position.voieId)
-          const glisse = projeterSurPolyligne(points, p).abscisse - projeterSurPolyligne(points, g.depart).abscisse
-          return placerEnginSurVoie(origine, ref.id, engin.position.abscisse + glisse)
-        }
-        case 'rame': {
-          const rame = origine.rames.find((r) => r.id === ref.id)
-          if (!rame) return origine
-          const points = voieDe(rame.voieId)
-          const glisse = projeterSurPolyligne(points, p).abscisse - projeterSurPolyligne(points, g.depart).abscisse
-          return placerRame(origine, ref.id, rame.abscisse + glisse)
-        }
         default:
           return origine
       }
@@ -231,12 +194,6 @@ export function PlanDeTravail({ editeur }: { editeur: Editeur }) {
       }
       case 'cadre':
         return redimensionnerCadre(origine, ref.id, Number(g.cle.slice('coin-'.length)), p)
-      case 'engin': {
-        // Poignée de rotation d'un engin hors voie ; Maj : par pas de 15°.
-        const engin = origine.engins.find((e) => e.id === ref.id)
-        if (engin?.position.genre !== 'libre') return origine
-        return tournerEngin(origine, ref.id, angleVers(engin.position, p, maj ? 15 : 0))
-      }
       default:
         return origine
     }
@@ -293,31 +250,14 @@ export function PlanDeTravail({ editeur }: { editeur: Editeur }) {
   const voiesParId = new Map(projet.voies.map((v) => [v.id, v]))
   const estChoisi = (genre: Genre, id: string) => selection?.genre === genre && selection.id === id
 
-  // Pose en cours (zone, BS, communication, engin, rame) : où le pointeur s'accrocherait.
+  // Pose en cours (zone, BS, communication) : où le pointeur s'accrocherait.
   const tolerance = TOLERANCE_ACCROCHE / vue.zoom
   const accroche =
-    curseur && voiesVisibles && ['zone', 'bs', 'communication', 'engin', 'rame'].includes(outil)
+    curseur && voiesVisibles && (outil === 'zone' || outil === 'bs' || outil === 'communication')
       ? outil === 'zone' && pose
         ? accrocherVoie(projet.voies.filter((v) => v.id === pose.voieId), curseur.p, tolerance)
         : accrocherVoie(projet.voies, curseur.p, tolerance, pose?.voieId)
       : null
-  // Aperçu de l'engin ou de la rame qui serait posé au clic.
-  const apercu = (() => {
-    if (!curseur || !projet.echelle || enDeplacement) return null
-    if (outil === 'engin' && editeur.typeChoisi) {
-      const position: PositionEngin = accroche
-        ? { genre: 'voie', voieId: accroche.voieId, abscisse: accroche.abscisse }
-        : { genre: 'libre', x: curseur.p.x, y: curseur.p.y, angle: 0 }
-      const { projet: avec, id } = ajouterEngin(projet, editeur.typeChoisi, position)
-      return <DessinEngin projet={avec} engin={avec.engins.find((e) => e.id === id)!} choisi={false} zoom={vue.zoom} apercu />
-    }
-    const vehicules = vehiculesDeGroupes(editeur.composition)
-    if (outil === 'rame' && accroche && vehicules.length > 0) {
-      const { projet: avec, id } = ajouterRame(projet, vehicules, accroche.voieId, accroche.abscisse)
-      return <DessinRame projet={avec} rame={avec.rames.find((r) => r.id === id)!} choisie={false} zoom={vue.zoom} apercu />
-    }
-    return null
-  })()
   const voiePose = pose ? voiesParId.get(pose.voieId) : undefined
   const pointPose = voiePose && pose ? pointAAbscisse(voiePose.points, pose.abscisse).point : null
   const rectangleEnCours = nouveauCadre ? normaliserRectangle(nouveauCadre.a, nouveauCadre.b) : null
@@ -380,7 +320,6 @@ export function PlanDeTravail({ editeur }: { editeur: Editeur }) {
         {pointPose && (
           <circle cx={pointPose.x} cy={pointPose.y} r={RAYON_POIGNEE / vue.zoom} fill={COULEURS.selection} stroke="#ffffff" strokeWidth={1.5 / vue.zoom} />
         )}
-        {apercu && <g style={{ pointerEvents: 'none' }}>{apercu}</g>}
         {/* Point d'accroche sous le pointeur. */}
         {accroche && (
           <circle

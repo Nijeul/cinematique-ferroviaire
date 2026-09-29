@@ -15,6 +15,7 @@ import {
   type Chantier,
 } from '../plan/chantier.ts'
 import { lirePlanImporte, nomFichierChantier, serialiserChantier } from '../plan/fichierChantier.ts'
+import { avisEnginsRetires } from '../plan/lecture.ts'
 import type { Projet } from '../plan/projet.ts'
 import { formaterDuree, formaterPlage } from '../plan/temps.ts'
 import { AssistantNouveauPlan } from './AssistantNouveauPlan.tsx'
@@ -66,7 +67,8 @@ export function EcranChantier(props: {
       return
     }
     modifierChantier((c) => ajouterPlan(c, lu.projet).chantier)
-    setMessage({ genre: 'info', texte: `Plan « ${lu.projet.nom} » importé dans ce chantier.` })
+    const avis = avisEnginsRetires(lu.projet.nom, lu.retires)
+    setMessage({ genre: 'info', texte: `Plan « ${lu.projet.nom} » importé dans ce chantier.${avis ? ` ${avis}` : ''}` })
   }
 
   const supprimer = (cible: ASupprimer) => {

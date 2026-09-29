@@ -5,7 +5,6 @@ import {
   epaisseurParDefaut,
   type Calque,
   type CalqueFond,
-  type Engin,
   type Extremites,
   type Fond,
   type NomCalque,
@@ -93,11 +92,6 @@ export function recalerSurVoie(projet: Projet, voieId: string): Projet {
       const talon = recaler(a.talon)
       return pointe === a.pointe && talon === a.talon ? a : { ...a, pointe, talon }
     }),
-    engins: projet.engins.map((e) => (e.position.genre === 'voie' ? { ...e, position: recaler(e.position) } : e)),
-    rames: projet.rames.map((r) => {
-      const { voieId, abscisse } = recaler({ voieId: r.voieId, abscisse: r.abscisse })
-      return abscisse === r.abscisse ? r : { ...r, voieId, abscisse }
-    }),
   }
 }
 
@@ -116,23 +110,18 @@ function appareilsLies(projet: Projet, touche: (a: Projet['appareils'][number]) 
   return new Set(projet.appareils.filter((a) => communications.has(a.communication ?? a.id)).map((a) => a.id))
 }
 
-const enginSurVoie = (e: Engin, id: string): boolean => e.position.genre === 'voie' && e.position.voieId === id
+export type Dependances = { zones: number; appareils: number }
 
-export type Dependances = { zones: number; appareils: number; engins: number; rames: number }
-
-// Ce qui disparaît avec une voie : ses zones, ses appareils, les engins et
-// les rames posés dessus.
+// Ce qui disparaît avec une voie : ses zones et ses appareils.
 export function dependancesVoie(projet: Projet, id: string): Dependances {
   return {
     zones: projet.zones.filter((z) => z.voieId === id).length,
     appareils: appareilsLies(projet, (a) => a.pointe.voieId === id || a.talon.voieId === id).size,
-    engins: projet.engins.filter((e) => enginSurVoie(e, id)).length,
-    rames: projet.rames.filter((r) => r.voieId === id).length,
   }
 }
 
-// Supprime la voie avec tout ce qui est posé dessus : un seul Annuler
-// restaure le tout.
+// Supprime la voie avec ses zones et ses appareils : un seul Annuler restaure
+// le tout.
 export function supprimerVoie(projet: Projet, id: string): Projet {
   const appareils = appareilsLies(projet, (a) => a.pointe.voieId === id || a.talon.voieId === id)
   return {
@@ -140,8 +129,6 @@ export function supprimerVoie(projet: Projet, id: string): Projet {
     voies: projet.voies.filter((voie) => voie.id !== id),
     zones: projet.zones.filter((z) => z.voieId !== id),
     appareils: projet.appareils.filter((a) => !appareils.has(a.id)),
-    engins: projet.engins.filter((e) => !enginSurVoie(e, id)),
-    rames: projet.rames.filter((r) => r.voieId !== id),
   }
 }
 

@@ -2,47 +2,21 @@ import { useCallback, useRef, useState, type ReactNode } from 'react'
 import type { Route } from '../plan/adresse.ts'
 import { ajouterSynoptique, nomLibre, remplacerPlan, type Chantier, type PlanDuChantier } from '../plan/chantier.ts'
 import { descriptionEchelle } from '../plan/echelle.ts'
-import { silhouetteRame } from '../plan/engins.ts'
-import type { Echelle, Projet } from '../plan/projet.ts'
-import { CalageEchelle } from './CalageEchelle.tsx'
-import { BandeauMessage, BarreNavigation, BoutonsFenetre, Fenetre } from './commun.tsx'
+import type { Echelle } from '../plan/projet.ts'
+import { FenetreEchelle } from './CalageEchelle.tsx'
+import { BandeauMessage, BarreNavigation } from './commun.tsx'
 import { COULEURS } from './couleurs.ts'
 import { NouveauSynoptique } from './NouveauSynoptique.tsx'
 import { PanneauCalques } from './PanneauCalques.tsx'
 import { PlanDeTravail } from './PlanDeTravail.tsx'
 import { POLICE, styleBouton, styleBoutonPrincipal } from './styles.ts'
-import { RAISON_SANS_ECHELLE, TOUCHE_ECHELLE, TOUCHES, useEditeur, type Editeur, type Outil } from './useEditeur.ts'
+import { TOUCHE_ECHELLE, TOUCHES, useEditeur, type Editeur, type Outil } from './useEditeur.ts'
 
 // Écran d'un plan : l'éditeur — fond de plan importé (image ou PDF) et, au
-// calque par-dessus, voies, zones de travaux, appareils de voie, cadres,
-// textes, engins et rames à l'échelle — l'outil « Échelle » et le bouton
-// « Nouveau synoptique ».
-
-// Recalage de l'échelle d'un plan existant (outil « Échelle… »).
-function FenetreEchelle(props: { projet: Projet; valider: (e: Echelle) => void; fermer: () => void }) {
-  const [echelle, setEchelle] = useState<Echelle | null>(null)
-  return (
-    <Fenetre titre={props.projet.echelle ? "Recaler l'échelle du plan" : "Caler l'échelle du plan"} fermer={props.fermer} largeur={900}>
-      <p style={{ margin: '0 0 8px', fontSize: 13, lineHeight: 1.5 }}>
-        Cliquez deux repères dont vous connaissez l'écart réel (deux poteaux, deux PK…), puis tapez cet écart. Les engins gardent leur
-        longueur en mètres : ils prendront la taille qui correspond à la nouvelle échelle.
-      </p>
-      <CalageEchelle projet={props.projet} changer={setEchelle} />
-      <BoutonsFenetre>
-        <button style={styleBouton()} onClick={props.fermer}>
-          Annuler
-        </button>
-        <button
-          style={{ ...styleBoutonPrincipal, opacity: echelle ? 1 : 0.5 }}
-          disabled={!echelle}
-          onClick={() => echelle && props.valider(echelle)}
-        >
-          Appliquer cette échelle
-        </button>
-      </BoutonsFenetre>
-    </Fenetre>
-  )
-}
+// calque par-dessus, voies, zones de travaux, appareils de voie, cadres et
+// textes — l'outil « Échelle » et le bouton « Nouveau synoptique ». Le plan
+// ne contient aucun engin : les engins se posent dans les images des
+// synoptiques, à l'échelle copiée depuis le plan.
 
 function Groupe({ children }: { children: ReactNode }) {
   return <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>{children}</div>
@@ -58,8 +32,6 @@ const OUTILS: { outil: Outil; libelle: string; titre: string }[] = [
   { outil: 'communication', libelle: 'Communication', titre: 'Deux BS talon contre talon entre deux voies' },
   { outil: 'cadre', libelle: 'Cadre', titre: 'Rectangle : stockage, base arrière, pont…' },
   { outil: 'texte', libelle: 'Texte', titre: 'Texte libre sur le plan' },
-  { outil: 'engin', libelle: 'Engin', titre: "Engin à l'échelle : sur une voie (il la suit) ou hors voie" },
-  { outil: 'rame', libelle: 'Rame', titre: 'Train : véhicules bout à bout le long d’une voie' },
   { outil: 'main', libelle: 'Main', titre: 'Déplacer la vue' },
 ]
 
@@ -88,14 +60,6 @@ function consigne(editeur: Editeur): string {
       return 'Glissez pour tracer le cadre, dans n\'importe quel sens'
     case 'texte':
       return 'Cliquez où poser le texte, puis tapez-le dans le panneau à droite · clic sur un texte : le modifier'
-    case 'engin':
-      return editeur.typeChoisi
-        ? `Cliquez sur une voie pour y poser « ${editeur.typeChoisi.modele} » le long de la voie, ou loin des voies pour le poser libre · type à choisir dans le panneau`
-        : "Catalogue d'engins vide : ajoutez des types dans la page du chantier"
-    case 'rame':
-      return editeur.composition.length > 0
-        ? 'Cliquez sur une voie : la rame se pose centrée sur ce point, véhicules bout à bout · composition dans le panneau'
-        : 'Composez la rame dans le panneau de droite, puis cliquez sur une voie'
     case 'selection':
       return 'Cliquez un élément pour le choisir, puis glissez-le ou ses poignées · Suppr : supprimer'
     case 'main':
@@ -107,7 +71,6 @@ function BarreOutils({ editeur, ouvrirEchelle }: { editeur: Editeur; ouvrirEchel
   const choixFond = useRef<HTMLInputElement>(null)
   const choixProjet = useRef<HTMLInputElement>(null)
   const verrouille = editeur.projet.calques.fond.verrouille
-  const sansEchelle = !editeur.projet.echelle
   return (
     <header
       style={{
@@ -169,22 +132,18 @@ function BarreOutils({ editeur, ouvrirEchelle }: { editeur: Editeur; ouvrirEchel
       </Groupe>
       <Separateur />
       <Groupe>
-        {OUTILS.map(({ outil, libelle, titre }) => {
-          const bloque = sansEchelle && (outil === 'engin' || outil === 'rame')
-          return (
-            <button
-              key={outil}
-              style={{ ...styleBouton(editeur.outil === outil), ...(bloque ? { opacity: 0.45, cursor: 'not-allowed' } : {}) }}
-              title={bloque ? `${titre} — ${RAISON_SANS_ECHELLE}` : `${titre} — raccourci : ${TOUCHES[outil]}`}
-              aria-pressed={editeur.outil === outil}
-              aria-disabled={bloque}
-              data-outil={outil}
-              onClick={() => editeur.choisirOutil(outil)}
-            >
-              {libelle}
-            </button>
-          )
-        })}
+        {OUTILS.map(({ outil, libelle, titre }) => (
+          <button
+            key={outil}
+            style={styleBouton(editeur.outil === outil)}
+            title={`${titre} — raccourci : ${TOUCHES[outil]}`}
+            aria-pressed={editeur.outil === outil}
+            data-outil={outil}
+            onClick={() => editeur.choisirOutil(outil)}
+          >
+            {libelle}
+          </button>
+        ))}
         <button
           style={styleBouton()}
           onClick={ouvrirEchelle}
@@ -230,7 +189,7 @@ function Bandeau({ editeur, ouvrirEchelle }: { editeur: Editeur; ouvrirEchelle: 
           }}
         >
           <span style={{ flex: 1 }}>
-            <strong>Échelle non définie</strong> : calez-la pour placer des engins à la bonne taille.
+            <strong>Échelle non définie</strong> : calez-la pour que les engins des synoptiques issus de ce plan soient à la bonne taille.
           </span>
           <button style={styleBoutonPrincipal} onClick={ouvrirEchelle}>
             Caler l'échelle…
@@ -259,24 +218,20 @@ export function EcranPlan(props: {
   const ouvrirEchelle = useCallback(() => setFenetre('echelle'), [])
   const editeur = useEditeur(plan.projet, (projet) => modifierChantier((c) => remplacerPlan(c, plan.id, projet)), {
     suspendu: fenetre !== null,
-    catalogue: chantier.catalogue,
     ouvrirEchelle,
   })
   const { projet } = editeur
 
   const recaler = (echelle: Echelle) => {
     const avant = projet.echelle
-    const suivant = { ...projet, echelle }
-    editeur.modifier(() => suivant)
+    editeur.modifier((p) => ({ ...p, echelle }))
     setFenetre(null)
-    const depassements = suivant.rames.filter((r) => (silhouetteRame(suivant, r)?.depassement ?? 0) > 0).length
-    const engins = projet.engins.length + projet.rames.length
+    const synoptiques = chantier.synoptiques.some((s) => s.origine.planId === plan.id)
     editeur.setMessage({
-      genre: depassements > 0 ? 'erreur' : 'info',
+      genre: 'info',
       texte:
         `Échelle ${avant ? 'recalée' : 'calée'} : ${descriptionEchelle(echelle, projet.largeur)}.` +
-        (engins > 0 ? ' Les engins et les rames ont pris leur nouvelle taille.' : '') +
-        (depassements > 0 ? ` Attention : ${depassements} rame(s) dépassent maintenant le bout de leur voie.` : '') +
+        (synoptiques ? ' Les synoptiques déjà créés depuis ce plan gardent la leur (copies figées).' : '') +
         ' Ctrl+Z pour revenir en arrière.',
     })
   }
@@ -352,7 +307,15 @@ export function EcranPlan(props: {
         </main>
         <PanneauCalques editeur={editeur} />
       </div>
-      {fenetre === 'echelle' && <FenetreEchelle projet={projet} valider={recaler} fermer={() => setFenetre(null)} />}
+      {fenetre === 'echelle' && (
+        <FenetreEchelle
+          titre={projet.echelle ? "Recaler l'échelle du plan" : "Caler l'échelle du plan"}
+          explication="Les synoptiques créés ensuite à partir de ce plan reprendront cette échelle : leurs engins y seront à la bonne taille."
+          projet={projet}
+          valider={recaler}
+          fermer={() => setFenetre(null)}
+        />
+      )}
       {fenetre === 'synoptique' && (
         <NouveauSynoptique
           projet={projet}

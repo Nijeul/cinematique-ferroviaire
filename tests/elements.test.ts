@@ -136,7 +136,7 @@ describe('communications', () => {
 describe('suppression en cascade et voies modifiées', () => {
   it('supprimer une voie supprime ses zones et ses appareils, communication comprise', () => {
     const projet = exemple()
-    expect(dependancesVoie(projet, 'voie-3')).toEqual({ zones: 2, appareils: 3, engins: 0, rames: 0 })
+    expect(dependancesVoie(projet, 'voie-3')).toEqual({ zones: 2, appareils: 3 })
     const apres = supprimerVoie(projet, 'voie-3')
     expect(apres.zones.map((z) => z.id)).toEqual(['zone-3', 'zone-4'])
     expect(apres.appareils).toEqual([])
@@ -145,7 +145,7 @@ describe('suppression en cascade et voies modifiées', () => {
 
   it('une voie sans rien dessus part seule', () => {
     const projet = exemple()
-    expect(dependancesVoie(projet, 'voie-1')).toEqual({ zones: 0, appareils: 0, engins: 0, rames: 0 })
+    expect(dependancesVoie(projet, 'voie-1')).toEqual({ zones: 0, appareils: 0 })
     expect(supprimerVoie(projet, 'voie-1').zones).toEqual(projet.zones)
   })
 

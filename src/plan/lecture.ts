@@ -10,19 +10,16 @@ import {
   type Ancrage,
   type Appareil,
   type Cadre,
-  type DimensionsEngin,
   type Echelle,
-  type Engin,
   type Fond,
   type Point,
   type Projet,
-  type Rame,
   type Texte,
-  type TypeEngin,
-  type Vehicule,
   type Voie,
   type Zone,
 } from './projet.ts'
+import type { DimensionsEngin, TypeEngin } from './catalogue.ts'
+import type { Engin, EnginsEtRames, Rame, Vehicule } from './engins.ts'
 import { longueurPolyligne } from './trace.ts'
 
 // Lecture et vérification d'un projet enregistré. Les erreurs sont en
@@ -31,9 +28,35 @@ import { longueurPolyligne } from './trace.ts'
 // Les fichiers des étapes précédentes s'ouvrent toujours : les listes
 // absentes sont vides, les extrémités prennent leurs noms par défaut (Nord à
 // gauche, Sud à droite), et un plan sans échelle (étapes 2 à 4) reste sans
-// échelle : il faudra la caler pour poser des engins.
+// échelle.
+//
+// Un plan ne contient aucun engin : ceux d'un plan enregistré avant la
+// correction de l'étape 5 sont retirés à la lecture, et comptés pour le dire
+// une fois à l'utilisateur. Les engins et les rames se lisent dans les images
+// des synoptiques (lireEnginsEtRames).
 
-export type ResultatLecture = { ok: true; projet: Projet } | { ok: false; erreurs: string[] }
+// Engins et rames trouvés dans un plan, et retirés.
+export type EnginsRetires = { engins: number; rames: number }
+
+export type ResultatLecture = { ok: true; projet: Projet; retires: EnginsRetires } | { ok: false; erreurs: string[] }
+
+const pluriel = (n: number, mot: string) => `${n} ${mot}${n > 1 ? 's' : ''}`
+
+// « Les engins ne se posent plus sur le plan mais dans les synoptiques :
+// 3 engins et 1 rame retirés du plan « Phase 1 ». » ; null si rien n'a été
+// retiré.
+export function avisEnginsRetires(nomPlan: string, r: EnginsRetires): string | null {
+  if (r.engins + r.rames === 0) return null
+  const quoi = [r.engins > 0 && pluriel(r.engins, 'engin'), r.rames > 0 && pluriel(r.rames, 'rame')].filter(Boolean).join(' et ')
+  const retire = r.engins + r.rames > 1 ? 'retirés' : r.engins === 1 ? 'retiré' : 'retirée'
+  return `Les engins ne se posent plus sur le plan mais dans les synoptiques : ${quoi} ${retire} du plan « ${nomPlan} ».`
+}
+
+// Ce qu'un plan enregistré contient encore d'engins et de rames.
+export function compterEnginsDuPlan(brut: unknown): EnginsRetires {
+  const longueur = (v: unknown) => (Array.isArray(v) ? v.length : 0)
+  return estObjet(brut) ? { engins: longueur(brut.engins), rames: longueur(brut.rames) } : { engins: 0, rames: 0 }
+}
 
 type Brut = Record<string, unknown>
 
@@ -324,6 +347,19 @@ function lireRame(r: Brut, libelle: string, erreurs: string[], voies: Map<string
   }
 }
 
+// Engins et rames d'une image de synoptique, posés sur ses voies ; il faut une
+// échelle pour qu'ils aient une taille.
+export function lireEnginsEtRames(brut: unknown, voies: Voie[], echelle: Echelle | null, erreurs: string[]): EnginsEtRames {
+  const b = estObjet(brut) ? brut : {}
+  const parId = new Map(voies.map((v) => [v.id, v]))
+  const engins = lireListe(b.engins, 'Engin', erreurs, (e, libelle) => lireEngin(e, libelle, erreurs, parId))
+  const rames = lireListe(b.rames, 'Rame', erreurs, (r, libelle) => lireRame(r, libelle, erreurs, parId))
+  if (!echelle && engins.length + rames.length > 0) {
+    erreurs.push("Des engins sont posés mais l'échelle manque : leur taille ne peut pas être calculée.")
+  }
+  return { engins, rames }
+}
+
 function lireEchelle(brut: unknown, erreurs: string[]): Echelle | null {
   if (brut === null || brut === undefined) return null
   if (!estObjet(brut) || !estPositif(brut.pixelsParMetre)) {
@@ -364,7 +400,8 @@ export function lireProjet(texte: string): ResultatLecture {
 }
 
 // Le contenu d'un plan, sans l'en-tête du fichier (marque et version) : sert
-// aussi pour les plans et les images rangés dans un fichier de chantier.
+// aussi pour les plans et les images rangés dans un fichier de chantier. Les
+// engins et rames éventuels ne sont pas lus (voir `retires`).
 export function lireCorpsProjet(brut: unknown): ResultatLecture {
   if (!estObjet(brut)) return { ok: false, erreurs: ['Le plan est illisible.'] }
   const erreurs: string[] = []
@@ -432,11 +469,6 @@ export function lireCorpsProjet(brut: unknown): ResultatLecture {
   const cadres = lireListe(brut.cadres, 'Cadre', erreurs, (c, libelle) => lireCadre(c, libelle, erreurs))
   const textes = lireListe(brut.textes, 'Texte', erreurs, (t, libelle) => lireTexte(t, libelle, erreurs))
   const echelle = lireEchelle(brut.echelle, erreurs)
-  const engins = lireListe(brut.engins, 'Engin', erreurs, (e, libelle) => lireEngin(e, libelle, erreurs, parId))
-  const rames = lireListe(brut.rames, 'Rame', erreurs, (r, libelle) => lireRame(r, libelle, erreurs, parId))
-  if (!echelle && brut.echelle == null && engins.length + rames.length > 0) {
-    erreurs.push("Des engins sont posés mais l'échelle du plan manque : leur taille ne peut pas être calculée.")
-  }
 
   if (erreurs.length > 0) return { ok: false, erreurs }
   return {
@@ -453,9 +485,8 @@ export function lireCorpsProjet(brut: unknown): ResultatLecture {
       voies,
       zones,
       appareils,
-      engins,
-      rames,
       textes,
     },
+    retires: compterEnginsDuPlan(brut),
   }
 }

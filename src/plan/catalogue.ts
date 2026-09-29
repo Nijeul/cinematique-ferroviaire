@@ -1,10 +1,23 @@
 import type { Resultat } from './echelle.ts'
 import { nouvelIdentifiant } from './edition.ts'
-import type { DimensionsEngin, TypeEngin } from './projet.ts'
 
-// Le catalogue d'engins d'un chantier : les types qu'on pose sur les plans
-// (catégorie, modèle, longueur et largeur en mètres, couleur de la
-// catégorie). Chaque chantier a le sien, modifiable dans la page du chantier.
+// Le catalogue d'engins d'un chantier : les types qu'on pose dans les images
+// des synoptiques (catégorie, modèle, longueur et largeur en mètres, couleur
+// de la catégorie). Chaque chantier a le sien, modifiable dans la page du
+// chantier.
+
+// Un type d'engin tel qu'il est posé : ses dimensions réelles en mètres et la
+// couleur de sa catégorie. Chaque engin posé en garde une copie (copie figée,
+// comme le reste du synoptique) : modifier le catalogue ne change pas les
+// engins déjà posés.
+export type DimensionsEngin = {
+  categorie: string
+  modele: string
+  longueur: number
+  largeur: number
+  couleur: string
+}
+export type TypeEngin = DimensionsEngin & { id: string }
 
 // ——— Liste par défaut ———
 //

@@ -1,23 +1,27 @@
 import { nouvelIdentifiant } from './edition.ts'
 import type { Rectangle } from './elements.ts'
 import type { Resultat } from './echelle.ts'
-import type { Echelle, Fond, Point, Projet } from './projet.ts'
+import type { EnginsEtRames } from './engins.ts'
+import type { Calque, Echelle, Fond, Point, Projet } from './projet.ts'
 import { ecrireInstant, formaterHoraire, formaterPlage, lireInstant, minutesDepuisT0 } from './temps.ts'
 
 // Un synoptique : une copie figée d'un plan, cadrée sur une partie du plan,
 // et une suite d'images qu'on feuillette comme un PowerPoint.
 //
-// Copie figée : à la création, le plan est copié entièrement. Le fond (image
-// lourde) est gardé une seule fois, au niveau du synoptique ; chaque image
-// porte sa propre copie des éléments (voies, zones, appareils…), pour qu'une
-// image puisse plus tard changer sans toucher les autres.
+// Copie figée : à la création, le plan est copié entièrement, échelle
+// comprise. Le fond (image lourde) et l'échelle sont gardés une seule fois,
+// au niveau du synoptique ; chaque image porte sa propre copie des éléments
+// (voies, zones, appareils…) et ses propres engins et rames : on pose ou on
+// déplace un engin sur une image sans toucher les autres. « Nouvelle image »
+// duplique l'image courante, engins compris : c'est ainsi qu'on fait avancer
+// les engins d'une image à l'autre.
 //
 // Temps : T0 est la date et l'heure du début du synoptique ; la fin et les
 // horaires des images sont en minutes depuis T0.
 
 // Ce qui est dessiné sur une image : tout le plan sauf le fond et l'échelle,
-// gardés une fois au niveau du synoptique.
-export type ContenuImage = Pick<Projet, 'extremites' | 'calques' | 'cadres' | 'voies' | 'zones' | 'appareils' | 'engins' | 'rames' | 'textes'>
+// gardés une fois au niveau du synoptique, et les engins et rames de l'image.
+export type ContenuImage = Pick<Projet, 'extremites' | 'calques' | 'cadres' | 'voies' | 'zones' | 'appareils' | 'textes'> & EnginsEtRames
 
 export type ImageSynoptique = { id: string; debut: number; fin: number; contenu: ContenuImage }
 
@@ -33,23 +37,35 @@ export type Synoptique = {
   largeur: number
   hauteur: number
   fond: Fond | null
-  // Copiée du plan à la création, figée comme le reste.
+  // Copiée du plan à la création, figée comme le reste ; calée dans le
+  // synoptique lui-même s'il n'en a pas (synoptiques de l'étape 4, plan sans
+  // échelle).
   echelle: Echelle | null
+  // Calque « Engins » : visible, verrouillé. Le même pour toutes les images.
+  calqueEngins: Calque
   images: ImageSynoptique[]
 }
 
+// Une image vue comme un plan : le fond et l'échelle du synoptique, les
+// éléments de l'image, ses engins et ses rames.
+export type PlanImage = Projet & EnginsEtRames
+
 const copie = <T>(valeur: T): T => structuredClone(valeur)
 
-export function contenuDe(projet: Projet): ContenuImage {
-  const { extremites, calques, cadres, voies, zones, appareils, engins, rames, textes } = projet
-  return copie({ extremites, calques, cadres, voies, zones, appareils, engins, rames, textes })
+// Contenu d'une image tiré d'un plan (qui n'a pas d'engins) ; `enginsEtRames`
+// sert à la relecture d'un synoptique enregistré.
+export function contenuDe(projet: Projet, enginsEtRames: EnginsEtRames = { engins: [], rames: [] }): ContenuImage {
+  const { extremites, calques, cadres, voies, zones, appareils, textes } = projet
+  return copie({ extremites, calques, cadres, voies, zones, appareils, textes, ...enginsEtRames })
 }
 
 // Le plan tel qu'il apparaît sur une image : le fond et l'échelle du
-// synoptique, et les éléments de l'image.
-export function projetDeImage(s: Synoptique, image: ImageSynoptique): Projet {
+// synoptique, les éléments, engins et rames de l'image.
+export function projetDeImage(s: Synoptique, image: ImageSynoptique): PlanImage {
   return { nom: s.nom, largeur: s.largeur, hauteur: s.hauteur, fond: s.fond, echelle: s.echelle, ...image.contenu }
 }
+
+export const CALQUE_ENGINS_PAR_DEFAUT: Calque = { visible: true, verrouille: false }
 
 // ——— Cadrage ———
 
@@ -112,15 +128,42 @@ export function creerSynoptique(
     hauteur: projet.hauteur,
     fond: projet.fond ? { ...projet.fond } : null,
     echelle: projet.echelle ? { ...projet.echelle } : null,
+    calqueEngins: { ...CALQUE_ENGINS_PAR_DEFAUT },
     images: [{ id: 'image-1', debut: 0, fin: demande.fin, contenu: contenuDe(projet) }],
   }
 }
 
+// ——— Engins d'une image ———
+
+// Modifie les engins et les rames d'une seule image : `transformer` reçoit
+// l'image vue comme un plan et renvoie la version modifiée. Seuls ses engins
+// et ses rames sont repris ; le reste de l'image (copie figée du plan) et les
+// autres images ne bougent pas.
+export function modifierImage(s: Synoptique, index: number, transformer: (image: PlanImage) => PlanImage): Synoptique {
+  const image = s.images[index]
+  if (!image) return s
+  const avant = projetDeImage(s, image)
+  const apres = transformer(avant)
+  if (apres === avant || (apres.engins === image.contenu.engins && apres.rames === image.contenu.rames)) return s
+  const contenu = { ...image.contenu, engins: apres.engins, rames: apres.rames }
+  return { ...s, images: s.images.map((im, i) => (i === index ? { ...im, contenu } : im)) }
+}
+
+export function modifierCalqueEngins(s: Synoptique, champs: Partial<Calque>): Synoptique {
+  return { ...s, calqueEngins: { ...s.calqueEngins, ...champs } }
+}
+
+// Échelle calée dans le synoptique lui-même (il n'en avait pas) : c'est une
+// copie indépendante, le plan d'origine ne change pas.
+export function calerEchelleSynoptique(s: Synoptique, echelle: Echelle): Synoptique {
+  return { ...s, echelle: { ...echelle } }
+}
+
 // ——— Images ———
 
-// Nouvelle image : copie de l'image courante, insérée juste après. Elle
-// commence à la fin de la courante et dure autant, sans dépasser la fin du
-// synoptique. S'il ne reste pas de place, elle reprend les horaires de la
+// Nouvelle image : copie de l'image courante, engins et rames compris,
+// insérée juste après. Elle commence à la fin de la courante et dure autant,
+// sans dépasser la fin du synoptique. S'il ne reste pas de place, elle reprend les horaires de la
 // courante, et un message invite à les ajuster.
 export function nouvelleImage(s: Synoptique, index: number): { synoptique: Synoptique; index: number; message: string | null } {
   const courante = s.images[index]

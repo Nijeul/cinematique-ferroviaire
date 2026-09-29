@@ -54,3 +54,15 @@ export const styleAvertissement: CSSProperties = {
   color: COULEURS.avertissement,
   background: '#fdf6e3',
 }
+
+// Panneaux latéraux (calques du plan, engins d'une image).
+export const stylesPanneau = {
+  section: { borderBottom: `1px solid ${COULEURS.bordure}`, padding: '10px 14px' },
+  titre: { margin: '0 0 6px', fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4, color: COULEURS.discret },
+  ligne: { display: 'flex', alignItems: 'center', gap: 8, margin: '6px 0', fontSize: 13 },
+  discret: { fontSize: 12, color: COULEURS.discret, margin: '4px 0' },
+  champ: { font: 'inherit', fontSize: 13, padding: '3px 6px', border: `1px solid ${COULEURS.bordure}`, borderRadius: 4, minWidth: 0 },
+  petitBouton: { font: 'inherit', fontSize: 12, padding: '2px 8px', border: `1px solid ${COULEURS.bordure}`, borderRadius: 4, background: '#fff', cursor: 'pointer' },
+  couleur: { width: 30, height: 26, padding: 0, border: 'none', background: 'none', cursor: 'pointer', flexShrink: 0 },
+  sousLigne: { display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, margin: '6px 0 0', color: COULEURS.discret, fontSize: 12 },
+} satisfies Record<string, CSSProperties>

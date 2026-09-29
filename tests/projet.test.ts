@@ -48,7 +48,7 @@ describe('lecture du projet', () => {
       },
     }
     const relu = lireProjet(serialiserProjet(projet))
-    expect(relu).toEqual({ ok: true, projet })
+    expect(relu).toEqual({ ok: true, projet, retires: { engins: 0, rames: 0 } })
   })
 
   it('refuse un fichier qui n’est pas du JSON, en français', () => {

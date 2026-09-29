@@ -1,9 +1,9 @@
 import type { Chantier, PlanDuChantier } from './chantier.ts'
 import type { Rectangle } from './elements.ts'
 import { creerCatalogue } from './catalogue.ts'
-import { lireCatalogue, lireCorpsProjet, lireProjet, type ResultatLecture } from './lecture.ts'
-import { FORMAT_FICHIER } from './projet.ts'
-import { contenuDe, type ImageSynoptique, type Synoptique } from './synoptique.ts'
+import { avisEnginsRetires, lireCatalogue, lireCorpsProjet, lireEnginsEtRames, lireProjet, type ResultatLecture } from './lecture.ts'
+import { FORMAT_FICHIER, type Calque } from './projet.ts'
+import { CALQUE_ENGINS_PAR_DEFAUT, contenuDe, type ImageSynoptique, type Synoptique } from './synoptique.ts'
 import { lireInstant } from './temps.ts'
 
 // Fichier d'un chantier entier — plans, synoptiques, fonds et catalogue
@@ -12,6 +12,10 @@ import { lireInstant } from './temps.ts'
 //
 // Version 1 (étape 4) : sans catalogue ni échelle. Elle s'ouvre toujours : le
 // chantier reçoit le catalogue par défaut, ses plans restent sans échelle.
+// Version 2 (étape 5) : échelle des plans et des synoptiques, catalogue, et
+// engins et rames dans les images des synoptiques. Un plan exporté avant la
+// correction de l'étape 5 pouvait porter des engins : ils en sont retirés à
+// la lecture, avec un avis (`avis`) à montrer une fois.
 
 export const FORMAT_CHANTIER = 'cinematique-ferroviaire/chantier'
 export const VERSION_CHANTIER = 2
@@ -26,7 +30,7 @@ export function nomFichierChantier(nom: string): string {
   return (propre || 'chantier') + EXTENSION_CHANTIER
 }
 
-export type LectureChantier = { ok: true; chantier: Chantier } | { ok: false; erreurs: string[] }
+export type LectureChantier = { ok: true; chantier: Chantier; avis: string[] } | { ok: false; erreurs: string[] }
 
 type Brut = Record<string, unknown>
 const estObjet = (v: unknown): v is Brut => typeof v === 'object' && v !== null && !Array.isArray(v)
@@ -44,7 +48,7 @@ function verifierIdentifiants(liste: unknown[], libelle: (i: number) => string, 
   })
 }
 
-function lirePlan(brut: unknown, i: number, erreurs: string[]): PlanDuChantier | null {
+function lirePlan(brut: unknown, i: number, erreurs: string[], avis: string[]): PlanDuChantier | null {
   const nom = estObjet(brut) && estObjet(brut.projet) && typeof brut.projet.nom === 'string' ? ` (« ${brut.projet.nom} »)` : ''
   const libelle = `Plan n°${i + 1}${nom}`
   if (!estObjet(brut)) {
@@ -56,7 +60,17 @@ function lirePlan(brut: unknown, i: number, erreurs: string[]): PlanDuChantier |
     erreurs.push(...lu.erreurs.map((e) => `${libelle} : ${e}`))
     return null
   }
+  const retire = avisEnginsRetires(lu.projet.nom, lu.retires)
+  if (retire) avis.push(retire)
   return { id: brut.id as string, projet: lu.projet }
+}
+
+function lireCalque(brut: unknown): Calque {
+  const c = typeof brut === 'object' && brut !== null ? (brut as Brut) : {}
+  return {
+    visible: typeof c.visible === 'boolean' ? c.visible : CALQUE_ENGINS_PAR_DEFAUT.visible,
+    verrouille: typeof c.verrouille === 'boolean' ? c.verrouille : CALQUE_ENGINS_PAR_DEFAUT.verrouille,
+  }
 }
 
 function lireCadrage(brut: unknown, largeur: number, hauteur: number): Rectangle | null | undefined {
@@ -111,7 +125,13 @@ function lireSynoptique(brut: unknown, i: number, erreurs: string[]): Synoptique
       erreurs.push(...lu.erreurs.map((e) => `${quelle} : ${e}`))
       return
     }
-    images.push({ id: im.id as string, debut: im.debut, fin: im.fin, contenu: contenuDe(lu.projet) })
+    const erreursEngins: string[] = []
+    const engins = lireEnginsEtRames(contenu, lu.projet.voies, echelle, erreursEngins)
+    if (erreursEngins.length > 0) {
+      erreurs.push(...erreursEngins.map((e) => `${quelle} : ${e}`))
+      return
+    }
+    images.push({ id: im.id as string, debut: im.debut, fin: im.fin, contenu: contenuDe(lu.projet, engins) })
   })
   if (erreurs.length > avant || cadrage === undefined) return null
   return {
@@ -125,6 +145,7 @@ function lireSynoptique(brut: unknown, i: number, erreurs: string[]): Synoptique
     hauteur,
     fond,
     echelle,
+    calqueEngins: lireCalque(brut.calqueEngins),
     images,
   }
 }
@@ -155,7 +176,8 @@ export function lireChantier(texte: string): LectureChantier {
   if (!Array.isArray(brut.synoptiques)) erreurs.push('La liste des synoptiques est absente.')
   verifierIdentifiants(plansBruts, (i) => `Plan n°${i + 1}`, erreurs)
   verifierIdentifiants(synoptiquesBruts, (i) => `Synoptique n°${i + 1}`, erreurs)
-  const plans = plansBruts.map((p: unknown, i: number) => lirePlan(p, i, erreurs))
+  const avis: string[] = []
+  const plans = plansBruts.map((p: unknown, i: number) => lirePlan(p, i, erreurs, avis))
   const synoptiques = synoptiquesBruts.map((s: unknown, i: number) => lireSynoptique(s, i, erreurs))
   const catalogue = brut.catalogue === undefined ? creerCatalogue() : lireCatalogue(brut.catalogue, erreurs)
   if (erreurs.length > 0) return { ok: false, erreurs }
@@ -169,6 +191,7 @@ export function lireChantier(texte: string): LectureChantier {
       synoptiques: synoptiques as Synoptique[],
       catalogue,
     },
+    avis,
   }
 }
 

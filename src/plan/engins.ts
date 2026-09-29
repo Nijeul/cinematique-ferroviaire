@@ -1,29 +1,67 @@
-import { dimensionsDe } from './catalogue.ts'
+import { dimensionsDe, type DimensionsEngin, type TypeEngin } from './catalogue.ts'
+import { dansPolygone, type Poignee } from './detection.ts'
 import { formaterMetres, metresVersPlan, planVersMetres } from './echelle.ts'
-import { afficherCalque, nomParDefaut, nouvelIdentifiant } from './edition.ts'
+import { nomParDefaut, nouvelIdentifiant } from './edition.ts'
 import { normaleHaut, tailleNom } from './geometrie.ts'
-import {
-  epaisseurParDefaut,
-  type DimensionsEngin,
-  type Engin,
-  type Point,
-  type PositionEngin,
-  type Projet,
-  type Rame,
-  type TypeEngin,
-  type Vehicule,
-  type Voie,
-} from './projet.ts'
+import { epaisseurParDefaut, type Point, type Projet, type Voie } from './projet.ts'
 import { bornerAbscisse, longueurPolyligne, pointAAbscisse } from './trace.ts'
 
-// Engins et rames posés sur le plan, à l'échelle : la longueur dessinée est
-// exactement la longueur réelle (en mètres) convertie par l'échelle du plan.
-// La largeur aussi, mais jamais plus fine que la voie dessinée, sinon l'engin
+// Engins et rames à l'échelle, posés dans une image de synoptique (jamais sur
+// le plan, qui reste « juste un plan ») : la longueur dessinée est exactement
+// la longueur réelle (en mètres) convertie par l'échelle du synoptique. La
+// largeur aussi, mais jamais plus fine que la voie dessinée, sinon l'engin
 // disparaîtrait sous le trait. Sur une voie, un engin suit le tracé (courbes
 // comprises) ; hors voie, il est libre et tourne. Une rame est une suite de
 // véhicules bout à bout sur une voie, chacun à sa propre abscisse.
 
+// Où est un engin : sur une voie (abscisse de son milieu, il suit la voie) ou
+// libre (milieu et angle en degrés, sens des aiguilles d'une montre,
+// 0 = horizontal).
+export type PositionEngin =
+  | { genre: 'voie'; voieId: string; abscisse: number }
+  | { genre: 'libre'; x: number; y: number; angle: number }
+
+export type Engin = {
+  id: string
+  // Type du catalogue dont il vient, et copie de ses dimensions.
+  typeId: string
+  type: DimensionsEngin
+  couleur: string
+  // Numéro ou court libellé affiché dans une pastille (« 3 », « P4 ») ; vide :
+  // pas de pastille.
+  numero: string
+  position: PositionEngin
+}
+
+export type Vehicule = { typeId: string; type: DimensionsEngin }
+
+// Rame : des véhicules bout à bout sur une voie. `abscisse` est le milieu de
+// la rame ; `sens` = 1 si la tête (premier véhicule) est du côté des abscisses
+// croissantes de la voie, -1 sinon.
+export type Rame = {
+  id: string
+  nom: string
+  numero: string
+  // Couleur de la pastille ; chaque véhicule garde la couleur de sa catégorie.
+  couleur: string
+  voieId: string
+  abscisse: number
+  sens: 1 | -1
+  vehicules: Vehicule[]
+}
+
+export type EnginsEtRames = { engins: Engin[]; rames: Rame[] }
+
+// Ce sur quoi l'on pose des engins : une image de synoptique vue comme un plan
+// (ses voies, son échelle, sa taille, ses extrémités) avec ses engins et ses
+// rames. Les fonctions de pose renvoient une planche du même type que celle
+// reçue.
+export type Planche = Pick<Projet, 'voies' | 'echelle' | 'largeur' | 'hauteur' | 'extremites'> & EnginsEtRames
+
 type PlanEngins = Pick<Projet, 'voies' | 'echelle' | 'largeur' | 'hauteur'>
+
+// Engin ou rame choisi dans une image.
+export type ReferenceEngin = { genre: 'engin' | 'rame'; id: string }
 
 const remplacer = <T extends { id: string }>(liste: T[], id: string, modifier: (e: T) => T): T[] =>
   liste.map((e) => (e.id === id ? modifier(e) : e))
@@ -275,22 +313,22 @@ export function changerNombre(groupes: Groupe[], i: number, nombre: number): Gro
 
 const pointsDe = (projet: PlanEngins, voieId: string): Point[] => projet.voies.find((v) => v.id === voieId)?.points ?? []
 
-export function ajouterEngin(projet: Projet, type: TypeEngin, position: PositionEngin): { projet: Projet; id: string } {
+export function ajouterEngin<P extends Planche>(projet: P, type: TypeEngin, position: PositionEngin): { planche: P; id: string } {
   const id = nouvelIdentifiant(projet.engins, 'engin')
   const placee: PositionEngin =
     position.genre === 'voie'
       ? { ...position, abscisse: bornerAbscisse(pointsDe(projet, position.voieId), position.abscisse) }
       : { ...position, angle: normaliserAngle(position.angle) }
   const engin: Engin = { id, typeId: type.id, type: dimensionsDe(type), couleur: type.couleur, numero: '', position: placee }
-  return { id, projet: afficherCalque({ ...projet, engins: [...projet.engins, engin] }, 'engins') }
+  return { id, planche: { ...projet, engins: [...projet.engins, engin] } }
 }
 
-export function modifierEngin(projet: Projet, id: string, champs: Partial<Pick<Engin, 'couleur' | 'numero'>>): Projet {
+export function modifierEngin<P extends Planche>(projet: P, id: string, champs: Partial<Pick<Engin, 'couleur' | 'numero'>>): P {
   return { ...projet, engins: remplacer(projet.engins, id, (e) => ({ ...e, ...champs })) }
 }
 
 // Engin sur une voie : nouvelle abscisse de son milieu, ramenée sur la voie.
-export function placerEnginSurVoie(projet: Projet, id: string, abscisse: number): Projet {
+export function placerEnginSurVoie<P extends Planche>(projet: P, id: string, abscisse: number): P {
   return {
     ...projet,
     engins: remplacer(projet.engins, id, (e) =>
@@ -302,7 +340,7 @@ export function placerEnginSurVoie(projet: Projet, id: string, abscisse: number)
 }
 
 // Engin libre : déplacement et rotation.
-export function glisserEnginLibre(projet: Projet, id: string, decalage: Point): Projet {
+export function glisserEnginLibre<P extends Planche>(projet: P, id: string, decalage: Point): P {
   return {
     ...projet,
     engins: remplacer(projet.engins, id, (e) =>
@@ -311,7 +349,7 @@ export function glisserEnginLibre(projet: Projet, id: string, decalage: Point): 
   }
 }
 
-export function tournerEngin(projet: Projet, id: string, angle: number): Projet {
+export function tournerEngin<P extends Planche>(projet: P, id: string, angle: number): P {
   return {
     ...projet,
     engins: remplacer(projet.engins, id, (e) =>
@@ -329,7 +367,7 @@ export function angleVers(centre: Point, p: Point, pas = 0): number {
 
 // Nouvelle rame, centrée sur l'abscisse cliquée ; la tête du côté gauche du
 // plan (Nord par défaut).
-export function ajouterRame(projet: Projet, vehicules: Vehicule[], voieId: string, abscisse: number): { projet: Projet; id: string } {
+export function ajouterRame<P extends Planche>(projet: P, vehicules: Vehicule[], voieId: string, abscisse: number): { planche: P; id: string } {
   const id = nouvelIdentifiant(projet.rames, 'rame')
   const points = pointsDe(projet, voieId)
   const s = bornerAbscisse(points, abscisse)
@@ -343,14 +381,14 @@ export function ajouterRame(projet: Projet, vehicules: Vehicule[], voieId: strin
     sens: pointAAbscisse(points, s).direction.x > 0 ? -1 : 1,
     vehicules: vehicules.map((v) => ({ typeId: v.typeId, type: { ...v.type } })),
   }
-  return { id, projet: afficherCalque({ ...projet, rames: [...projet.rames, rame] }, 'engins') }
+  return { id, planche: { ...projet, rames: [...projet.rames, rame] } }
 }
 
-export function modifierRame(projet: Projet, id: string, champs: Partial<Pick<Rame, 'nom' | 'numero' | 'couleur'>>): Projet {
+export function modifierRame<P extends Planche>(projet: P, id: string, champs: Partial<Pick<Rame, 'nom' | 'numero' | 'couleur'>>): P {
   return { ...projet, rames: remplacer(projet.rames, id, (r) => ({ ...r, ...champs })) }
 }
 
-export function placerRame(projet: Projet, id: string, abscisse: number): Projet {
+export function placerRame<P extends Planche>(projet: P, id: string, abscisse: number): P {
   return {
     ...projet,
     rames: remplacer(projet.rames, id, (r) => ({ ...r, abscisse: bornerAbscisse(pointsDe(projet, r.voieId), abscisse) })),
@@ -358,34 +396,14 @@ export function placerRame(projet: Projet, id: string, abscisse: number): Projet
 }
 
 // La rame garde sa place ; la tête passe à l'autre bout.
-export function inverserRame(projet: Projet, id: string): Projet {
+export function inverserRame<P extends Planche>(projet: P, id: string): P {
   return { ...projet, rames: remplacer(projet.rames, id, (r) => ({ ...r, sens: r.sens === 1 ? -1 : 1 })) }
 }
 
 // Nouvelle composition d'une rame (au moins un véhicule), à la même place.
-export function composerRame(projet: Projet, id: string, vehicules: Vehicule[]): Projet {
+export function composerRame<P extends Planche>(projet: P, id: string, vehicules: Vehicule[]): P {
   if (vehicules.length === 0) return projet
   return { ...projet, rames: remplacer(projet.rames, id, (r) => ({ ...r, vehicules: vehicules.map((v) => ({ ...v, type: { ...v.type } })) })) }
-}
-
-// Un type du catalogue a changé : les engins et véhicules posés qui en
-// viennent prennent ses nouvelles dimensions. La couleur d'un engin suit
-// aussi, sauf s'il avait reçu une couleur à lui.
-export function appliquerType(projet: Projet, avant: TypeEngin, apres: TypeEngin): Projet {
-  const dims = dimensionsDe(apres)
-  const touche = projet.engins.some((e) => e.typeId === avant.id) || projet.rames.some((r) => r.vehicules.some((v) => v.typeId === avant.id))
-  if (!touche) return projet
-  return {
-    ...projet,
-    engins: projet.engins.map((e) =>
-      e.typeId === avant.id ? { ...e, type: dims, couleur: e.couleur === avant.couleur ? apres.couleur : e.couleur } : e,
-    ),
-    rames: projet.rames.map((r) =>
-      r.vehicules.some((v) => v.typeId === avant.id)
-        ? { ...r, vehicules: r.vehicules.map((v) => (v.typeId === avant.id ? { ...v, type: { ...dims } } : v)) }
-        : r,
-    ),
-  }
 }
 
 // ——— Pastille et libellé ———
@@ -435,4 +453,54 @@ export function coteEtiquetteRame(s: SilhouetteRame): 'dessus' | 'dessous' {
   const haut = normaleHaut(s.milieu.direction)
   const fleche = (s.milieu.centre.x - corde.x) * haut.x + (s.milieu.centre.y - corde.y) * haut.y
   return fleche > s.vehicules[0].largeur * 0.5 ? 'dessus' : 'dessous'
+}
+
+// Ligne de base de l'étiquette d'une rame (texte horizontal, centré en x) :
+// au milieu de la rame, du côté extérieur de la courbe, et au-delà de tout
+// véhicule qui passerait sous le texte — sur une rame qui passe le sommet
+// d'une courbe, l'étiquette ne chevauche ainsi aucun wagon.
+export function positionEtiquetteRame(s: SilhouetteRame, taille: number, largeurTexte: number): Point {
+  const x = s.milieu.centre.x
+  const marge = taille * 0.3
+  const demi = largeurTexte / 2 + marge
+  const coins = s.vehicules.flatMap((v) => v.coins).filter((c) => Math.abs(c.x - x) <= demi)
+  const ys = coins.length > 0 ? coins.map((c) => c.y) : [s.milieu.centre.y]
+  return coteEtiquetteRame(s) === 'dessus'
+    ? { x, y: Math.min(...ys) - marge - taille * 0.2 }
+    : { x, y: Math.max(...ys) + marge + taille * 0.8 }
+}
+
+// ——— Choix sous le pointeur, poignée, suppression ———
+
+// Engin ou rame sous le pointeur : le dernier posé (dessiné au-dessus) d'abord.
+export function enginSousPointeur(projet: Planche, p: Point, tolerance: number): ReferenceEngin | null {
+  for (let i = projet.rames.length - 1; i >= 0; i--) {
+    const s = silhouetteRame(projet, projet.rames[i])
+    if (s?.vehicules.some((v) => dansPolygone(v.coins, p, tolerance))) return { genre: 'rame', id: projet.rames[i].id }
+  }
+  for (let i = projet.engins.length - 1; i >= 0; i--) {
+    const s = silhouetteEngin(projet, projet.engins[i])
+    if (s && dansPolygone(s.coins, p, tolerance)) return { genre: 'engin', id: projet.engins[i].id }
+  }
+  return null
+}
+
+export const existeEngin = (projet: EnginsEtRames, ref: ReferenceEngin): boolean =>
+  (ref.genre === 'engin' ? projet.engins : projet.rames).some((e) => e.id === ref.id)
+
+// Poignée ronde de rotation d'un engin hors voie, au bout de l'engin (un engin
+// sur voie ou une rame se glissent d'un bloc, sans poignée).
+export function poigneesEngin(projet: Planche, ref: ReferenceEngin): Poignee[] {
+  if (ref.genre !== 'engin') return []
+  const engin = projet.engins.find((e) => e.id === ref.id)
+  const s = engin?.position.genre === 'libre' ? silhouetteEngin(projet, engin) : null
+  if (!s) return []
+  const ecart = s.longueur / 2 + s.largeur * 1.2
+  return [{ cle: 'rotation', point: { x: s.centre.x + s.direction.x * ecart, y: s.centre.y + s.direction.y * ecart } }]
+}
+
+export function supprimerEngin<P extends Planche>(projet: P, ref: ReferenceEngin): P {
+  return ref.genre === 'engin'
+    ? { ...projet, engins: projet.engins.filter((e) => e.id !== ref.id) }
+    : { ...projet, rames: projet.rames.filter((r) => r.id !== ref.id) }
 }

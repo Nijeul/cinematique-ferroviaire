@@ -10,9 +10,10 @@ import {
 } from '../plan/echelle.ts'
 import type { Echelle, Point, Projet } from '../plan/projet.ts'
 import { deplacer, facteurMolette, recadrer, versPlan, zoomerAutour, type Vue } from '../plan/vue.ts'
+import { BoutonsFenetre, Fenetre } from './commun.tsx'
 import { COULEURS } from './couleurs.ts'
 import { DessinPlan } from './DessinPlan.tsx'
-import { styleChamp, styleDiscret } from './styles.ts'
+import { styleBouton, styleBoutonPrincipal, styleChamp, styleDiscret } from './styles.ts'
 
 // Calage de l'échelle d'un plan. Deux façons :
 // - deux clics sur le plan, sur deux repères dont on connaît l'écart réel
@@ -230,5 +231,37 @@ export function CalageEchelle(props: { projet: Projet; changer: (echelle: Echell
         )}
       </p>
     </div>
+  )
+}
+
+// Fenêtre de calage de l'échelle d'un plan existant (outil « Échelle… »), ou
+// d'un synoptique qui n'en a pas.
+export function FenetreEchelle(props: {
+  titre: string
+  explication: string
+  projet: Projet
+  valider: (e: Echelle) => void
+  fermer: () => void
+}) {
+  const [echelle, setEchelle] = useState<Echelle | null>(null)
+  return (
+    <Fenetre titre={props.titre} fermer={props.fermer} largeur={900}>
+      <p style={{ margin: '0 0 8px', fontSize: 13, lineHeight: 1.5 }}>
+        Cliquez deux repères dont vous connaissez l'écart réel (deux poteaux, deux PK…), puis tapez cet écart. {props.explication}
+      </p>
+      <CalageEchelle projet={props.projet} changer={setEchelle} />
+      <BoutonsFenetre>
+        <button style={styleBouton()} onClick={props.fermer}>
+          Annuler
+        </button>
+        <button
+          style={{ ...styleBoutonPrincipal, opacity: echelle ? 1 : 0.5 }}
+          disabled={!echelle}
+          onClick={() => echelle && props.valider(echelle)}
+        >
+          Appliquer cette échelle
+        </button>
+      </BoutonsFenetre>
+    </Fenetre>
   )
 }

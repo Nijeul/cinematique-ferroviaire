@@ -83,7 +83,8 @@ describe('modèle du chantier', () => {
     const r = ajouterPlan(c, nouveauPlan('  Phase définitive ', fond, { pixelsParMetre: 2.5 }))
     expect(r.id).toBe('plan-2')
     const projet = r.chantier.plans[1].projet
-    expect(projet).toMatchObject({ nom: 'Phase définitive', largeur: 1200, hauteur: 700, echelle: { pixelsParMetre: 2.5 }, voies: [], engins: [] })
+    expect(projet).toMatchObject({ nom: 'Phase définitive', largeur: 1200, hauteur: 700, echelle: { pixelsParMetre: 2.5 }, voies: [] })
+    expect(projet).not.toHaveProperty('engins')
     expect(projet.fond?.nomFichier).toBe('plan.png')
     expect(r.chantier.plans[0].projet).toMatchObject({ largeur: 1600, fond: null, echelle: { pixelsParMetre: 4 } })
   })
@@ -119,7 +120,7 @@ describe('modèle du chantier', () => {
 
   it('résume un plan en une ligne', () => {
     const c = fixture()
-    expect(resumePlan(c.plans[0].projet)).toBe('4 voies · 4 zones · 3 appareils · 1 cadre · 1 texte · 3 engins · 1 rame · sans fond')
+    expect(resumePlan(c.plans[0].projet)).toBe('4 voies · 4 zones · 3 appareils · 1 cadre · 1 texte · sans fond')
     const vide = creerProjet()
     expect(resumePlan(vide)).toBe('rien de tracé · sans fond · échelle non définie')
     const avecFond = { ...vide, echelle: { pixelsParMetre: 1 }, fond: { image: '', largeur: 1, hauteur: 1, nomFichier: 'plan.pdf', page: 2, nombrePages: 3 } }
@@ -138,7 +139,7 @@ describe('export et import d’un chantier', () => {
     const c = fixture()
     c.plans[0].projet.fond = { image: 'data:image/png;base64,iVBORw0KGgo=', largeur: 1600, hauteur: 900, nomFichier: 'plan.png', page: null, nombrePages: null }
     c.synoptiques[0].fond = { ...c.plans[0].projet.fond }
-    expect(lireChantier(serialiserChantier(c))).toEqual({ ok: true, chantier: c })
+    expect(lireChantier(serialiserChantier(c))).toEqual({ ok: true, chantier: c, avis: [] })
   })
 
   it('nomme le fichier d’après le chantier', () => {
@@ -230,7 +231,7 @@ describe('reprise de la sauvegarde automatique des étapes 2 et 3', () => {
     expect(c.plans).toHaveLength(1)
     expect(c.plans[0].projet.voies).toEqual(lu.projet.voies)
     expect(c.plans[0].projet.fond?.image).toBe('data:image/png;base64,iVBORw0KGgo=')
-    expect(lireChantier(serialiserChantier(c))).toEqual({ ok: true, chantier: c })
+    expect(lireChantier(serialiserChantier(c))).toEqual({ ok: true, chantier: c, avis: [] })
   })
 
   it('garde un plan vide sans fond tel quel', () => {
