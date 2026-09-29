@@ -1,27 +1,25 @@
 import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react'
+import { descriptionEchelle } from '../plan/echelle.ts'
 import { libelleSens } from '../plan/dessin.ts'
 import type { Genre } from '../plan/detection.ts'
 import { modifierCalque, modifierCalqueFond, modifierExtremites, modifierVoie, retirerFond } from '../plan/edition.ts'
 import { inverserAppareil, jumeau, modifierAppareil, modifierCadre, modifierTexte, modifierZone } from '../plan/elements.ts'
 import { bornerPage } from '../plan/fond.ts'
-import { EPAISSEUR_MAX, EPAISSEUR_MIN, TAILLE_TEXTE_MAX, TAILLE_TEXTE_MIN, type NomCalque } from '../plan/projet.ts'
+import {
+  EPAISSEUR_MAX,
+  EPAISSEUR_MIN,
+  TAILLE_TEXTE_MAX,
+  TAILLE_TEXTE_MIN,
+  type NomCalque,
+} from '../plan/projet.ts'
 import { COULEURS } from './couleurs.ts'
-import { TOUCHES, type Editeur } from './useEditeur.ts'
+import { stylesPanneau as styles } from './styles.ts'
+import { TOUCHE_ECHELLE, TOUCHES, type Editeur } from './useEditeur.ts'
 
-// Panneau latéral : le plan (nom, extrémités du plan), un calque par type
-// d'élément — Fond, Cadres, Voies, Zones, Appareils, Textes — chacun avec
+// Panneau latéral : le plan (nom, échelle, extrémités du plan), un calque par
+// type d'élément — Fond, Cadres, Voies, Zones, Appareils, Textes — chacun avec
 // sa liste et les propriétés de ses éléments, et l'aide des raccourcis.
 
-const styles = {
-  section: { borderBottom: `1px solid ${COULEURS.bordure}`, padding: '10px 14px' },
-  titre: { margin: '0 0 6px', fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4, color: COULEURS.discret },
-  ligne: { display: 'flex', alignItems: 'center', gap: 8, margin: '6px 0', fontSize: 13 },
-  discret: { fontSize: 12, color: COULEURS.discret, margin: '4px 0' },
-  champ: { font: 'inherit', fontSize: 13, padding: '3px 6px', border: `1px solid ${COULEURS.bordure}`, borderRadius: 4, minWidth: 0 },
-  petitBouton: { font: 'inherit', fontSize: 12, padding: '2px 8px', border: `1px solid ${COULEURS.bordure}`, borderRadius: 4, background: '#fff', cursor: 'pointer' },
-  couleur: { width: 30, height: 26, padding: 0, border: 'none', background: 'none', cursor: 'pointer', flexShrink: 0 },
-  sousLigne: { display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, margin: '6px 0 0', color: COULEURS.discret, fontSize: 12 },
-} satisfies Record<string, CSSProperties>
 
 function Section({ titre, children }: { titre: string; children: ReactNode }) {
   return (
@@ -252,7 +250,7 @@ function Ligne(props: { editeur: Editeur; genre: Genre; id: string; children: Re
   )
 }
 
-function ChampCouleur({ valeur, libelle, changer }: { valeur: string; libelle: string; changer: (c: string) => void }) {
+export function ChampCouleur({ valeur, libelle, changer }: { valeur: string; libelle: string; changer: (c: string) => void }) {
   return (
     <input
       type="color"
@@ -573,6 +571,7 @@ function Aide() {
     [`Communication (${TOUCHES.communication})`, 'clic sur la première voie, puis sur la seconde : deux BS talon contre talon'],
     [`Cadre (${TOUCHES.cadre})`, 'glisser pour tracer un rectangle'],
     [`Texte (${TOUCHES.texte})`, 'clic sur le plan, puis taper le texte dans le panneau'],
+    [`Échelle… (${TOUCHE_ECHELLE})`, 'caler l’échelle : deux repères sur le plan et leur distance réelle ; elle sert aux engins des synoptiques'],
     [`Sélection (${TOUCHES.selection})`, "clic sur un élément ; glisser l'élément ou ses poignées"],
     ['Suppr', "supprime l'élément choisi (ou le point choisi d'une voie)"],
     ['Molette', 'zoom autour du curseur'],
@@ -617,6 +616,18 @@ export function PanneauCalques({ editeur }: { editeur: Editeur }) {
             modifier((p) => ({ ...p, nom }), 'nom-projet')
           }}
         />
+        <p style={{ ...styles.discret, marginTop: 8 }} data-testid="echelle-plan">
+          {projet.echelle ? (
+            <>
+              Échelle : {descriptionEchelle(projet.echelle, projet.largeur)}
+            </>
+          ) : (
+            <strong style={{ color: COULEURS.avertissement }}>Échelle non définie</strong>
+          )}
+        </p>
+        <p style={styles.discret}>
+          Les engins se posent dans les synoptiques créés à partir de ce plan{projet.echelle ? ', à cette échelle' : ''}.
+        </p>
         <p style={{ ...styles.discret, marginTop: 10 }}>Extrémités du plan (sens des appareils) :</p>
         <div style={{ ...styles.ligne, gap: 6 }}>
           <span title="Extrémité gauche du plan">◀</span>

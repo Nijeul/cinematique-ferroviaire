@@ -2,8 +2,8 @@ import { useRef, useState, type ReactNode } from 'react'
 import { ecrireAdresse, type Route } from '../plan/adresse.ts'
 import {
   ajouterPlan,
-  ajouterPlanVierge,
   copierPlan,
+  nomPlanPropose,
   renommerPlan,
   renommerSynoptique,
   resumePlan,
@@ -15,14 +15,19 @@ import {
   type Chantier,
 } from '../plan/chantier.ts'
 import { lirePlanImporte, nomFichierChantier, serialiserChantier } from '../plan/fichierChantier.ts'
+import { avisEnginsRetires } from '../plan/lecture.ts'
+import type { Projet } from '../plan/projet.ts'
 import { formaterDuree, formaterPlage } from '../plan/temps.ts'
+import { AssistantNouveauPlan } from './AssistantNouveauPlan.tsx'
+import { CatalogueEngins } from './CatalogueEngins.tsx'
 import { BandeauMessage, BarreNavigation, ChampRenommer, Confirmation, LigneListe, Page } from './commun.tsx'
 import { COULEURS } from './couleurs.ts'
 import { lireFichierTexte, telecharger } from './navigateur.ts'
 import { POLICE, styleBouton, styleBoutonDanger, styleBoutonPrincipal, styleDiscret, styleTitreSection } from './styles.ts'
 import type { Message } from './useEditeur.ts'
 
-// Écran d'un chantier : ses plans (un par phase) et ses synoptiques.
+// Écran d'un chantier : ses plans (un par phase), ses synoptiques et son
+// catalogue d'engins.
 
 type ASupprimer = { genre: 'plan' | 'synoptique'; id: string; nom: string; texte: string }
 
@@ -36,11 +41,14 @@ export function EcranChantier(props: {
   const [renommage, setRenommage] = useState<string | null>(null)
   const [aSupprimer, setASupprimer] = useState<ASupprimer | null>(null)
   const [message, setMessage] = useState<Message | null>(null)
+  const [assistant, setAssistant] = useState(false)
   const choixPlan = useRef<HTMLInputElement>(null)
 
-  const nouveauPlan = () => {
-    const { id } = ajouterPlanVierge(chantier)
-    modifierChantier((c) => ajouterPlanVierge(c).chantier)
+  // Fin de l'assistant « Nouveau plan » : le plan (avec son échelle) est créé et ouvert.
+  const creerPlan = (projet: Projet) => {
+    const { id } = ajouterPlan(chantier, projet)
+    modifierChantier((c) => ajouterPlan(c, projet).chantier)
+    setAssistant(false)
     aller({ ecran: 'plan', chantierId: chantier.id, planId: id })
   }
 
@@ -59,7 +67,8 @@ export function EcranChantier(props: {
       return
     }
     modifierChantier((c) => ajouterPlan(c, lu.projet).chantier)
-    setMessage({ genre: 'info', texte: `Plan « ${lu.projet.nom} » importé dans ce chantier.` })
+    const avis = avisEnginsRetires(lu.projet.nom, lu.retires)
+    setMessage({ genre: 'info', texte: `Plan « ${lu.projet.nom} » importé dans ce chantier.${avis ? ` ${avis}` : ''}` })
   }
 
   const supprimer = (cible: ASupprimer) => {
@@ -90,7 +99,7 @@ export function EcranChantier(props: {
         <section style={{ marginBottom: 28 }} data-testid="section-plans">
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <h2 style={{ ...styleTitreSection, flex: 1, margin: 0 }}>Plans</h2>
-            <button style={styleBoutonPrincipal} onClick={nouveauPlan}>
+            <button style={styleBoutonPrincipal} onClick={() => setAssistant(true)} title="Nom, fond de plan, puis échelle">
               + Nouveau plan
             </button>
             <button style={styleBouton()} onClick={() => choixPlan.current?.click()} title="Fichier de plan enregistré (…cinematique.json)">
@@ -227,7 +236,10 @@ export function EcranChantier(props: {
             })}
           </ul>
         </section>
+
+        <CatalogueEngins chantier={chantier} modifierChantier={modifierChantier} />
       </Page>
+      {assistant && <AssistantNouveauPlan nomPropose={nomPlanPropose(chantier)} creer={creerPlan} fermer={() => setAssistant(false)} />}
       {aSupprimer && (
         <Confirmation
           titre={`Supprimer le ${aSupprimer.genre} « ${aSupprimer.nom} » ?`}

@@ -10,6 +10,7 @@ import {
   type Ancrage,
   type Appareil,
   type Cadre,
+  type Echelle,
   type Fond,
   type Point,
   type Projet,
@@ -17,16 +18,45 @@ import {
   type Voie,
   type Zone,
 } from './projet.ts'
+import type { DimensionsEngin, TypeEngin } from './catalogue.ts'
+import type { Engin, EnginsEtRames, Rame, Vehicule } from './engins.ts'
 import { longueurPolyligne } from './trace.ts'
 
 // Lecture et vérification d'un projet enregistré. Les erreurs sont en
 // français, prêtes à afficher ; aucune exception ne sort d'ici.
 //
-// Les fichiers de l'étape 2 (version 2 : fond et voies seulement) s'ouvrent
-// toujours : les listes absentes sont vides, les extrémités prennent leurs
-// noms par défaut (Nord à gauche, Sud à droite).
+// Les fichiers des étapes précédentes s'ouvrent toujours : les listes
+// absentes sont vides, les extrémités prennent leurs noms par défaut (Nord à
+// gauche, Sud à droite), et un plan sans échelle (étapes 2 à 4) reste sans
+// échelle.
+//
+// Un plan ne contient aucun engin : ceux d'un plan enregistré avant la
+// correction de l'étape 5 sont retirés à la lecture, et comptés pour le dire
+// une fois à l'utilisateur. Les engins et les rames se lisent dans les images
+// des synoptiques (lireEnginsEtRames).
 
-export type ResultatLecture = { ok: true; projet: Projet } | { ok: false; erreurs: string[] }
+// Engins et rames trouvés dans un plan, et retirés.
+export type EnginsRetires = { engins: number; rames: number }
+
+export type ResultatLecture = { ok: true; projet: Projet; retires: EnginsRetires } | { ok: false; erreurs: string[] }
+
+const pluriel = (n: number, mot: string) => `${n} ${mot}${n > 1 ? 's' : ''}`
+
+// « Les engins ne se posent plus sur le plan mais dans les synoptiques :
+// 3 engins et 1 rame retirés du plan « Phase 1 ». » ; null si rien n'a été
+// retiré.
+export function avisEnginsRetires(nomPlan: string, r: EnginsRetires): string | null {
+  if (r.engins + r.rames === 0) return null
+  const quoi = [r.engins > 0 && pluriel(r.engins, 'engin'), r.rames > 0 && pluriel(r.rames, 'rame')].filter(Boolean).join(' et ')
+  const retire = r.engins + r.rames > 1 ? 'retirés' : r.engins === 1 ? 'retiré' : 'retirée'
+  return `Les engins ne se posent plus sur le plan mais dans les synoptiques : ${quoi} ${retire} du plan « ${nomPlan} ».`
+}
+
+// Ce qu'un plan enregistré contient encore d'engins et de rames.
+export function compterEnginsDuPlan(brut: unknown): EnginsRetires {
+  const longueur = (v: unknown) => (Array.isArray(v) ? v.length : 0)
+  return estObjet(brut) ? { engins: longueur(brut.engins), rames: longueur(brut.rames) } : { engins: 0, rames: 0 }
+}
 
 type Brut = Record<string, unknown>
 
@@ -229,6 +259,116 @@ function lireTexte(t: Brut, libelle: string, erreurs: string[]): Texte | null {
   }
 }
 
+// Dimensions d'un type d'engin (catalogue, engin posé, véhicule d'une rame).
+function lireDimensions(d: unknown, libelle: string, erreurs: string[]): DimensionsEngin | null {
+  if (!estObjet(d)) {
+    erreurs.push(`${libelle} : type d'engin illisible.`)
+    return null
+  }
+  const avant = erreurs.length
+  if (typeof d.categorie !== 'string') erreurs.push(`${libelle} : catégorie manquante.`)
+  if (typeof d.modele !== 'string') erreurs.push(`${libelle} : modèle manquant.`)
+  if (!estPositif(d.longueur)) erreurs.push(`${libelle} : la longueur doit être un nombre de mètres positif.`)
+  if (!estPositif(d.largeur)) erreurs.push(`${libelle} : la largeur doit être un nombre de mètres positive.`)
+  verifierCouleur(d.couleur, libelle, erreurs)
+  if (erreurs.length > avant) return null
+  return {
+    categorie: d.categorie as string,
+    modele: d.modele as string,
+    longueur: d.longueur as number,
+    largeur: d.largeur as number,
+    couleur: (d.couleur as string).toLowerCase(),
+  }
+}
+
+// Un type du catalogue d'un chantier.
+export function lireTypeEngin(t: Brut, libelle: string, erreurs: string[]): TypeEngin | null {
+  const dimensions = lireDimensions(t, libelle, erreurs)
+  return dimensions && { id: t.id as string, ...dimensions }
+}
+
+export function lireCatalogue(brut: unknown, erreurs: string[]): TypeEngin[] {
+  return lireListe(brut, "Type d'engin", erreurs, (t, libelle) => lireTypeEngin(t, libelle, erreurs))
+}
+
+const libelleEngin = (e: Brut, libelle: string): string =>
+  estObjet(e.type) && typeof e.type.modele === 'string' ? libelle.replace(/^Engin n°\d+/, (m) => `${m} (« ${(e.type as Brut).modele} »)`) : libelle
+
+function lireEngin(e: Brut, libelleBrut: string, erreurs: string[], voies: Map<string, Voie>): Engin | null {
+  const libelle = libelleEngin(e, libelleBrut)
+  const avant = erreurs.length
+  if (typeof e.typeId !== 'string') erreurs.push(`${libelle} : type du catalogue manquant.`)
+  const type = lireDimensions(e.type, libelle, erreurs)
+  verifierCouleur(e.couleur, libelle, erreurs)
+  const numero = typeof e.numero === 'string' ? e.numero : ''
+  const p = e.position
+  let position: Engin['position'] | null = null
+  if (estObjet(p) && p.genre === 'voie') {
+    verifierSurVoie(p.voieId, [["l'abscisse", p.abscisse]], voies, libelle, erreurs)
+    position = { genre: 'voie', voieId: p.voieId as string, abscisse: p.abscisse as number }
+  } else if (estObjet(p) && p.genre === 'libre') {
+    if (!estNombre(p.x) || !estNombre(p.y) || !estNombre(p.angle)) erreurs.push(`${libelle} : position (x, y, angle) invalide.`)
+    position = { genre: 'libre', x: p.x as number, y: p.y as number, angle: p.angle as number }
+  } else {
+    erreurs.push(`${libelle} : position illisible (sur une voie ou libre).`)
+  }
+  if (erreurs.length > avant || !type || !position) return null
+  return { id: e.id as string, typeId: e.typeId as string, type, couleur: (e.couleur as string).toLowerCase(), numero, position }
+}
+
+function lireRame(r: Brut, libelle: string, erreurs: string[], voies: Map<string, Voie>): Rame | null {
+  const avant = erreurs.length
+  if (typeof r.nom !== 'string') erreurs.push(`${libelle} : nom manquant.`)
+  verifierCouleur(r.couleur, libelle, erreurs)
+  verifierSurVoie(r.voieId, [["l'abscisse", r.abscisse]], voies, libelle, erreurs)
+  if (r.sens !== 1 && r.sens !== -1) erreurs.push(`${libelle} : sens illisible (1 ou -1 attendu).`)
+  const brutes = Array.isArray(r.vehicules) ? r.vehicules : []
+  if (brutes.length === 0) erreurs.push(`${libelle} : une rame doit avoir au moins un véhicule.`)
+  const vehicules: Vehicule[] = []
+  brutes.forEach((v: unknown, i: number) => {
+    const quel = `${libelle}, véhicule ${i + 1}`
+    if (!estObjet(v) || typeof v.typeId !== 'string') {
+      erreurs.push(`${quel} : type du catalogue manquant.`)
+      return
+    }
+    const type = lireDimensions(v.type, quel, erreurs)
+    if (type) vehicules.push({ typeId: v.typeId, type })
+  })
+  if (erreurs.length > avant) return null
+  return {
+    id: r.id as string,
+    nom: r.nom as string,
+    numero: typeof r.numero === 'string' ? r.numero : '',
+    couleur: (r.couleur as string).toLowerCase(),
+    voieId: r.voieId as string,
+    abscisse: r.abscisse as number,
+    sens: r.sens as 1 | -1,
+    vehicules,
+  }
+}
+
+// Engins et rames d'une image de synoptique, posés sur ses voies ; il faut une
+// échelle pour qu'ils aient une taille.
+export function lireEnginsEtRames(brut: unknown, voies: Voie[], echelle: Echelle | null, erreurs: string[]): EnginsEtRames {
+  const b = estObjet(brut) ? brut : {}
+  const parId = new Map(voies.map((v) => [v.id, v]))
+  const engins = lireListe(b.engins, 'Engin', erreurs, (e, libelle) => lireEngin(e, libelle, erreurs, parId))
+  const rames = lireListe(b.rames, 'Rame', erreurs, (r, libelle) => lireRame(r, libelle, erreurs, parId))
+  if (!echelle && engins.length + rames.length > 0) {
+    erreurs.push("Des engins sont posés mais l'échelle manque : leur taille ne peut pas être calculée.")
+  }
+  return { engins, rames }
+}
+
+function lireEchelle(brut: unknown, erreurs: string[]): Echelle | null {
+  if (brut === null || brut === undefined) return null
+  if (!estObjet(brut) || !estPositif(brut.pixelsParMetre)) {
+    erreurs.push("L'échelle du plan est illisible (nombre de pixels par mètre positif attendu).")
+    return null
+  }
+  return { pixelsParMetre: brut.pixelsParMetre }
+}
+
 export function lireProjet(texte: string): ResultatLecture {
   let brut: unknown
   try {
@@ -260,7 +400,8 @@ export function lireProjet(texte: string): ResultatLecture {
 }
 
 // Le contenu d'un plan, sans l'en-tête du fichier (marque et version) : sert
-// aussi pour les plans et les images rangés dans un fichier de chantier.
+// aussi pour les plans et les images rangés dans un fichier de chantier. Les
+// engins et rames éventuels ne sont pas lus (voir `retires`).
 export function lireCorpsProjet(brut: unknown): ResultatLecture {
   if (!estObjet(brut)) return { ok: false, erreurs: ['Le plan est illisible.'] }
   const erreurs: string[] = []
@@ -327,6 +468,7 @@ export function lireCorpsProjet(brut: unknown): ResultatLecture {
   verifierCommunications(appareils, erreurs)
   const cadres = lireListe(brut.cadres, 'Cadre', erreurs, (c, libelle) => lireCadre(c, libelle, erreurs))
   const textes = lireListe(brut.textes, 'Texte', erreurs, (t, libelle) => lireTexte(t, libelle, erreurs))
+  const echelle = lireEchelle(brut.echelle, erreurs)
 
   if (erreurs.length > 0) return { ok: false, erreurs }
   return {
@@ -336,6 +478,7 @@ export function lireCorpsProjet(brut: unknown): ResultatLecture {
       largeur: brut.largeur as number,
       hauteur: brut.hauteur as number,
       fond,
+      echelle,
       extremites,
       calques,
       cadres,
@@ -344,5 +487,6 @@ export function lireCorpsProjet(brut: unknown): ResultatLecture {
       appareils,
       textes,
     },
+    retires: compterEnginsDuPlan(brut),
   }
 }

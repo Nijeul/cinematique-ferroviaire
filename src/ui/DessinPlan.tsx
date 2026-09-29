@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import {
   boutsAppareil,
   cotesEtiquettesZones,
@@ -28,7 +29,8 @@ import { bandeAutour, sousPolyligne } from '../plan/trace.ts'
 import { COULEURS } from './couleurs.ts'
 
 // Le dessin d'un plan, sans interaction : la feuille et le fond, puis au
-// calque, du dessous vers le dessus : cadres, voies, zones, appareils, textes.
+// calque, du dessous vers le dessus : cadres, voies, zones, appareils,
+// (engins et rames d'une image de synoptique, passés dans `engins`), textes.
 // Sert au plan de travail, aux images d'un synoptique et à leurs vignettes.
 // Coordonnées en pixels du plan ; `zoom` règle l'épaisseur des repères de
 // sélection, constants à l'écran.
@@ -252,7 +254,13 @@ function DessinTexte({ texte, choisi, zoom }: { texte: Texte; choisi: boolean; z
 
 // `affiche` : la partie montrée (le cadrage d'un synoptique), pour y garder les
 // repères d'extrémités ; toute la feuille par défaut.
-export function DessinPlan(props: { projet: Projet; zoom: number; affiche?: Rectangle; estChoisi?: (genre: Genre, id: string) => boolean }) {
+export function DessinPlan(props: {
+  projet: Projet
+  zoom: number
+  affiche?: Rectangle
+  estChoisi?: (genre: Genre, id: string) => boolean
+  engins?: ReactNode
+}) {
   const { projet } = props
   // Même nom que dans le plan de travail : les tailles « / vue.zoom » restent constantes à l'écran.
   const vue = { zoom: props.zoom }
@@ -364,6 +372,8 @@ export function DessinPlan(props: { projet: Projet; zoom: number; affiche?: Rect
             />
           )
         })}
+
+      {props.engins}
 
       {calques.textes.visible &&
         projet.textes.map((texte) => (

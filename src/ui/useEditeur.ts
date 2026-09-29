@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { accrocherVoie, CALQUE_DU_GENRE, existe, type Genre, type Reference } from '../plan/detection.ts'
-import { ajouterVoie, dependancesVoie, supprimerPoint, remplacerFond } from '../plan/edition.ts'
+import { ajouterVoie, dependancesVoie, supprimerPoint, remplacerFond, type Dependances } from '../plan/edition.ts'
 import { ajouterCadre, ajouterCommunication, ajouterAppareil, ajouterTexte, ajouterZone, jumeau, supprimerElement } from '../plan/elements.ts'
-import { bornerPage, typeDeFond } from '../plan/fond.ts'
+import { bornerPage } from '../plan/fond.ts'
 import { terminerTrace } from '../plan/geometrie.ts'
 import { annuler, creerHistorique, enregistrer, peutAnnuler, peutRetablir, retablir } from '../plan/historique.ts'
-import { lireProjet } from '../plan/lecture.ts'
+import { avisEnginsRetires, lireProjet } from '../plan/lecture.ts'
 import { nomDeFichier, serialiserProjet, type Point, type Projet } from '../plan/projet.ts'
 import type { Vue } from '../plan/vue.ts'
-import { fermerPdf, lireImage, ouvrirPdf, rendrePage, type PdfOuvert } from './fondDePlan.ts'
+import { fermerPdf, ouvrirFond, rendrePage, type PdfOuvert } from './fondDePlan.ts'
 import { telecharger } from './navigateur.ts'
 
 // L'état de l'éditeur d'un plan et toutes ses actions : projet et historique,
@@ -35,6 +35,9 @@ export const TOUCHES: Record<Outil, string> = {
   main: 'M',
 }
 
+// L'outil « Échelle » ouvre la fenêtre de calage.
+export const TOUCHE_ECHELLE = 'L'
+
 const NOM_CALQUE: Record<Genre, string> = {
   cadre: 'Cadres',
   voie: 'Voies',
@@ -49,7 +52,14 @@ const estChampDeSaisie = (cible: EventTarget | null): boolean =>
 
 const pluriel = (n: number, mot: string) => `${n} ${mot}${n > 1 ? 's' : ''}`
 
-export function useEditeur(projetInitial: Projet, surChangement: (projet: Projet) => void, suspendu: boolean) {
+export type OptionsEditeur = {
+  // Une fenêtre est ouverte par-dessus : les raccourcis se taisent.
+  suspendu: boolean
+  ouvrirEchelle: () => void
+}
+
+export function useEditeur(projetInitial: Projet, surChangement: (projet: Projet) => void, options: OptionsEditeur) {
+  const { suspendu, ouvrirEchelle } = options
   const [historique, setHistorique] = useState(() => creerHistorique(projetInitial))
   const [outil, setOutil] = useState<Outil>('voie')
   const [selectionBrute, setSelection] = useState<Selection>(null)
@@ -214,7 +224,7 @@ export function useEditeur(projetInitial: Projet, surChangement: (projet: Projet
   }
 
   // Message après la suppression d'une voie qui portait zones ou appareils.
-  const annoncerCascade = (nomVoie: string, dependances: { zones: number; appareils: number }) => {
+  const annoncerCascade = (nomVoie: string, dependances: Dependances) => {
     const { zones, appareils } = dependances
     if (zones + appareils === 0) return
     const avec = [zones && pluriel(zones, 'zone'), appareils && pluriel(appareils, 'appareil')].filter(Boolean).join(' et ')
@@ -288,6 +298,8 @@ export function useEditeur(projetInitial: Projet, surChangement: (projet: Projet
         e.preventDefault()
         if (trace) retirerDernierPointTrace()
         else supprimerSelection()
+      } else if (!ctrl && !e.altKey && touche === TOUCHE_ECHELLE.toLowerCase()) {
+        ouvrirEchelle()
       } else if (!ctrl && !e.altKey) {
         const choisi = (Object.keys(TOUCHES) as Outil[]).find((o) => TOUCHES[o].toLowerCase() === touche)
         if (choisi) choisirOutil(choisi)
@@ -311,25 +323,17 @@ export function useEditeur(projetInitial: Projet, surChangement: (projet: Projet
   })
 
   const importerFond = async (fichier: File) => {
-    const type = typeDeFond(fichier.name, fichier.type)
-    if (!type) {
-      erreur(`« ${fichier.name} » n'est ni une image (PNG, JPG) ni un PDF.`)
-      return
-    }
     setOccupe('Lecture du fond de plan…')
     try {
-      const ouvert = type === 'pdf' ? await ouvrirPdf(fichier) : null
-      const fond = ouvert ? await rendrePage(ouvert, 1) : await lireImage(fichier)
+      const { fond, pdf: ouvert } = await ouvrirFond(fichier)
       fermerPdf(pdf)
       setPdf(ouvert)
       jetonPage.current++
       modifier((p) => remplacerFond(p, fond))
       setVue(null)
-      setMessage(
-        ouvert && ouvert.nombrePages > 1
-          ? { genre: 'info', texte: `PDF de ${ouvert.nombrePages} pages : page 1 affichée. Changez de page dans le panneau « Calques ».` }
-          : null,
-      )
+      const pages = ouvert && ouvert.nombrePages > 1 ? `PDF de ${ouvert.nombrePages} pages : page 1 affichée. Changez de page dans le panneau « Calques ». ` : ''
+      const echelle = projet.echelle ? 'Nouveau fond : vérifiez l\'échelle du plan (bouton « Échelle… »).' : ''
+      setMessage(pages || echelle ? { genre: 'info', texte: pages + echelle } : null)
     } catch (e) {
       erreur(`Impossible de lire « ${fichier.name} » : ${(e as Error).message}`)
     } finally {
@@ -382,7 +386,11 @@ export function useEditeur(projetInitial: Projet, surChangement: (projet: Projet
     setPose(null)
     setSelection(null)
     setVue(null)
-    setMessage({ genre: 'info', texte: `Plan « ${lu.projet.nom} » ouvert à la place du précédent (Annuler pour revenir en arrière).` })
+    const retires = avisEnginsRetires(lu.projet.nom, lu.retires)
+    setMessage({
+      genre: 'info',
+      texte: `Plan « ${lu.projet.nom} » ouvert à la place du précédent (Annuler pour revenir en arrière).${retires ? ` ${retires}` : ''}`,
+    })
   }
 
   const enregistrerProjet = () => {

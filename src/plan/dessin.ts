@@ -1,5 +1,5 @@
 import type { Rectangle } from './elements.ts'
-import { tailleNom } from './geometrie.ts'
+import { normaleHaut, tailleNom } from './geometrie.ts'
 import { epaisseurParDefaut, type Appareil, type Point, type Projet, type Voie, type Zone } from './projet.ts'
 import { pointAAbscisse } from './trace.ts'
 
@@ -60,14 +60,6 @@ function etiquetteVers(p: Point, n: Point, ecart: number, taille: number): Etiqu
   const y = p.y + n.y * ecart
   if (Math.abs(n.y) > 0.7) return { x, y: n.y < 0 ? y - taille * 0.1 : y + taille * 0.75, ancre: 'middle' }
   return { x, y: y + taille * 0.35, ancre: n.x < 0 ? 'end' : 'start' }
-}
-
-// Normale « vers le haut » d'une direction (vers la gauche si la direction
-// est verticale).
-function normaleHaut(d: Point): Point {
-  const n = { x: d.y, y: -d.x }
-  if (Math.abs(n.y) > 1e-9) return n.y < 0 ? n : { x: -n.x, y: -n.y }
-  return n.x < 0 ? n : { x: -n.x, y: -n.y }
 }
 
 export function etiquetteZone(voie: Voie, zone: Zone, cote: Cote): Etiquette {

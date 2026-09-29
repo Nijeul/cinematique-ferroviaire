@@ -1,4 +1,4 @@
-import { chantierRecupere, identifiantChantierLibre, NOM_CHANTIER_RECUPERE, type Chantier } from '../plan/chantier.ts'
+import { chantierRecupere, identifiantChantierLibre, migrerChantier, NOM_CHANTIER_RECUPERE, type Chantier } from '../plan/chantier.ts'
 import { lireAncienneSauvegarde, oublierAncienneSauvegarde } from './navigateur.ts'
 
 // Les chantiers sont gardés dans le navigateur, dans IndexedDB : les fonds de
@@ -54,10 +54,21 @@ async function operation<T>(mode: IDBTransactionMode, faire: (magasin: IDBObject
   }
 }
 
-export const listerChantiers = (): Promise<Chantier[]> => operation('readonly', (m) => m.getAll() as IDBRequest<Chantier[]>)
+// Les chantiers gardés par les étapes précédentes reçoivent à la lecture ce
+// qui leur manque (catalogue d'engins, plans et synoptiques sans échelle).
+export const listerChantiers = async (): Promise<Chantier[]> =>
+  (await operation('readonly', (m) => m.getAll() as IDBRequest<Chantier[]>)).map((c) => migrerChantier(c).chantier)
 
-export const lireChantierStocke = async (id: string): Promise<Chantier | null> =>
-  ((await operation('readonly', (m) => m.get(id))) as Chantier | undefined) ?? null
+// Un chantier ouvert, avec les avis de sa mise à jour : des engins retirés de
+// ses plans. Le chantier corrigé est aussitôt réenregistré, pour que l'avis
+// ne s'affiche qu'une fois.
+export const lireChantierStocke = async (id: string): Promise<{ chantier: Chantier; avis: string[] } | null> => {
+  const c = (await operation('readonly', (m) => m.get(id))) as Chantier | undefined
+  if (!c) return null
+  const migre = migrerChantier(c)
+  if (migre.avis.length > 0) await enregistrerChantier(migre.chantier)
+  return migre
+}
 
 export const enregistrerChantier = async (c: Chantier): Promise<void> => {
   await operation('readwrite', (m) => m.put(c))

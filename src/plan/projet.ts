@@ -79,6 +79,14 @@ export type Fond = {
   nombrePages: number | null
 }
 
+// Échelle du plan : combien d'unités du plan (pixels du fond) font un mètre
+// réel. Calée à la création du plan (deux points dont on connaît l'écart, ou
+// la largeur réelle de la toile) ; null pour les plans des étapes 2 à 4, qui
+// n'en avaient pas. Elle est copiée dans les synoptiques créés depuis le plan :
+// c'est là que les engins se posent, à la bonne taille. Le plan lui-même ne
+// contient aucun engin.
+export type Echelle = { pixelsParMetre: number }
+
 // Noms des deux bouts du plan : Nord à gauche, Sud à droite par défaut (repère
 // du commanditaire), renommables (« Paris » / « Poitiers »…).
 export type Extremites = { gauche: string; droite: string }
@@ -100,6 +108,7 @@ export type Projet = {
   largeur: number
   hauteur: number
   fond: Fond | null
+  echelle: Echelle | null
   extremites: Extremites
   calques: Calques
   cadres: Cadre[]
@@ -111,9 +120,12 @@ export type Projet = {
 
 // Marque et version du fichier enregistré, pour reconnaître nos projets.
 // Version 2 : fond et voies (étape 2). Version 3 : zones, appareils, cadres,
-// textes et extrémités (étape 3).
+// textes et extrémités (étape 3). Version 4 : échelle (étape 5). Les
+// fichiers de version 4 enregistrés avant la correction de l'étape 5
+// pouvaient contenir des engins : ils en sont retirés à la lecture, car les
+// engins se posent désormais dans les synoptiques.
 export const FORMAT_FICHIER = 'cinematique-ferroviaire/projet'
-export const VERSION_FICHIER = 3
+export const VERSION_FICHIER = 4
 export const EXTENSION_FICHIER = '.cinematique.json'
 
 export const TOILE_PAR_DEFAUT = { largeur: 1600, hauteur: 900 } as const
@@ -146,6 +158,7 @@ export function creerProjet(nom = 'Nouveau projet'): Projet {
     largeur: TOILE_PAR_DEFAUT.largeur,
     hauteur: TOILE_PAR_DEFAUT.hauteur,
     fond: null,
+    echelle: null,
     extremites: { ...EXTREMITES_PAR_DEFAUT },
     calques: creerCalques(),
     cadres: [],

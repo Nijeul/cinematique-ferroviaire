@@ -2,7 +2,6 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import {
   ajouterPlan,
-  ajouterPlanVierge,
   ajouterSynoptique,
   chantierRecupere,
   copierPlan,
@@ -10,6 +9,8 @@ import {
   descriptionPerte,
   identifiantChantierLibre,
   nomLibre,
+  nomPlanPropose,
+  nouveauPlan,
   NOM_CHANTIER_RECUPERE,
   renommerPlan,
   renommerSynoptique,
@@ -18,6 +19,7 @@ import {
   supprimerSynoptique,
   type Chantier,
 } from '../src/plan/chantier.ts'
+import { creerCatalogue } from '../src/plan/catalogue.ts'
 import { lireChantier, lirePlanImporte, nomFichierChantier, serialiserChantier } from '../src/plan/fichierChantier.ts'
 import { lireProjet } from '../src/plan/lecture.ts'
 import { creerProjet, FORMAT_FICHIER, serialiserProjet } from '../src/plan/projet.ts'
@@ -59,19 +61,32 @@ describe('chantier d’exemple', () => {
 
 describe('modèle du chantier', () => {
   it('crée un chantier vide et nomme les nouveaux sans doublon', () => {
-    expect(creerChantier('chantier-1', 'A', QUAND)).toEqual({ id: 'chantier-1', nom: 'A', modifieLe: QUAND, plans: [], synoptiques: [] })
+    expect(creerChantier('chantier-1', 'A', QUAND)).toEqual({
+      id: 'chantier-1',
+      nom: 'A',
+      modifieLe: QUAND,
+      plans: [],
+      synoptiques: [],
+      catalogue: creerCatalogue(),
+    })
     expect(nomLibre([], 'Nouveau chantier')).toBe('Nouveau chantier')
     expect(nomLibre(['Nouveau chantier', 'Nouveau chantier 2'], 'Nouveau chantier')).toBe('Nouveau chantier 3')
     expect(identifiantChantierLibre(['chantier-1', 'chantier-4'])).toBe('chantier-5')
   })
 
-  it('ajoute des plans vierges « Plan 1 », « Plan 2 »', () => {
+  it('l’assistant « Nouveau plan » crée un plan nommé, avec son fond et son échelle', () => {
     let c = creerChantier('c', 'C', QUAND)
-    c = ajouterPlanVierge(c).chantier
-    const r = ajouterPlanVierge(c)
+    expect(nomPlanPropose(c)).toBe('Plan 1')
+    c = ajouterPlan(c, nouveauPlan('Plan 1', null, { pixelsParMetre: 4 })).chantier
+    expect(nomPlanPropose(c)).toBe('Plan 2')
+    const fond = { image: 'data:image/png;base64,iVBORw0KGgo=', largeur: 1200, hauteur: 700, nomFichier: 'plan.png', page: null, nombrePages: null }
+    const r = ajouterPlan(c, nouveauPlan('  Phase définitive ', fond, { pixelsParMetre: 2.5 }))
     expect(r.id).toBe('plan-2')
-    expect(r.chantier.plans.map((p) => p.projet.nom)).toEqual(['Plan 1', 'Plan 2'])
-    expect(r.chantier.plans[1].projet.voies).toEqual([])
+    const projet = r.chantier.plans[1].projet
+    expect(projet).toMatchObject({ nom: 'Phase définitive', largeur: 1200, hauteur: 700, echelle: { pixelsParMetre: 2.5 }, voies: [] })
+    expect(projet).not.toHaveProperty('engins')
+    expect(projet.fond?.nomFichier).toBe('plan.png')
+    expect(r.chantier.plans[0].projet).toMatchObject({ largeur: 1600, fond: null, echelle: { pixelsParMetre: 4 } })
   })
 
   it('copie un plan juste après lui, sans lien avec l’original', () => {
@@ -107,14 +122,14 @@ describe('modèle du chantier', () => {
     const c = fixture()
     expect(resumePlan(c.plans[0].projet)).toBe('4 voies · 4 zones · 3 appareils · 1 cadre · 1 texte · sans fond')
     const vide = creerProjet()
-    expect(resumePlan(vide)).toBe('rien de tracé · sans fond')
-    const avecFond = { ...vide, fond: { image: '', largeur: 1, hauteur: 1, nomFichier: 'plan.pdf', page: 2, nombrePages: 3 } }
+    expect(resumePlan(vide)).toBe('rien de tracé · sans fond · échelle non définie')
+    const avecFond = { ...vide, echelle: { pixelsParMetre: 1 }, fond: { image: '', largeur: 1, hauteur: 1, nomFichier: 'plan.pdf', page: 2, nombrePages: 3 } }
     expect(resumePlan(avecFond)).toBe('rien de tracé · fond plan.pdf (page 2)')
   })
 
   it('dit ce qui sera perdu en supprimant le chantier', () => {
     expect(descriptionPerte(fixture())).toBe('2 plans et 1 synoptique (3 images), fonds de plan compris.')
-    expect(descriptionPerte(ajouterPlanVierge(creerChantier('c', 'C', QUAND)).chantier)).toBe('1 plan, fonds de plan compris.')
+    expect(descriptionPerte(ajouterPlan(creerChantier('c', 'C', QUAND), creerProjet()).chantier)).toBe('1 plan, fonds de plan compris.')
     expect(descriptionPerte(creerChantier('c', 'C', QUAND))).toBe('Ce chantier est vide.')
   })
 })
@@ -124,7 +139,7 @@ describe('export et import d’un chantier', () => {
     const c = fixture()
     c.plans[0].projet.fond = { image: 'data:image/png;base64,iVBORw0KGgo=', largeur: 1600, hauteur: 900, nomFichier: 'plan.png', page: null, nombrePages: null }
     c.synoptiques[0].fond = { ...c.plans[0].projet.fond }
-    expect(lireChantier(serialiserChantier(c))).toEqual({ ok: true, chantier: c })
+    expect(lireChantier(serialiserChantier(c))).toEqual({ ok: true, chantier: c, avis: [] })
   })
 
   it('nomme le fichier d’après le chantier', () => {
@@ -216,7 +231,7 @@ describe('reprise de la sauvegarde automatique des étapes 2 et 3', () => {
     expect(c.plans).toHaveLength(1)
     expect(c.plans[0].projet.voies).toEqual(lu.projet.voies)
     expect(c.plans[0].projet.fond?.image).toBe('data:image/png;base64,iVBORw0KGgo=')
-    expect(lireChantier(serialiserChantier(c))).toEqual({ ok: true, chantier: c })
+    expect(lireChantier(serialiserChantier(c))).toEqual({ ok: true, chantier: c, avis: [] })
   })
 
   it('garde un plan vide sans fond tel quel', () => {

@@ -1,5 +1,5 @@
 import type { PDFDocumentProxy } from 'pdfjs-dist/legacy/build/pdf.mjs'
-import { bornerPage, echelleRendu } from '../plan/fond.ts'
+import { bornerPage, echelleRendu, typeDeFond } from '../plan/fond.ts'
 import type { Fond } from '../plan/projet.ts'
 
 // Lecture du fond de plan : une image telle quelle, ou une page de PDF rendue
@@ -74,5 +74,20 @@ export async function lireImage(fichier: File): Promise<Fond> {
     nomFichier: fichier.name,
     page: null,
     nombrePages: null,
+  }
+}
+
+// Fichier choisi comme fond : une image, ou la page 1 d'un PDF (gardé ouvert
+// pour changer de page). Erreur en français si ce n'est ni l'un ni l'autre.
+export async function ouvrirFond(fichier: File): Promise<{ fond: Fond; pdf: PdfOuvert | null }> {
+  const type = typeDeFond(fichier.name, fichier.type)
+  if (!type) throw new Error("ce n'est ni une image (PNG, JPG) ni un PDF.")
+  if (type === 'image') return { fond: await lireImage(fichier), pdf: null }
+  const pdf = await ouvrirPdf(fichier)
+  try {
+    return { fond: await rendrePage(pdf, 1), pdf }
+  } catch (e) {
+    fermerPdf(pdf)
+    throw e
   }
 }

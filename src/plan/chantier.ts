@@ -1,6 +1,9 @@
-import { nomParDefaut, nouvelIdentifiant } from './edition.ts'
-import { creerProjet, type Projet } from './projet.ts'
-import { creerSynoptique, type DemandeValide, type Synoptique } from './synoptique.ts'
+import { ajouterType, creerCatalogue, modifierType, supprimerType, type ChampsType, type DimensionsEngin, type TypeEngin } from './catalogue.ts'
+import type { Resultat } from './echelle.ts'
+import { nomParDefaut, nouvelIdentifiant, remplacerFond } from './edition.ts'
+import { avisEnginsRetires, compterEnginsDuPlan } from './lecture.ts'
+import { CALQUES_ELEMENTS, creerCalques, creerProjet, type Echelle, type Fond, type Projet } from './projet.ts'
+import { CALQUE_ENGINS_PAR_DEFAUT, creerSynoptique, type DemandeValide, type Synoptique } from './synoptique.ts'
 
 // Un chantier : plusieurs plans (un par phase : définitive, provisoire,
 // transitoire…) et les synoptiques créés à partir de ces plans. Chaque
@@ -16,10 +19,12 @@ export type Chantier = {
   modifieLe: string
   plans: PlanDuChantier[]
   synoptiques: Synoptique[]
+  // Les types d'engins qu'on pose dans les synoptiques de ce chantier.
+  catalogue: TypeEngin[]
 }
 
 export function creerChantier(id: string, nom: string, maintenant: string): Chantier {
-  return { id, nom, modifieLe: maintenant, plans: [], synoptiques: [] }
+  return { id, nom, modifieLe: maintenant, plans: [], synoptiques: [], catalogue: creerCatalogue() }
 }
 
 // « Nouveau chantier », puis « Nouveau chantier 2 »… sans reprendre un nom pris.
@@ -51,8 +56,13 @@ export function ajouterPlan(c: Chantier, projet: Projet): { chantier: Chantier; 
   return { id, chantier: { ...c, plans: [...c.plans, { id, projet }] } }
 }
 
-export function ajouterPlanVierge(c: Chantier): { chantier: Chantier; id: string } {
-  return ajouterPlan(c, creerProjet(nomParDefaut(c.plans.map((p) => p.projet), 'Plan')))
+export const nomPlanPropose = (c: Chantier): string => nomParDefaut(c.plans.map((p) => p.projet), 'Plan')
+
+// Le plan créé par l'assistant « Nouveau plan » : un nom, un fond ou non, et
+// l'échelle, obligatoire.
+export function nouveauPlan(nom: string, fond: Fond | null, echelle: Echelle): Projet {
+  const vierge = creerProjet(nom.trim() || 'Plan sans nom')
+  return { ...(fond ? remplacerFond(vierge, fond) : vierge), echelle: { ...echelle } }
 }
 
 // Copie d'un plan (pour une phase provisoire…), rangée juste après lui.
@@ -78,6 +88,31 @@ export function renommerPlan(c: Chantier, planId: string, nom: string): Chantier
 export function supprimerPlan(c: Chantier, planId: string): Chantier {
   return { ...c, plans: c.plans.filter((p) => p.id !== planId) }
 }
+
+// ——— Catalogue d'engins ———
+
+export function ajouterTypeChantier(c: Chantier, dimensions: DimensionsEngin): Resultat<{ chantier: Chantier; id: string }> {
+  const r = ajouterType(c.catalogue, dimensions)
+  return r.ok ? { ok: true, valeur: { id: r.valeur.id, chantier: { ...c, catalogue: r.valeur.catalogue } } } : r
+}
+
+// Un type modifié : seuls les prochains engins posés prennent ses nouvelles
+// valeurs. Ceux déjà posés dans les synoptiques (copies figées) gardent les
+// leurs.
+export function modifierTypeChantier(c: Chantier, id: string, champs: ChampsType): Resultat<Chantier> {
+  const r = modifierType(c.catalogue, id, champs)
+  return r.ok ? { ok: true, valeur: { ...c, catalogue: r.valeur } } : r
+}
+
+// Les engins déjà posés gardent leurs dimensions (ils en ont une copie).
+export const supprimerTypeChantier = (c: Chantier, id: string): Chantier => ({ ...c, catalogue: supprimerType(c.catalogue, id) })
+
+// Nombre de synoptiques du chantier où ce type est posé (engin ou véhicule
+// d'une rame, sur au moins une image).
+export const synoptiquesDuType = (c: Chantier, id: string): number =>
+  c.synoptiques.filter((s) =>
+    s.images.some((im) => im.contenu.engins.some((e) => e.typeId === id) || im.contenu.rames.some((r) => r.vehicules.some((v) => v.typeId === id))),
+  ).length
 
 // ——— Synoptiques ———
 
@@ -123,6 +158,7 @@ export function resumePlan(p: Projet): string {
   ].filter((x): x is string => typeof x === 'string')
   if (parties.length === 0) parties.push('rien de tracé')
   parties.push(p.fond ? `fond ${p.fond.nomFichier}${p.fond.page ? ` (page ${p.fond.page})` : ''}` : 'sans fond')
+  if (!p.echelle) parties.push('échelle non définie')
   return parties.join(' · ')
 }
 
@@ -140,4 +176,54 @@ export const NOM_CHANTIER_RECUPERE = 'Chantier récupéré'
 
 export function chantierRecupere(id: string, projet: Projet, maintenant: string): Chantier {
   return ajouterPlan(creerChantier(id, NOM_CHANTIER_RECUPERE, maintenant), projet).chantier
+}
+
+// ——— Chantiers gardés dans le navigateur par les étapes précédentes ———
+
+// Un chantier rangé dans le navigateur avant l'étape 5 n'a ni catalogue, ni
+// échelle, ni engins : on complète ce qui manque (catalogue par défaut, plans
+// et synoptiques sans échelle, images sans engins), sans rien changer
+// d'autre. Un chantier rangé avant la correction de l'étape 5 peut avoir des
+// engins sur ses plans : ils en sont retirés, avec un avis par plan à montrer
+// une fois (le chantier corrigé est aussitôt réenregistré). Les engins de ses
+// synoptiques restent dans leurs images.
+type Souple = Record<string, unknown>
+
+// Calques d'un plan ou d'une image : ceux d'aujourd'hui, sans le calque
+// « Engins » que les plans avaient avant la correction de l'étape 5.
+const calquesDe = (brut: unknown): Souple => {
+  const calques = { ...creerCalques(), ...(brut as Souple) }
+  return Object.fromEntries(Object.entries(calques).filter(([nom]) => nom === 'fond' || (CALQUES_ELEMENTS as readonly string[]).includes(nom)))
+}
+
+function migrerPlan(p: Souple, avis: string[]): Souple {
+  const reste = { ...p }
+  delete reste.engins
+  delete reste.rames
+  const retire = avisEnginsRetires(typeof p.nom === 'string' ? p.nom : 'sans nom', compterEnginsDuPlan(p))
+  if (retire) avis.push(retire)
+  return { echelle: null, ...reste, calques: calquesDe(p.calques) }
+}
+
+export function migrerChantier(brut: Chantier): { chantier: Chantier; avis: string[] } {
+  const c = brut as unknown as Souple & {
+    plans: { projet: Souple }[]
+    synoptiques: (Souple & { images: (Souple & { contenu: Souple })[] })[]
+  }
+  const avis: string[] = []
+  const chantier = {
+    ...c,
+    catalogue: c.catalogue ?? creerCatalogue(),
+    plans: c.plans.map((p) => ({ ...p, projet: migrerPlan(p.projet, avis) })),
+    synoptiques: c.synoptiques.map((s) => ({
+      echelle: null,
+      calqueEngins: { ...CALQUE_ENGINS_PAR_DEFAUT },
+      ...s,
+      images: s.images.map((im) => ({
+        ...im,
+        contenu: { engins: [], rames: [], ...im.contenu, calques: calquesDe(im.contenu.calques) },
+      })),
+    })),
+  } as unknown as Chantier
+  return { chantier, avis }
 }

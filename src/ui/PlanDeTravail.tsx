@@ -17,6 +17,7 @@ import { COULEUR_VOIE_PAR_DEFAUT, COULEUR_ZONE_PAR_DEFAUT, epaisseurParDefaut, t
 import { pointAAbscisse, projeterSurPolyligne } from '../plan/trace.ts'
 import { deplacer, facteurMolette, recadrer, versPlan, zoomerAutour, type Vue } from '../plan/vue.ts'
 import { COULEURS } from './couleurs.ts'
+import { BarreEchelle } from './DessinEngins.tsx'
 import { DessinPlan, DessinZone } from './DessinPlan.tsx'
 import type { Editeur } from './useEditeur.ts'
 
@@ -37,7 +38,6 @@ type Glisser =
   | { genre: 'nouveauCadre'; depart: Point; ecran: Point }
 
 let compteurGlisser = 0
-
 
 export function PlanDeTravail({ editeur }: { editeur: Editeur }) {
   const { projet, outil, selection, trace, pose, espace } = editeur
@@ -379,6 +379,17 @@ export function PlanDeTravail({ editeur }: { editeur: Editeur }) {
           />
         ))}
       </g>
+      {/* Échelle graphique, en bas à droite, adaptée au zoom. */}
+      {projet.echelle && taille.largeur > 0 && (
+        <BarreEchelle
+          x={taille.largeur - 16}
+          y={taille.hauteur - 14}
+          unitesParMetre={projet.echelle.pixelsParMetre * vue.zoom}
+          longueurMax={170}
+          taille={12}
+          ancre="droite"
+        />
+      )}
     </svg>
   )
 }

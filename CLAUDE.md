@@ -51,15 +51,22 @@ Le commanditaire fait le contrôle visuel — c'est le cœur de la méthode.
 
 ```
 src/
-  plan/       modèle du plan, du chantier et du synoptique, lecture des fichiers (plan,
-              chantier), temps (minutes depuis T0 → « Ve/Sa 01h30 »), adresses des
-              écrans, vue et cadrage, géométrie du tracé et le long des voies, zones /
-              appareils / cadres / textes, détection sous le pointeur, annuler
+  plan/       modèle du plan (sans aucun engin), du chantier et du synoptique, lecture des
+              fichiers (plan, chantier) et migrations (engins retirés des plans enregistrés
+              avant la correction de l'étape 5), temps (minutes depuis T0 → « Ve/Sa 01h30 »),
+              adresses des écrans, vue et cadrage, géométrie du tracé et le long des voies,
+              zones / appareils / cadres / textes, échelle, catalogue d'engins (liste par
+              défaut dans catalogue.ts), engins et rames à l'échelle posés dans les images
+              d'un synoptique (engins.ts, synoptique.ts), détection sous le pointeur, annuler
               (ni React ni DOM, testé)
-  ui/         écrans React (accueil, chantier, plan, synoptique), dessin SVG du plan,
-              panneau Calques, et accès au navigateur (IndexedDB pour les chantiers,
-              pdf.js, téléchargement)
-fixtures/     jeux de données d'exemple, anonymisés (dont un plan et un chantier V2)
+  ui/         écrans React (accueil, chantier et son catalogue, assistant « Nouveau plan »,
+              plan, synoptique), calage de l'échelle (plan et synoptique), dessin SVG du plan
+              et des engins, panneau Calques du plan, édition de l'image courante d'un
+              synoptique (useEditeurImage, ImageDeTravail, PanneauEngins), et accès au
+              navigateur (IndexedDB pour les chantiers, pdf.js, téléchargement)
+fixtures/     jeux de données d'exemple, anonymisés (dont un plan des étapes 2-3 et un
+              chantier avec plans à l'échelle sans engins, et un synoptique dont les images
+              portent des engins et une rame à des positions différentes)
 sources/      synoptiques réels fournis par le commanditaire (facultatif : il importe
               ses propres plans dans l'application)
 ```

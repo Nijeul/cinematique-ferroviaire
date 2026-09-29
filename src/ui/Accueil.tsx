@@ -13,6 +13,7 @@ import {
   type Chantier,
 } from '../plan/chantier.ts'
 import { lireChantier, lirePlanImporte, nomFichierChantier, serialiserChantier } from '../plan/fichierChantier.ts'
+import { avisEnginsRetires } from '../plan/lecture.ts'
 import type { Projet } from '../plan/projet.ts'
 import { BandeauMessage, BarreNavigation, BoutonsFenetre, ChampRenommer, Confirmation, Fenetre, LigneListe, Page } from './commun.tsx'
 import { COULEURS } from './couleurs.ts'
@@ -35,7 +36,9 @@ export function Accueil(props: { aller: (route: Route) => void; messageInitial: 
   const [message, setMessage] = useState<Message | null>(props.messageInitial)
   const [renommage, setRenommage] = useState<string | null>(null)
   const [aSupprimer, setASupprimer] = useState<Chantier | null>(null)
-  const [planAImporter, setPlanAImporter] = useState<Projet | null>(null)
+  // Plan lu, en attente du choix de son chantier ; `avis` : engins retirés du plan.
+  const [aImporter, setAImporter] = useState<{ projet: Projet; avis: string | null } | null>(null)
+  const planAImporter = aImporter?.projet ?? null
   const [destination, setDestination] = useState(NOUVEAU)
   const choixChantier = useRef<HTMLInputElement>(null)
   const choixPlan = useRef<HTMLInputElement>(null)
@@ -54,7 +57,9 @@ export function Accueil(props: { aller: (route: Route) => void; messageInitial: 
 
   // Le message du lancement (reprise de l'ancienne sauvegarde) ne s'affiche qu'une fois.
   const { messageLu } = props
-  useEffect(() => messageLu(), [messageLu])
+  useEffect(() => {
+    messageLu()
+  }, [messageLu])
 
   useEffect(() => {
     // Lecture asynchrone : la liste arrive après le premier affichage.
@@ -117,7 +122,7 @@ export function Accueil(props: { aller: (route: Route) => void; messageInitial: 
         genre: 'info',
         texte: `Chantier « ${c.nom} » importé : ${textePlans(c.plans.length)}, ${texteSynoptiques(c.synoptiques.length)}.${
           dejaLa ? ' Un chantier du même nom existait déjà : il est conservé à côté.' : ''
-        }`,
+        }${lu.avis.length > 0 ? ` ${lu.avis.join(' ')}` : ''}`,
       })
     }
   }
@@ -130,18 +135,19 @@ export function Accueil(props: { aller: (route: Route) => void; messageInitial: 
       return
     }
     setDestination(NOUVEAU)
-    setPlanAImporter(lu.projet)
+    setAImporter({ projet: lu.projet, avis: avisEnginsRetires(lu.projet.nom, lu.retires) })
   }
 
   const importerPlan = async () => {
     const projet = planAImporter
+    const avis = aImporter?.avis
     if (!projet) return
-    setPlanAImporter(null)
+    setAImporter(null)
     const cible =
       destination === NOUVEAU ? creerChantier(idLibre(), nomLibre(liste.map((x) => x.nom), projet.nom || 'Nouveau chantier'), maintenant()) : liste.find((c) => c.id === destination)
     if (!cible) return
     const c = toucher(ajouterPlan(cible, projet).chantier, maintenant())
-    if (await ecrire(c)) setMessage({ genre: 'info', texte: `Plan « ${projet.nom} » importé dans le chantier « ${c.nom} ».` })
+    if (await ecrire(c)) setMessage({ genre: 'info', texte: `Plan « ${projet.nom} » importé dans le chantier « ${c.nom} ».${avis ? ` ${avis}` : ''}` })
   }
 
   return (
@@ -255,7 +261,7 @@ export function Accueil(props: { aller: (route: Route) => void; messageInitial: 
         />
       )}
       {planAImporter && (
-        <Fenetre titre={`Importer le plan « ${planAImporter.nom} »`} fermer={() => setPlanAImporter(null)}>
+        <Fenetre titre={`Importer le plan « ${planAImporter.nom} »`} fermer={() => setAImporter(null)}>
           <label style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 13 }}>
             Dans quel chantier ?
             <select value={destination} onChange={(e) => setDestination(e.target.value)} style={styleChamp} aria-label="Chantier de destination">
@@ -268,7 +274,7 @@ export function Accueil(props: { aller: (route: Route) => void; messageInitial: 
             </select>
           </label>
           <BoutonsFenetre>
-            <button style={styleBouton()} onClick={() => setPlanAImporter(null)}>
+            <button style={styleBouton()} onClick={() => setAImporter(null)}>
               Annuler
             </button>
             <button style={styleBoutonPrincipal} onClick={() => void importerPlan()}>

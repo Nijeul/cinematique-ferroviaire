@@ -8,12 +8,14 @@ import { enregistrerChantier, lireChantierStocke } from './stockage.ts'
 
 export type Enregistrement = { genre: 'ok' } | { genre: 'enCours' } | { genre: 'erreur'; texte: string }
 
-type Etat = { id: string; chantier: Chantier | null; charge: boolean; erreur: string | null }
+// `avis` : ce que la mise à jour du chantier à l'ouverture a changé (engins
+// retirés des plans), à dire une fois.
+type Etat = { id: string; chantier: Chantier | null; charge: boolean; erreur: string | null; avis: string[] }
 
 const DELAI_ENREGISTREMENT = 400
 
 export function useChantier(id: string) {
-  const [etat, setEtat] = useState<Etat>({ id, chantier: null, charge: false, erreur: null })
+  const [etat, setEtat] = useState<Etat>({ id, chantier: null, charge: false, erreur: null, avis: [] })
   const [enregistrement, setEnregistrement] = useState<Enregistrement>({ genre: 'ok' })
   // Dernière version modifiée et pas encore écrite.
   const enAttente = useRef<Chantier | null>(null)
@@ -21,8 +23,8 @@ export function useChantier(id: string) {
   useEffect(() => {
     let actif = true
     lireChantierStocke(id).then(
-      (chantier) => actif && setEtat({ id, chantier, charge: true, erreur: null }),
-      (e: Error) => actif && setEtat({ id, chantier: null, charge: true, erreur: e.message }),
+      (lu) => actif && setEtat({ id, chantier: lu?.chantier ?? null, charge: true, erreur: null, avis: lu?.avis ?? [] }),
+      (e: Error) => actif && setEtat({ id, chantier: null, charge: true, erreur: e.message, avis: [] }),
     )
     return () => {
       actif = false
@@ -73,11 +75,15 @@ export function useChantier(id: string) {
     }
   }, [ecrire])
 
+  const avisLu = useCallback(() => setEtat((e) => ({ ...e, avis: [] })), [])
+
   return {
     chantier,
     charge: etat.id === id && etat.charge,
     erreurLecture: etat.id === id ? etat.erreur : null,
     modifier,
     enregistrement,
+    avis: etat.id === id ? etat.avis : [],
+    avisLu,
   }
 }

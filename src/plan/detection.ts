@@ -49,6 +49,17 @@ export function boiteTexte(t: Texte): Rectangle {
 const dansRectangle = (r: Rectangle, p: Point, marge: number): boolean =>
   p.x >= r.x - marge && p.x <= r.x + r.largeur + marge && p.y >= r.y - marge && p.y <= r.y + r.hauteur + marge
 
+// Point dans un polygone (règle pair-impair), ou à moins de `marge` de son bord.
+export function dansPolygone(polygone: Point[], p: Point, marge = 0): boolean {
+  let dedans = false
+  for (let i = 0, j = polygone.length - 1; i < polygone.length; j = i++) {
+    const a = polygone[i]
+    const b = polygone[j]
+    if (a.y > p.y !== b.y > p.y && p.x < ((b.x - a.x) * (p.y - a.y)) / (b.y - a.y) + a.x) dedans = !dedans
+  }
+  return dedans || (marge > 0 && distancePointPolyligne(p, [...polygone, polygone[0]]) <= marge)
+}
+
 // Élément sous le pointeur, en commençant par le calque du dessus : textes,
 // appareils, zones, voies, cadres.
 export function elementSousPointeur(projet: Projet, p: Point, tolerance: number): Reference | null {
@@ -113,7 +124,8 @@ export function elementSousPointeur(projet: Projet, p: Point, tolerance: number)
 
 // Poignée : un point qu'on attrape pour modifier l'élément choisi.
 // Clés : « point-2 » (voie), « debut » / « fin » (zone), « pointe » /
-// « talon » (appareil), « coin-0 » à « coin-3 » (cadre).
+// « talon » (appareil), « coin-0 » à « coin-3 » (cadre), « rotation » (engin
+// hors voie, dans une image de synoptique).
 export type Poignee = { cle: string; point: Point }
 
 export function poigneesDe(projet: Projet, ref: Reference): Poignee[] {

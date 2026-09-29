@@ -110,8 +110,10 @@ function appareilsLies(projet: Projet, touche: (a: Projet['appareils'][number]) 
   return new Set(projet.appareils.filter((a) => communications.has(a.communication ?? a.id)).map((a) => a.id))
 }
 
+export type Dependances = { zones: number; appareils: number }
+
 // Ce qui disparaît avec une voie : ses zones et ses appareils.
-export function dependancesVoie(projet: Projet, id: string): { zones: number; appareils: number } {
+export function dependancesVoie(projet: Projet, id: string): Dependances {
   return {
     zones: projet.zones.filter((z) => z.voieId === id).length,
     appareils: appareilsLies(projet, (a) => a.pointe.voieId === id || a.talon.voieId === id).size,

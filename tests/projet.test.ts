@@ -48,7 +48,7 @@ describe('lecture du projet', () => {
       },
     }
     const relu = lireProjet(serialiserProjet(projet))
-    expect(relu).toEqual({ ok: true, projet })
+    expect(relu).toEqual({ ok: true, projet, retires: { engins: 0, rames: 0 } })
   })
 
   it('refuse un fichier qui n’est pas du JSON, en français', () => {
@@ -144,7 +144,7 @@ describe('fichiers de l’étape 2 (version 2)', () => {
   it('sont réenregistrés au format actuel', () => {
     const lu = lireProjet(JSON.stringify(etape2()))
     if (!lu.ok) throw new Error()
-    expect(JSON.parse(serialiserProjet(lu.projet)).version).toBe(3)
+    expect(JSON.parse(serialiserProjet(lu.projet)).version).toBe(4)
   })
 })
 

@@ -1,17 +1,22 @@
-import { useRef, useState, type ReactNode } from 'react'
+import { useCallback, useRef, useState, type ReactNode } from 'react'
 import type { Route } from '../plan/adresse.ts'
 import { ajouterSynoptique, nomLibre, remplacerPlan, type Chantier, type PlanDuChantier } from '../plan/chantier.ts'
+import { descriptionEchelle } from '../plan/echelle.ts'
+import type { Echelle } from '../plan/projet.ts'
+import { FenetreEchelle } from './CalageEchelle.tsx'
 import { BandeauMessage, BarreNavigation } from './commun.tsx'
 import { COULEURS } from './couleurs.ts'
 import { NouveauSynoptique } from './NouveauSynoptique.tsx'
 import { PanneauCalques } from './PanneauCalques.tsx'
 import { PlanDeTravail } from './PlanDeTravail.tsx'
 import { POLICE, styleBouton, styleBoutonPrincipal } from './styles.ts'
-import { TOUCHES, useEditeur, type Editeur, type Outil } from './useEditeur.ts'
+import { TOUCHE_ECHELLE, TOUCHES, useEditeur, type Editeur, type Outil } from './useEditeur.ts'
 
-// Écran d'un plan : l'éditeur des étapes 2 et 3 — fond de plan importé
-// (image ou PDF) et, au calque par-dessus, voies, zones de travaux, appareils
-// de voie, cadres et textes — et le bouton « Nouveau synoptique ».
+// Écran d'un plan : l'éditeur — fond de plan importé (image ou PDF) et, au
+// calque par-dessus, voies, zones de travaux, appareils de voie, cadres et
+// textes — l'outil « Échelle » et le bouton « Nouveau synoptique ». Le plan
+// ne contient aucun engin : les engins se posent dans les images des
+// synoptiques, à l'échelle copiée depuis le plan.
 
 function Groupe({ children }: { children: ReactNode }) {
   return <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>{children}</div>
@@ -62,7 +67,7 @@ function consigne(editeur: Editeur): string {
   }
 }
 
-function BarreOutils({ editeur }: { editeur: Editeur }) {
+function BarreOutils({ editeur, ouvrirEchelle }: { editeur: Editeur; ouvrirEchelle: () => void }) {
   const choixFond = useRef<HTMLInputElement>(null)
   const choixProjet = useRef<HTMLInputElement>(null)
   const verrouille = editeur.projet.calques.fond.verrouille
@@ -133,11 +138,19 @@ function BarreOutils({ editeur }: { editeur: Editeur }) {
             style={styleBouton(editeur.outil === outil)}
             title={`${titre} — raccourci : ${TOUCHES[outil]}`}
             aria-pressed={editeur.outil === outil}
+            data-outil={outil}
             onClick={() => editeur.choisirOutil(outil)}
           >
             {libelle}
           </button>
         ))}
+        <button
+          style={styleBouton()}
+          onClick={ouvrirEchelle}
+          title={`Caler ou recaler l'échelle du plan : deux repères et leur distance réelle — raccourci : ${TOUCHE_ECHELLE}`}
+        >
+          Échelle…
+        </button>
       </Groupe>
       <Separateur />
       <Groupe>
@@ -156,10 +169,33 @@ function BarreOutils({ editeur }: { editeur: Editeur }) {
   )
 }
 
-function Bandeau({ editeur }: { editeur: Editeur }) {
+function Bandeau({ editeur, ouvrirEchelle }: { editeur: Editeur; ouvrirEchelle: () => void }) {
   const { occupe } = editeur
   return (
     <>
+      {!editeur.projet.echelle && (
+        <div
+          role="note"
+          data-testid="bandeau-sans-echelle"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            padding: '7px 14px',
+            fontSize: 13,
+            color: COULEURS.avertissement,
+            background: '#fdf6e3',
+            borderBottom: `1px solid #ecd9a8`,
+          }}
+        >
+          <span style={{ flex: 1 }}>
+            <strong>Échelle non définie</strong> : calez-la pour que les engins des synoptiques issus de ce plan soient à la bonne taille.
+          </span>
+          <button style={styleBoutonPrincipal} onClick={ouvrirEchelle}>
+            Caler l'échelle…
+          </button>
+        </div>
+      )}
       {occupe && (
         <p role="status" style={{ margin: 0, padding: '6px 14px', fontSize: 13, color: COULEURS.discret, background: '#ffffff' }}>
           {occupe}
@@ -178,9 +214,27 @@ export function EcranPlan(props: {
   etat: ReactNode
 }) {
   const { chantier, plan, modifierChantier } = props
-  const [fenetre, setFenetre] = useState(false)
-  const editeur = useEditeur(plan.projet, (projet) => modifierChantier((c) => remplacerPlan(c, plan.id, projet)), fenetre)
+  const [fenetre, setFenetre] = useState<'synoptique' | 'echelle' | null>(null)
+  const ouvrirEchelle = useCallback(() => setFenetre('echelle'), [])
+  const editeur = useEditeur(plan.projet, (projet) => modifierChantier((c) => remplacerPlan(c, plan.id, projet)), {
+    suspendu: fenetre !== null,
+    ouvrirEchelle,
+  })
   const { projet } = editeur
+
+  const recaler = (echelle: Echelle) => {
+    const avant = projet.echelle
+    editeur.modifier((p) => ({ ...p, echelle }))
+    setFenetre(null)
+    const synoptiques = chantier.synoptiques.some((s) => s.origine.planId === plan.id)
+    editeur.setMessage({
+      genre: 'info',
+      texte:
+        `Échelle ${avant ? 'recalée' : 'calée'} : ${descriptionEchelle(echelle, projet.largeur)}.` +
+        (synoptiques ? ' Les synoptiques déjà créés depuis ce plan gardent la leur (copies figées).' : '') +
+        ' Ctrl+Z pour revenir en arrière.',
+    })
+  }
   const vide = !projet.fond && projet.voies.length + projet.cadres.length + projet.textes.length === 0 && !editeur.trace
 
   const creerSynoptique = (demande: Parameters<typeof ajouterSynoptique>[2]) => {
@@ -203,15 +257,15 @@ export function EcranPlan(props: {
         action={
           <button
             style={{ ...styleBoutonPrincipal, borderColor: '#5b93cc' }}
-            onClick={() => setFenetre(true)}
+            onClick={() => setFenetre('synoptique')}
             title="Créer un synoptique à partir de ce plan (copie figée)"
           >
             Nouveau synoptique…
           </button>
         }
       />
-      <BarreOutils editeur={editeur} />
-      <Bandeau editeur={editeur} />
+      <BarreOutils editeur={editeur} ouvrirEchelle={ouvrirEchelle} />
+      <Bandeau editeur={editeur} ouvrirEchelle={ouvrirEchelle} />
       <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
         <main style={{ flex: 1, position: 'relative', minWidth: 0, overflow: 'hidden', userSelect: 'none' }}>
           <PlanDeTravail editeur={editeur} />
@@ -253,7 +307,16 @@ export function EcranPlan(props: {
         </main>
         <PanneauCalques editeur={editeur} />
       </div>
-      {fenetre && (
+      {fenetre === 'echelle' && (
+        <FenetreEchelle
+          titre={projet.echelle ? "Recaler l'échelle du plan" : "Caler l'échelle du plan"}
+          explication="Les synoptiques créés ensuite à partir de ce plan reprendront cette échelle : leurs engins y seront à la bonne taille."
+          projet={projet}
+          valider={recaler}
+          fermer={() => setFenetre(null)}
+        />
+      )}
+      {fenetre === 'synoptique' && (
         <NouveauSynoptique
           projet={projet}
           nomPropose={nomLibre(
@@ -261,7 +324,7 @@ export function EcranPlan(props: {
             `Synoptique ${chantier.synoptiques.length + 1}`,
           )}
           creer={creerSynoptique}
-          fermer={() => setFenetre(false)}
+          fermer={() => setFenetre(null)}
         />
       )}
     </div>
