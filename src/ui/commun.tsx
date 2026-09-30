@@ -1,6 +1,7 @@
-import { useEffect, useId, useState, type ReactNode } from 'react'
+import { useContext, useEffect, useId, useState, type ReactNode } from 'react'
 import { ecrireAdresse, type Route } from '../plan/adresse.ts'
 import { formaterHoraire, lireInstant } from '../plan/temps.ts'
+import { ContexteCompte } from './contexteCompte.ts'
 import { COULEURS } from './couleurs.ts'
 import { styleBouton, styleBoutonDanger, styleChamp } from './styles.ts'
 import type { Message } from './useEditeur.ts'
@@ -11,8 +12,9 @@ import type { Message } from './useEditeur.ts'
 export type Etape = { libelle: string; route?: Route }
 
 // Barre du haut : nom de l'application, fil d'Ariane « Accueil › chantier ›
-// plan », et à droite l'état de l'enregistrement dans le navigateur.
+// plan », et à droite l'état de l'enregistrement, puis le compte connecté.
 export function BarreNavigation({ chemin, etat, action }: { chemin: Etape[]; etat?: ReactNode; action?: ReactNode }) {
+  const compte = useContext(ContexteCompte)
   return (
     <nav
       aria-label="Fil d'Ariane"
@@ -49,6 +51,19 @@ export function BarreNavigation({ chemin, etat, action }: { chemin: Etape[]; eta
         {etat}
       </span>
       {action}
+      {compte && (
+        <span style={{ display: 'flex', alignItems: 'center', gap: 8, paddingLeft: 10, borderLeft: '1px solid #56606b', whiteSpace: 'nowrap' }}>
+          <span style={{ fontSize: 12, color: '#dfe5ea' }} data-testid="compte-connecte" title="Compte connecté">
+            {compte.email}
+          </span>
+          <button
+            onClick={compte.deconnecter}
+            style={{ font: 'inherit', fontSize: 12, padding: '2px 8px', borderRadius: 4, border: '1px solid #7b8691', background: 'transparent', color: '#ffffff', cursor: 'pointer' }}
+          >
+            Se déconnecter
+          </button>
+        </span>
+      )}
     </nav>
   )
 }
