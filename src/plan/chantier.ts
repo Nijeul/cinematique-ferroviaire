@@ -373,9 +373,13 @@ export function chantierRecupere(id: string, projet: Projet, maintenant: string)
 type Souple = Record<string, unknown>
 
 // Calques d'un plan ou d'une image : ceux d'aujourd'hui, sans le calque
-// « Engins » que les plans avaient avant la correction de l'étape 5.
+// « Engins » que les plans avaient avant la correction de l'étape 5. Un
+// calque « Fond » incomplet reçoit ce qui lui manque (opacité pleine…) : le
+// curseur d'opacité du synoptique en a besoin.
 const calquesDe = (brut: unknown): Souple => {
-  const calques = { ...creerCalques(), ...(brut as Souple) }
+  const defaut = creerCalques()
+  const lu = (brut ?? {}) as Souple
+  const calques = { ...defaut, ...lu, fond: { ...defaut.fond, ...(lu.fond as Souple | undefined) } }
   return Object.fromEntries(Object.entries(calques).filter(([nom]) => nom === 'fond' || (CALQUES_ELEMENTS as readonly string[]).includes(nom)))
 }
 

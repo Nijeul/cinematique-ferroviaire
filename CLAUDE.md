@@ -71,7 +71,8 @@ src/
               sélection (fleches.ts), états d'exploitation d'un chantier (liste par défaut) et
               des voies de chaque image, hachures (exploitation.ts), commentaires des images
               (commentaires.ts), coupes de tronçonnage des zones (coupes.ts), zones
-              affichées ou masquées de chaque synoptique (zonesAffichees.ts), légende de
+              affichées ou masquées de chaque synoptique (zonesAffichees.ts), opacité du
+              fond de plan d'un synoptique, écrite dans toutes ses images (fondSynoptique.ts), légende de
               chaque image construite d'après ce qu'elle montre (legende.ts), mise en page d'une image en planche : bandeau de titre,
               créneau horaire, encart PHASAGE et ses étapes, cadre LÉGENDE en colonnes
               (planche.ts), cartouche de la page de garde (cartouche.ts), exports : choix
@@ -97,7 +98,7 @@ src/
               l'image courante d'un synoptique (useEditeurImage, ImageDeTravail,
               PanneauEngins, PanneauFleches, PanneauCommentaires, PanneauExploitation,
               PanneauImage : zone choisie et ses coupes, créneau, phasage, légende, zones
-              affichées), fenêtres « Exporter… » et cartouche (FenetreExport), rendu d'une
+              affichées, opacité du fond), fenêtres « Exporter… » et cartouche (FenetreExport), rendu d'une
               planche en image pour les exports, avec le même dessin que l'écran
               (rendrePlanche), export image après image (exporter), connexion, nouveau mot de
               passe et compte non membre (EcranConnexion), page Équipe (EcranEquipe), mémoire

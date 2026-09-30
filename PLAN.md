@@ -490,6 +490,16 @@ coupes » ; « les wagons ne doivent jamais disparaître s'ils sont là ».
   elle revient avec son état, son avancement et ses coupes. Par défaut, tout est affiché. Le
   champ `zonesMasquees` du synoptique est facultatif : le fichier reste en **version 6**, et
   les chantiers enregistrés sans lui s'ouvrent avec toutes leurs zones.
+- **Opacité du fond de plan** (retour du commanditaire : « Je voudrais pouvoir modifier
+  l'opacité du fond du plan depuis le synoptique. ») : panneau « Fond de plan » de l'écran du
+  synoptique, sous « Zones affichées » : curseur « Opacité du fond de plan » de 0 à 100 %,
+  valeur affichée. Réglage **pour tout le synoptique** : image de travail, planche, vignettes,
+  exports PowerPoint et PDF ; le plan d'origine ne change jamais. Un glissé du curseur
+  s'annule d'un seul Ctrl+Z. Pas de nouveau champ : le réglage réutilise l'opacité du calque
+  « Fond » que chaque image copie du plan à la création du synoptique (valeur par défaut : celle
+  du plan) ; le curseur l'écrit dans toutes les images. Fichier toujours en **version 6** ; un
+  calque « Fond » incomplet d'un chantier gardé dans le navigateur reçoit l'opacité pleine.
+  Curseur grisé si le synoptique n'a pas de fond.
 
 Questions ouvertes de l'étape 10 (choix provisoires en place) :
 

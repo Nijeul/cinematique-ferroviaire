@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useRef, useState, type ReactNode } from 'react'
 import { PAS_COUPES_PAR_DEFAUT, texteCoupes } from '../plan/coupes.ts'
 import { formaterNombre, lireNombre } from '../plan/echelle.ts'
 import type { CoteDepart } from '../plan/etatsZones.ts'
@@ -12,6 +12,7 @@ import {
   numeroEtapePropose,
   supprimerEtape,
 } from '../plan/planche.ts'
+import { modifierOpaciteFond, pourcentOpaciteFond } from '../plan/fondSynoptique.ts'
 import type { HeuresCreneau, Synoptique } from '../plan/synoptique.ts'
 import { afficherToutesLesZones, afficherZone, texteZonesAffichees, zonesDuSynoptique } from '../plan/zonesAffichees.ts'
 import { COULEURS } from './couleurs.ts'
@@ -485,6 +486,48 @@ export function PanneauZonesAffichees(props: { synoptique: Synoptique; modifier:
           </p>
         </>
       )}
+    </Section>
+  )
+}
+
+// ——— Fond de plan du synoptique ———
+
+// Opacité du fond de plan, pour toutes les images du synoptique (l'image de
+// travail, la planche, les vignettes et les exports). Le plan d'origine ne
+// change pas. Une série de mouvements du curseur (un glissé) s'annule d'un
+// seul Ctrl+Z ; un nouveau glissé est une nouvelle étape.
+export function PanneauFondSynoptique(props: { synoptique: Synoptique; index: number; modifier: Modifier }) {
+  const { synoptique: s, index, modifier } = props
+  const glisse = useRef(0)
+  const pourcent = pourcentOpaciteFond(s, index)
+  const sansFond = !s.fond?.image
+  return (
+    <Section titre="Fond de plan" testid="panneau-fond-synoptique">
+      <label style={styles.ligne}>
+        <span style={{ flexShrink: 0 }}>Opacité du fond de plan</span>
+        <input
+          type="range"
+          min={0}
+          max={100}
+          step={1}
+          value={pourcent}
+          disabled={sansFond}
+          aria-label="Opacité du fond de plan"
+          style={{ flex: 1, minWidth: 0 }}
+          onPointerDown={() => {
+            glisse.current += 1
+          }}
+          onChange={(e) => modifier(modifierOpaciteFond(s, Number(e.target.value)), `opacite-fond:${glisse.current}`)}
+        />
+        <span style={{ width: 44, textAlign: 'right', whiteSpace: 'nowrap', fontWeight: 600 }} data-testid="valeur-opacite-fond">
+          {pourcent} %
+        </span>
+      </label>
+      <p style={styles.discret}>
+        {sansFond
+          ? "Ce synoptique n'a pas de fond de plan."
+          : `Pour toutes les images de ce synoptique et ses exports. Le plan « ${s.origine.nomPlan} » ne change pas.`}
+      </p>
     </Section>
   )
 }
