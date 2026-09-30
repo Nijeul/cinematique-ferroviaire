@@ -3,12 +3,14 @@
 // endroit.
 //
 //   #/                                        accueil
+//   #/equipe                                  l'équipe (membres, invitations)
 //   #/chantier/<id>                           un chantier
 //   #/chantier/<id>/plan/<id>                 un plan
 //   #/chantier/<id>/synoptique/<id>/image/<n> une image d'un synoptique
 
 export type Route =
   | { ecran: 'accueil' }
+  | { ecran: 'equipe' }
   | { ecran: 'chantier'; chantierId: string }
   | { ecran: 'plan'; chantierId: string; planId: string }
   | { ecran: 'synoptique'; chantierId: string; synoptiqueId: string; image: number }
@@ -27,6 +29,7 @@ function decoder(segment: string): string | null {
 // Une adresse inconnue ou abîmée ramène à l'accueil.
 export function lireAdresse(hash: string): Route {
   const segments = hash.replace(/^#?\/?/, '').split('/').filter((s) => s !== '')
+  if (segments[0] === 'equipe' && segments.length === 1) return { ecran: 'equipe' }
   if (segments[0] !== 'chantier' || segments.length < 2) return ACCUEIL
   const chantierId = decoder(segments[1])
   if (!chantierId) return ACCUEIL
@@ -47,6 +50,8 @@ export function ecrireAdresse(route: Route): string {
   switch (route.ecran) {
     case 'accueil':
       return '#/'
+    case 'equipe':
+      return '#/equipe'
     case 'chantier':
       return `#/chantier/${c(route.chantierId)}`
     case 'plan':

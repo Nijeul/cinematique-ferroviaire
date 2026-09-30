@@ -80,6 +80,20 @@ export const identifiantChantierLibre = (ids: string[]): string =>
     'chantier',
   )
 
+// Identifiant d'un nouveau chantier, unique pour toute l'équipe : deux
+// collègues qui créent un chantier chacun de leur côté (hors ligne compris)
+// n'obtiennent jamais le même (« chantier-k3f9x2qa »).
+export function identifiantChantierUnique(ids: string[], aleatoire: () => number = Math.random): string {
+  const pris = new Set(ids)
+  for (let essai = 0; essai < 100; essai++) {
+    let suffixe = ''
+    while (suffixe.length < 8) suffixe += Math.floor(aleatoire() * 36).toString(36)
+    const id = `chantier-${suffixe}`
+    if (!pris.has(id)) return id
+  }
+  return identifiantChantierLibre(ids)
+}
+
 export const toucher = (c: Chantier, maintenant: string): Chantier => ({ ...c, modifieLe: maintenant })
 
 export const renommerChantier = (c: Chantier, nom: string): Chantier => ({ ...c, nom })

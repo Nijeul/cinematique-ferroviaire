@@ -13,6 +13,8 @@ export function cleEcran(route: Route): string {
   switch (route.ecran) {
     case 'accueil':
       return 'accueil'
+    case 'equipe':
+      return 'equipe'
     case 'chantier':
       return `chantier:${route.chantierId}`
     case 'plan':
@@ -22,11 +24,11 @@ export function cleEcran(route: Route): string {
   }
 }
 
-// Où revenir : la page du chantier (sauf depuis l'accueil, qui n'en a pas) et
-// l'accueil.
+// Où revenir : la page du chantier (sauf depuis l'accueil et l'équipe, qui
+// n'en ont pas) et l'accueil.
 export function retoursApresErreur(route: Route): { chantier: Route | null; accueil: Route } {
   return {
-    chantier: route.ecran === 'accueil' ? null : { ecran: 'chantier', chantierId: route.chantierId },
+    chantier: route.ecran === 'accueil' || route.ecran === 'equipe' ? null : { ecran: 'chantier', chantierId: route.chantierId },
     accueil: { ecran: 'accueil' },
   }
 }

@@ -36,7 +36,12 @@ Le commanditaire est conducteur de travaux ferroviaire, pas développeur. Il con
    `Ve/Sa 01h30` à l'affichage uniquement.
 3. **La couleur porte l'information**, comme dans les synoptiques. Lisibilité avant tout ;
    jamais de recherche d'effet.
-4. **Pas de backend.** Le projet reste un fichier que l'utilisateur enregistre et transmet.
+4. **Mémoire en ligne dans Supabase** (décision du commanditaire, étape 9), avec une copie
+   locale de secours (IndexedDB) et l'export `.chantier.json` toujours disponible ; aucun
+   serveur à nous ; RLS partout (seuls les membres de l'équipe lisent et écrivent) ; jamais
+   de clé secrète côté navigateur (seules l'adresse du projet et la clé publique
+   `sb_publishable_…` vont dans les variables `VITE_…`). Le schéma vit dans
+   `supabase/migrations/`, identique à ce qui est appliqué au projet.
 5. **Aucune valeur d'un chantier réel hors de `fixtures/`** (les données y sont anonymisées).
 6. Pas de dépendance lourde sans justification, pas de code mort, pas de fonctionnalité hors
    plan sans demander.
@@ -68,8 +73,14 @@ src/
               créneau horaire, encart PHASAGE et ses étapes, cadre LÉGENDE en colonnes
               (planche.ts), cartouche de la page de garde (cartouche.ts), exports : choix
               des images, planche ajustée dans la page, zones de texte PowerPoint à leur
-              place, page de garde, nom du fichier (export.ts), détection sous le pointeur,
-              annuler (ni React ni DOM, testé)
+              place, page de garde, nom du fichier (export.ts), mémoire en ligne : fonds
+              extraits du chantier et réinjectés, empreinte, fichiers inutiles (fondsEnLigne.ts),
+              décisions de synchronisation (à envoyer, à récupérer, conflit, reprise d'un
+              navigateur), textes et erreurs en français (synchro.ts), détection sous le
+              pointeur, annuler (ni React ni DOM, testé)
+  enligne/    accès à Supabase, seul endroit qui le connaît : interface DepotEnLigne
+              (depot.ts), variables et refus d'une clé secrète (configuration.ts, testé),
+              comptes, tables et stockage « fonds » (supabase.ts, chargé à la demande)
   export/     écriture des fichiers exportés, sans navigateur (testée sous Node) :
               PowerPoint avec pptxgenjs (ecrirePptx.ts), PDF avec jsPDF (ecrirePdf.ts) ;
               chargés à la demande, au premier export
@@ -82,8 +93,12 @@ src/
               PanneauEngins, PanneauFleches, PanneauImage : zone choisie, créneau, phasage,
               légende), fenêtres « Exporter… » et cartouche (FenetreExport), rendu d'une
               planche en image pour les exports, avec le même dessin que l'écran
-              (rendrePlanche), export image après image (exporter), et accès au navigateur
-              (IndexedDB pour les chantiers, pdf.js, téléchargement)
+              (rendrePlanche), export image après image (exporter), connexion, nouveau mot de
+              passe et compte non membre (EcranConnexion), page Équipe (EcranEquipe), mémoire
+              des chantiers en ligne ou dans ce navigateur (memoire.ts), enregistrement et
+              conflits du chantier ouvert (useChantier), et accès au navigateur (IndexedDB :
+              copie de secours des chantiers et fiches de synchronisation, pdf.js,
+              téléchargement)
 fixtures/     jeux de données d'exemple, anonymisés (dont un plan des étapes 2-3 et un
               chantier avec plans à l'échelle sans engins, un synoptique dont les images
               portent des engins et une rame à des positions différentes, un synoptique de
@@ -92,6 +107,8 @@ fixtures/     jeux de données d'exemple, anonymisés (dont un plan des étapes 
               avec description, une rame « TTX 1 » et un cartouche aux valeurs fictives)
 sources/      synoptiques réels fournis par le commanditaire (facultatif, jamais versionnés :
               données réelles ; il importe ses propres plans dans l'application)
+supabase/     migrations SQL du projet Supabase (tables membres et chantiers, règles
+              d'accès, refus d'inscription non invitée, stockage privé « fonds »)
 ```
 
 ## Vocabulaire métier
@@ -128,3 +145,14 @@ sources/      synoptiques réels fournis par le commanditaire (facultatif, jamai
   commanditaire, ne jamais les inverser.
 - **tsconfig.node.json** couvre `tests/` : tout module importé par un test doit compiler avec
   ses `lib`/`types` (DOM et vite/client y sont déjà).
+- **Variables Vercel** : `VITE_SUPABASE_URL` et `VITE_SUPABASE_PUBLISHABLE_KEY` sont lues au
+  **build** (Production, Preview et Development). Les changer n'a d'effet qu'au déploiement
+  suivant ; absentes, le site repasse en « dans ce navigateur seulement ». Localement :
+  `.env.local` (jamais versionné, modèle dans `.env.example`).
+- **Projet Supabase gratuit** : mis en pause après 7 jours sans activité (le site affiche
+  alors la marche à suivre : « Restore project » dans le tableau de bord), et pas de
+  sauvegarde automatique. Le service d'e-mails intégré n'écrit qu'aux membres de
+  l'organisation Supabase tant qu'aucun SMTP n'est réglé.
+- **Erreurs d'Auth** : une inscription refusée par la base (adresse non invitée) arrive en
+  erreur 500 « Database error saving new user », rangée par la bibliothèque dans
+  `AuthRetryableFetchError` : seul le statut 0 veut dire « pas de réseau ».

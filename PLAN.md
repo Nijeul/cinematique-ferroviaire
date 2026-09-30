@@ -37,10 +37,12 @@ Jamais deux étapes d'avance. Chaque étape est une PR courte qui dit quoi regar
 | 5 | Échelle du plan, obligatoire à la création ; catalogue d'engins par chantier ; engins et rames posés à l'échelle **dans les images des synoptiques** (pas sur le plan), couleurs et numéros ; « Nouvelle image » emporte les engins (détail ci-dessous) | les engins se posent à la bonne taille dans une image, se reconnaissent et avancent d'une image à l'autre | **validé** |
 | 6 | États de la voie par chantier ; état et avancement partiel de chaque zone dans chaque image ; encart PHASAGE ; créneau horaire et bandeau de titre (détail ci-dessous) | une image se lit comme une planche actuelle (hors flèches et légende) | **validé** |
 | 7 | Types de flèches par chantier ; flèches tracées dans les images (sens de travail, sens d'avancement TTX, cheminement, chemin de roule) ; **légende** propre à chaque image, construite d'après ce qu'elle montre : engins numérotés (« 1 — Pelle RR »), rames, états présents, flèches (détail ci-dessous) | la planche s'explique d'elle-même, sans les carrés noirs numérotés | **validé** |
-| 8 | Exports PowerPoint et PDF des images d'un synoptique : une diapositive ou une page par image, textes du bandeau, du créneau et du PHASAGE modifiables dans PowerPoint, page de garde avec cartouche (détail ci-dessous) | un jeu de planches équivalent à l'actuel | **en cours** |
+| 8 | Exports PowerPoint et PDF des images d'un synoptique : une diapositive ou une page par image, textes du bandeau, du créneau et du PHASAGE modifiables dans PowerPoint, page de garde avec cartouche (détail ci-dessous) | un jeu de planches équivalent à l'actuel | **validé** |
+| 9 | Mémoire en ligne (Supabase) : un compte par personne, sur invitation ; chantiers et fonds enregistrés en ligne et partagés par l'équipe ; copie de secours dans le navigateur ; conflits signalés ; page « Équipe » (détail ci-dessous) | on retrouve ses chantiers sur un autre ordinateur, un collègue invité les voit | **en cours** |
 
-**L'étape 8 est la dernière du plan.** Les besoins au-delà (vidéo, orthophoto calée, import
-DXF, 3D en option…) seront rediscutés une fois l'étape 8 validée — pas avant.
+L'étape 8 devait être la dernière ; l'étape 9 a été demandée par le commanditaire une fois
+l'étape 8 validée (« Fais en sorte qu'il y ait une mémoire »). Les autres besoins (vidéo,
+orthophoto calée, import DXF, 3D en option…) restent à rediscuter.
 
 ### Étape 3 — éléments du plan au calque
 
@@ -363,6 +365,70 @@ Questions ouvertes de l'étape 8 (choix provisoires en place) :
 - **Forme de la planche** : sur une diapositive 16/9, une planche plus haute (cadrage étroit)
   laisse des marges blanches sur les côtés ; le cadrage du synoptique permet de s'en approcher.
 
+### Étape 9 — mémoire en ligne (Supabase)
+
+Demande du commanditaire : « J'ai relié à Supabase. Fais en sorte qu'il y ait une mémoire. »
+Jusqu'ici les chantiers ne vivaient que dans le navigateur d'un ordinateur ; ils sont
+désormais enregistrés en ligne, dans le projet Supabase « cinematique-ferroviaire », et on les
+retrouve sur n'importe quel ordinateur après connexion.
+
+- **Comptes** : un compte par personne (e-mail et mot de passe). **Écran de connexion**
+  avant tout le reste : « Se connecter », « Créer mon compte », « Mot de passe oublié ».
+  Barre du haut : le compte connecté et « Se déconnecter ».
+- **Sur invitation** : seule une adresse de la liste des membres peut créer un compte
+  (« Cette adresse n'a pas été invitée. Demandez à un membre de l'équipe de vous inviter. ») ;
+  un compte qui n'est pas (ou plus) membre ne voit rien et ne peut rien écrire — c'est la
+  base qui le garantit (règles d'accès), pas seulement l'écran. Premier membre : le
+  commanditaire.
+- **Page « Équipe »** (depuis l'accueil) : les membres (qui les a invités, quand), « Inviter
+  un collègue (e-mail) », « Retirer » avec confirmation. On ne retire jamais le dernier
+  membre. L'invité ouvre le site et clique « Créer mon compte » avec son adresse (aucun
+  e-mail d'invitation n'est envoyé).
+- **Tous les membres voient et modifient tous les chantiers.** L'accueil liste les chantiers
+  en ligne, avec qui les a modifiés et quand (« modifié par … aujourd'hui à 14h32 »).
+- **Enregistrement** : la copie du navigateur est écrite comme avant (0,4 s après la
+  modification) ; l'envoi en ligne part 2,5 s après la dernière modification, et en quittant
+  la page quand c'est possible. Indicateur : « ✓ Enregistré en ligne », « Enregistrement… »,
+  « Hors ligne — enregistré dans ce navigateur seulement, envoi dès le retour de la
+  connexion », ou une erreur en français. Au retour de la connexion et à l'ouverture, ce qui
+  attend est envoyé.
+- **Fonds de plan** : chaque image (plan ou copie figée d'un synoptique) est rangée à part,
+  dans un stockage privé réservé aux membres, et ne s'envoie que si elle a changé ; une même
+  image n'est envoyée qu'une fois. Supprimer un chantier supprime ses images.
+- **Conflit** : si un collègue a enregistré le même chantier entre-temps, rien n'est écrasé
+  en silence : « Ce chantier a été modifié par X aujourd'hui à 14h32 » — « Recharger sa
+  version » ou « Garder la mienne » (et « Exporter ma version… » par précaution).
+- **Reprise de l'existant** : à la première connexion sur un navigateur, ses chantiers sont
+  mis en ligne (« 3 chantiers de ce navigateur ont été mis en ligne »). Un chantier présent
+  des deux côtés avec un contenu différent : la version en ligne est gardée, celle du
+  navigateur devient « … (copie de ce navigateur) ». Rien ne se perd.
+- **Sans serveur** (site sans réglage Supabase, projet en pause, pas de connexion) : message
+  clair et marche à suivre ; on peut « Travailler dans ce navigateur seulement ».
+- L'export et l'import de fichiers `.chantier.json` restent disponibles.
+
+Décisions du commanditaire pour l'étape 9 :
+
+- **Un compte par personne**, et **tous les membres voient et modifient tous les chantiers
+  de l'équipe** (choix 1.b).
+- **Comptes sur invitation uniquement** : quelqu'un qui n'a pas été invité ne peut rien lire
+  ni écrire, même s'il réussit à créer un compte.
+- **Offre gratuite de Supabase** : pas de sauvegarde automatique, pause du projet après 7
+  jours sans activité. La copie du navigateur reste une copie de secours, et l'export
+  `.chantier.json` reste le moyen d'archiver.
+
+Questions ouvertes de l'étape 9 :
+
+- **E-mails** : le service d'e-mails gratuit de Supabase n'écrit qu'aux membres de
+  l'organisation Supabase. Pour que les collègues reçoivent la confirmation de compte et
+  « Mot de passe oublié », il faut soit brancher un service d'envoi (SMTP, gratuit chez
+  Brevo ou Resend jusqu'à quelques centaines d'e-mails par jour), soit désactiver la
+  confirmation d'adresse (plus simple, un peu moins sûr). Lequel préférez-vous ?
+- **Travail à plusieurs en même temps** : un chantier ouvert ne se met pas à jour tout seul
+  quand un collègue l'enregistre ; on le voit à l'enregistrement suivant (conflit) ou en
+  rouvrant le chantier. Faut-il un rafraîchissement automatique ?
+- **Sauvegardes** : l'offre gratuite n'en fait pas. Faut-il un export régulier de tous les
+  chantiers (un bouton « Tout exporter ») ?
+
 ## Décisions du commanditaire
 
 - Appareils de voie : **seulement le BS et la communication** pour l'instant, pas d'autres ADV.
@@ -393,6 +459,10 @@ Questions ouvertes de l'étape 8 (choix provisoires en place) :
   créneau et encart autour du plan) : « C'est bon. » Les choix en place sont gardés.
 - **Étape 7** (flèches, légende et ses choix provisoires) : « C'est bon, passe à l'étape
   suivante. » Les choix en place sont gardés.
+- **Étape 8** (exports PowerPoint et PDF) : validée.
+- **Mémoire en ligne** (étape 9) : Supabase, un compte par personne, sur invitation ; tous
+  les membres voient et modifient tous les chantiers ; offre gratuite (copie de secours dans
+  le navigateur, export `.chantier.json` pour archiver).
 
 ## Synoptiques réels
 
