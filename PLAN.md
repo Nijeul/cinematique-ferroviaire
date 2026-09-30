@@ -445,6 +445,8 @@ coupes » ; « les wagons ne doivent jamais disparaître s'ils sont là ».
   réordonner (ordre de la légende), supprimer (confirmation qui dit combien d'images sont
   concernées ; les voies qui y étaient n'ont plus d'état). Liste par défaut : **Interceptée**
   (framboise), **Annoncée** (orange), **Simultanée** (bleu), **Restituée** (vert).
+  **Simultanée** = voie interceptée en même temps que la voie contiguë (définition du
+  commanditaire, sans autre sens).
 - **Dans chaque image**, panneau « Exploitation des voies » : un état par voie entière (ou
   aucun). Rendu : **hachures** à 45° de la couleur de l'état, dans une bande un peu plus large
   que la voie et ses zones, **sous** la voie, les zones et les engins (la voie et l'état de ses
