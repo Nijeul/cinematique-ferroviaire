@@ -13,6 +13,7 @@ import {
   supprimerEtape,
 } from '../plan/planche.ts'
 import type { HeuresCreneau, Synoptique } from '../plan/synoptique.ts'
+import { afficherToutesLesZones, afficherZone, texteZonesAffichees, zonesDuSynoptique } from '../plan/zonesAffichees.ts'
 import { COULEURS } from './couleurs.ts'
 import { ApercuEtat } from './DessinEtats.tsx'
 import { styleChamp, stylesPanneau as styles } from './styles.ts'
@@ -416,6 +417,74 @@ export function PanneauLegende(props: { synoptique: Synoptique; index: number; l
           ))}
         </ul>
       </fieldset>
+    </Section>
+  )
+}
+
+// ——— Zones affichées du synoptique ———
+
+// Les zones de travaux du plan figé, chacune avec sa case « affichée ». Une
+// zone décochée disparaît de toutes les images du synoptique (tracé, nom,
+// état, coupes, légende, exports) ; son état et ses coupes sont gardés.
+export function PanneauZonesAffichees(props: { synoptique: Synoptique; modifier: Modifier }) {
+  const { synoptique: s, modifier } = props
+  const zones = zonesDuSynoptique(s)
+  return (
+    <Section
+      titre={
+        <>
+          Zones affichées <span style={{ fontWeight: 400, textTransform: 'none' }}>· {texteZonesAffichees(s)}</span>
+        </>
+      }
+      testid="panneau-zones-affichees"
+    >
+      {zones.length === 0 ? (
+        <p style={styles.discret}>Le plan de ce synoptique n'a pas de zone de travaux.</p>
+      ) : (
+        <>
+          <div style={{ ...styles.ligne, gap: 6 }}>
+            <button style={styles.petitBouton} disabled={zones.every((z) => z.affichee)} onClick={() => modifier(afficherToutesLesZones(s, true))}>
+              Tout afficher
+            </button>
+            <button style={styles.petitBouton} disabled={zones.every((z) => !z.affichee)} onClick={() => modifier(afficherToutesLesZones(s, false))}>
+              Tout masquer
+            </button>
+          </div>
+          <ul style={{ listStyle: 'none', margin: 0, padding: 0 }} data-testid="liste-zones-affichees">
+            {zones.map(({ zone, voie, affichee }) => (
+              <li key={zone.id} style={{ margin: '3px 0' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }} data-testid="ligne-zone-affichee" data-zone={zone.nom}>
+                  <input
+                    type="checkbox"
+                    checked={affichee}
+                    aria-label={`Afficher la zone « ${zone.nom} »`}
+                    onChange={(e) => modifier(afficherZone(s, zone.id, e.target.checked))}
+                  />
+                  <span style={{ width: 14, height: 10, flexShrink: 0, background: zone.couleur, opacity: affichee ? 1 : 0.35, border: `1px solid ${COULEURS.bordure}` }} />
+                  <span
+                    style={{
+                      flex: 1,
+                      minWidth: 0,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      color: affichee ? undefined : COULEURS.discret,
+                      textDecoration: affichee ? undefined : 'line-through',
+                    }}
+                  >
+                    {zone.nom || 'Zone sans nom'}
+                  </span>
+                  {voie !== '' && <span style={{ color: COULEURS.discret, fontSize: 12, flexShrink: 0 }}>{voie}</span>}
+                </label>
+              </li>
+            ))}
+          </ul>
+          <p style={styles.discret}>
+            Pour toutes les images de ce synoptique. Une zone décochée disparaît de l'image, de la planche, de la légende et des exports ;
+            son état et ses coupes sont gardés et reviennent quand on la recoche.
+          </p>
+        </>
+      )}
     </Section>
   )
 }

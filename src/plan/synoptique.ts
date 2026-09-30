@@ -10,6 +10,7 @@ import { CALQUE_EXPLOITATION_PAR_DEFAUT, type ExploitationVoies } from './exploi
 import type { Fleche } from './fleches.ts'
 import type { Calque, Echelle, Fond, Point, Projet } from './projet.ts'
 import { ecrireInstant, formaterHoraire, formaterPlage, lireInstant, minutesDepuisT0 } from './temps.ts'
+import { zonesVisibles, type ZonesMasquees } from './zonesAffichees.ts'
 
 // Un synoptique : une copie figée d'un plan, cadrée sur une partie du plan,
 // et une suite d'images qu'on feuillette comme un PowerPoint.
@@ -92,6 +93,9 @@ export type Synoptique = {
   calqueCommentaires: Calque
   // Légende de chaque image, en bas à droite (cochée par défaut).
   afficherLegende: boolean
+  // Zones masquées dans toutes les images (voir zonesAffichees.ts) ; vide :
+  // toutes affichées. Leurs états et coupes restent dans les images.
+  zonesMasquees: ZonesMasquees
   // Bandeau de titre, en haut de chaque image (une ou plusieurs lignes) ;
   // vide : pas de bandeau.
   bandeau: string
@@ -137,9 +141,11 @@ const nouvelleImageVide = (id: string, debut: number, fin: number, contenu: Cont
 })
 
 // Le plan tel qu'il apparaît sur une image : le fond et l'échelle du
-// synoptique, les éléments, engins et rames de l'image.
+// synoptique, les éléments, engins et rames de l'image — sans les zones
+// masquées du synoptique (ni dessinées, ni détectées sous le pointeur).
 export function projetDeImage(s: Synoptique, image: ImageSynoptique): PlanImage {
-  return { nom: s.nom, largeur: s.largeur, hauteur: s.hauteur, fond: s.fond, echelle: s.echelle, ...image.contenu }
+  const zones = zonesVisibles(s, image.contenu.zones)
+  return { nom: s.nom, largeur: s.largeur, hauteur: s.hauteur, fond: s.fond, echelle: s.echelle, ...image.contenu, zones }
 }
 
 export const CALQUE_ENGINS_PAR_DEFAUT: Calque = { visible: true, verrouille: false }
@@ -232,6 +238,7 @@ export function creerSynoptique(
     calqueExploitation: { ...CALQUE_EXPLOITATION_PAR_DEFAUT },
     calqueCommentaires: { ...CALQUE_COMMENTAIRES_PAR_DEFAUT },
     afficherLegende: true,
+    zonesMasquees: [],
     bandeau: '',
     cartouche: creerCartouche(),
     images: [nouvelleImageVide('image-1', 0, demande.fin, contenuDe(projet))],

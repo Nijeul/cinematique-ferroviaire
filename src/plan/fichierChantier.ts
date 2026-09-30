@@ -62,6 +62,9 @@ import { lireInstant } from './temps.ts'
 // par défaut, images sans hachures, sans commentaires, sans coupes. Une
 // version plus ancienne de l'application refuse d'ouvrir une version 6
 // (« version plus récente ») : elle ne peut donc pas l'abîmer.
+// Complément de l'étape 10, toujours en version 6 : zones masquées de chaque
+// synoptique (`zonesMasquees`), facultatives ; absentes, toutes les zones
+// sont affichées.
 
 export const FORMAT_CHANTIER = 'cinematique-ferroviaire/chantier'
 export const VERSION_CHANTIER = 6
@@ -126,6 +129,18 @@ function lireLegendeMasquee(brut: unknown, quelle: string, erreurs: string[]): s
     return []
   }
   return [...brut]
+}
+
+// Zones masquées d'un synoptique : des identifiants de zones de ses images ;
+// ceux d'une zone qui n'existe pas sont ignorés.
+function lireZonesMasquees(brut: unknown, images: ImageSynoptique[], libelle: string, erreurs: string[]): string[] {
+  if (brut === undefined) return []
+  if (!Array.isArray(brut) || !brut.every((id) => typeof id === 'string')) {
+    erreurs.push(`${libelle} : la liste des zones masquées est illisible.`)
+    return []
+  }
+  const existantes = new Set(images.flatMap((im) => im.contenu.zones.map((z) => z.id)))
+  return [...new Set(brut)].filter((id) => existantes.has(id))
 }
 
 function lireCadrage(brut: unknown, largeur: number, hauteur: number): Rectangle | null | undefined {
@@ -282,6 +297,7 @@ function lireSynoptique(
       contenu: contenuDe(lu.projet, engins, etatsZones, fleches, { exploitation, commentaires, coupes }),
     })
   })
+  const zonesMasquees = lireZonesMasquees(brut.zonesMasquees, images, libelle, erreurs)
   if (erreurs.length > avant || cadrage === undefined) return null
   return {
     id: brut.id as string,
@@ -299,6 +315,7 @@ function lireSynoptique(
     calqueExploitation: lireCalque(brut.calqueExploitation, CALQUE_EXPLOITATION_PAR_DEFAUT),
     calqueCommentaires: lireCalque(brut.calqueCommentaires, CALQUE_COMMENTAIRES_PAR_DEFAUT),
     afficherLegende: typeof brut.afficherLegende === 'boolean' ? brut.afficherLegende : true,
+    zonesMasquees,
     bandeau: typeof brut.bandeau === 'string' ? brut.bandeau : '',
     cartouche: lireCartouche(brut.cartouche),
     images,

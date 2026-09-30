@@ -479,6 +479,17 @@ coupes » ; « les wagons ne doivent jamais disparaître s'ils sont là ».
   d'exploitation par défaut, images sans hachures, commentaires ni coupes). Une version plus
   ancienne de l'application **refuse** d'ouvrir un chantier en version 6 (« version plus
   récente ») : elle ne peut pas l'abîmer.
+- **Zones affichées** (retour du commanditaire : « Il faut pouvoir masquer et afficher les
+  zones dans le mode synoptique. Parce que je me fiche de voir les RVB des zones que je ne
+  traite pas dans ce synoptique. ») : panneau « Zones affichées » de l'écran du synoptique,
+  réglage **pour tout le synoptique** (pas image par image) : chaque zone du plan figé avec sa
+  case, sa couleur et sa voie, boutons « Tout afficher » et « Tout masquer », Annuler /
+  Rétablir. Une zone décochée disparaît de toutes les images : tracé, nom, état, avancement,
+  coupes, lignes de la légende, vignettes et exports PowerPoint et PDF ; elle ne se choisit
+  plus en cliquant (le panneau de la zone choisie se ferme). Ses données restent : recochée,
+  elle revient avec son état, son avancement et ses coupes. Par défaut, tout est affiché. Le
+  champ `zonesMasquees` du synoptique est facultatif : le fichier reste en **version 6**, et
+  les chantiers enregistrés sans lui s'ouvrent avec toutes leurs zones.
 
 Questions ouvertes de l'étape 10 (choix provisoires en place) :
 

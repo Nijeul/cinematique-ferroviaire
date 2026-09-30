@@ -31,7 +31,7 @@ import { CalqueEngins, ChoixType, RameAPoser } from './PanneauEngins.tsx'
 import { CalqueFleches, ChoixTypeFleche, PanneauFleche } from './PanneauFleches.tsx'
 import { CalqueCommentaires, PanneauCommentaire } from './PanneauCommentaires.tsx'
 import { PanneauExploitation } from './PanneauExploitation.tsx'
-import { PanneauCreneau, PanneauLegende, PanneauPhasage, PanneauZone } from './PanneauImage.tsx'
+import { PanneauCreneau, PanneauLegende, PanneauPhasage, PanneauZone, PanneauZonesAffichees } from './PanneauImage.tsx'
 import { DessinPlanche } from './Planche.tsx'
 import { POLICE, styleBouton, styleBoutonDanger, styleBoutonPrincipal, styleChamp, styleDiscret, styleTitreSection } from './styles.ts'
 import type { Message } from './useEditeur.ts'
@@ -44,7 +44,7 @@ import { RAISON_SANS_ECHELLE, TOUCHES_IMAGE, useEditeurImage, type EditeurImage,
 // montre la légende. Chaque image a ses propres engins, flèches et états de
 // zones ; « Nouvelle image » les recopie, il ne reste qu'à changer ce qui
 // bouge. Horaires, nombre d'images et propriétés du synoptique (dont le
-// bandeau de titre et cartouche) se modifient aussi — le tout avec Annuler /
+// bandeau de titre, le cartouche et les zones affichées) se modifient aussi — le tout avec Annuler /
 // Rétablir. « Exporter… » produit le PowerPoint ou le PDF des images, sans
 // rien modifier.
 
@@ -523,6 +523,7 @@ export function EcranSynoptique(props: {
           {editeur.outil === 'engin' && <ChoixType editeur={editeur} />}
           {editeur.outil === 'rame' && <RameAPoser editeur={editeur} />}
           {editeur.outil === 'fleche' && <ChoixTypeFleche editeur={editeur} />}
+          <PanneauZonesAffichees synoptique={s} modifier={(suivant, cle = null) => modifier(suivant, index, cle)} />
           <Section titre={`Image ${index + 1} sur ${s.images.length}`}>
             <ChampInstant libelle="Début" valeur={instantDepuisT0(s.t0, image.debut)} changer={horaireImage('debut')} />
             <ChampInstant libelle="Fin" valeur={instantDepuisT0(s.t0, image.fin)} changer={horaireImage('fin')} />

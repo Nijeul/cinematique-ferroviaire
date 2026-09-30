@@ -7,6 +7,7 @@ import { etatDeZone } from './etatsZones.ts'
 import { etatsExploitationPresents, type EtatExploitation } from './exploitation.ts'
 import type { TypeFleche } from './fleches.ts'
 import type { Synoptique } from './synoptique.ts'
+import { zonesVisibles } from './zonesAffichees.ts'
 
 // La légende d'une image de synoptique, construite d'après ce que l'image
 // montre, et seulement cela — comme sur les planches du commanditaire, où
@@ -147,12 +148,13 @@ function entreesEngins(engins: Engin[], rames: Rame[], catalogue: TypeEngin[]): 
 
 // Toutes les lignes que la légende de l'image aurait, masquées comprises,
 // dans l'ordre : rames, engins numérotés, autres engins, états, coupes,
-// exploitation, flèches. Ce
-// qui est sur un calque masqué n'est pas sur la planche : pas dans la légende.
+// exploitation, flèches. Ce qui est sur un calque masqué n'est pas sur la
+// planche : pas dans la légende. De même pour les zones masquées du
+// synoptique : ni leur état, ni leurs coupes n'y figurent.
 export function entreesLegende(s: Synoptique, index: number, listes: ListesChantier): EntreeLegende[] {
   const image = s.images[index]
   if (!image) return []
-  const contenu = image.contenu
+  const contenu = { ...image.contenu, zones: zonesVisibles(s, image.contenu.zones) }
   const engins = s.calqueEngins.visible && s.echelle ? entreesEngins(contenu.engins, contenu.rames, listes.catalogue) : []
 
   const etats: EntreeLegende[] = []
