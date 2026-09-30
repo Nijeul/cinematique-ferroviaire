@@ -4,7 +4,7 @@ import { formaterMetres, metresVersPlan, planVersMetres } from './echelle.ts'
 import { nomParDefaut, nouvelIdentifiant } from './edition.ts'
 import { normaleHaut, tailleNom } from './geometrie.ts'
 import { epaisseurParDefaut, type Point, type Projet, type Voie } from './projet.ts'
-import { bornerAbscisse, longueurPolyligne, pointAAbscisse } from './trace.ts'
+import { bornerAbscisse, longueurPolyligne, pointAAbscisse, projeterSurPolyligne } from './trace.ts'
 
 // Engins et rames à l'échelle, posés dans une image de synoptique (jamais sur
 // le plan, qui reste « juste un plan ») : la longueur dessinée est exactement
@@ -342,6 +342,69 @@ export function placerEnginSurVoie<P extends Planche>(projet: P, id: string, abs
         : e,
     ),
   }
+}
+
+// ——— Changer de voie ———
+//
+// Un engin passe d'une voie à une autre (la pelle RR qui passe de V2 sur V1),
+// ou quitte la voie (déraillement : il devient libre, sur la route ou en
+// base arrière) et y revient (enraillement). Il garde tout le reste : son
+// type, son numéro, sa couleur, sa description, son identifiant (et donc sa
+// place dans la légende). Il se pose au point de la nouvelle voie le plus
+// proche de l'endroit où il était.
+
+// Milieu et direction actuels d'un engin, qu'il soit sur une voie ou libre.
+function poseActuelle(projet: PlanEngins, engin: Engin): Pose | null {
+  if (engin.position.genre === 'libre') return { centre: { x: engin.position.x, y: engin.position.y }, direction: directionDe(engin.position.angle) }
+  const voie = projet.voies.find((v) => v.id === (engin.position as { voieId: string }).voieId)
+  if (!voie) return null
+  const longueur = projet.echelle ? metresVersPlan(projet.echelle, engin.type.longueur) : 0
+  return poseSurVoie(voie.points, engin.position.abscisse, longueur)
+}
+
+// `voieId` : la voie d'arrivée ; null : hors voie, à l'endroit où il était,
+// dans le sens de la voie qu'il quitte.
+export function changerVoieEngin<P extends Planche>(projet: P, id: string, voieId: string | null): P {
+  const engin = projet.engins.find((e) => e.id === id)
+  if (!engin) return projet
+  if (voieId === null && engin.position.genre === 'libre') return projet
+  if (voieId !== null && engin.position.genre === 'voie' && engin.position.voieId === voieId) return projet
+  const pose = poseActuelle(projet, engin)
+  const voie = voieId === null ? null : projet.voies.find((v) => v.id === voieId)
+  if (!pose || (voieId !== null && !voie)) return projet
+  const position: PositionEngin = voie
+    ? { genre: 'voie', voieId: voie.id, abscisse: projeterSurPolyligne(voie.points, pose.centre).abscisse }
+    : { genre: 'libre', x: pose.centre.x, y: pose.centre.y, angle: normaliserAngle(angleDe(pose.direction)) }
+  return { ...projet, engins: remplacer(projet.engins, id, (e) => ({ ...e, position })) }
+}
+
+// Une rame passe sur une autre voie : même composition, même sens vu sur le
+// plan (la tête reste du même côté), au plus près de là où elle était.
+export function changerVoieRame<P extends Planche>(projet: P, id: string, voieId: string): P {
+  const rame = projet.rames.find((r) => r.id === id)
+  const depart = rame && projet.voies.find((v) => v.id === rame.voieId)
+  const arrivee = projet.voies.find((v) => v.id === voieId)
+  if (!rame || !depart || !arrivee || rame.voieId === voieId) return projet
+  const avant = pointAAbscisse(depart.points, bornerAbscisse(depart.points, rame.abscisse))
+  const abscisse = projeterSurPolyligne(arrivee.points, avant.point).abscisse
+  const apres = pointAAbscisse(arrivee.points, abscisse)
+  // Sens de la tête vu sur le plan : il ne change pas, même si la nouvelle
+  // voie a été tracée dans l'autre sens.
+  const memeSens = avant.direction.x * apres.direction.x + avant.direction.y * apres.direction.y >= 0
+  const sens: 1 | -1 = memeSens ? rame.sens : rame.sens === 1 ? -1 : 1
+  return { ...projet, rames: remplacer(projet.rames, id, (r) => ({ ...r, voieId, abscisse, sens })) }
+}
+
+// Rectangle qui contient tous les véhicules d'une rame (unités du plan).
+export function empriseRame(projet: PlanEngins, rame: Rame): { x: number; y: number; largeur: number; hauteur: number } | null {
+  const s = silhouetteRame(projet, rame)
+  if (!s) return null
+  const coins = s.vehicules.flatMap((v) => v.coins)
+  const xs = coins.map((c) => c.x)
+  const ys = coins.map((c) => c.y)
+  const x = Math.min(...xs)
+  const y = Math.min(...ys)
+  return { x, y, largeur: Math.max(...xs) - x, hauteur: Math.max(...ys) - y }
 }
 
 // Engin libre : déplacement et rotation.

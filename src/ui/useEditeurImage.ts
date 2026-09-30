@@ -1,10 +1,21 @@
 import { useState } from 'react'
 import type { TypeEngin } from '../plan/catalogue.ts'
+import {
+  ajouterCommentaire,
+  modifierCalqueCommentaires,
+  modifierCommentairesImage,
+  supprimerCommentaire,
+  type Commentaire,
+} from '../plan/commentaires.ts'
+import { reglerCoupes } from '../plan/coupes.ts'
 import { accrocherVoie } from '../plan/detection.ts'
 import {
   ajouterEngin,
   ajouterRame,
   avertissementDepassement,
+  changerVoieEngin,
+  changerVoieRame,
+  empriseRame,
   existeEngin,
   silhouetteEngin,
   silhouetteRame,
@@ -16,6 +27,7 @@ import {
 } from '../plan/engins.ts'
 import type { EtatVoie } from '../plan/etatsVoie.ts'
 import { basculerAvancement, choisirEtatZone, etatDeZone, modifierAvancement, type Avancement } from '../plan/etatsZones.ts'
+import { choisirExploitationVoie, modifierCalqueExploitation, type EtatExploitation } from '../plan/exploitation.ts'
 import {
   ajouterFleche,
   modifierCalqueFleches,
@@ -29,26 +41,38 @@ import {
 import { terminerTrace } from '../plan/geometrie.ts'
 import type { ListesChantier } from '../plan/legende.ts'
 import type { Point } from '../plan/projet.ts'
-import { modifierCalqueEngins, modifierImage, projetDeImage, type PlanImage, type Synoptique } from '../plan/synoptique.ts'
+import {
+  cadrageIncluant,
+  horsCadrage,
+  modifierCalqueEngins,
+  modifierImage,
+  projetDeImage,
+  type PlanImage,
+  type Synoptique,
+} from '../plan/synoptique.ts'
 import type { Vue } from '../plan/vue.ts'
 import type { Message } from './useEditeur.ts'
 
 // Édition de l'image courante d'un synoptique : on y pose, choisit, glisse et
-// supprime des engins et des rames, à l'échelle du synoptique ; on y trace,
-// choisit, déforme, glisse et supprime des flèches ; on y choisit une zone de
-// travaux pour changer son état (elle ne se déplace pas). Seule l'image
-// courante change ; l'historique (Annuler / Rétablir) est celui du
-// synoptique.
+// supprime des engins et des rames, à l'échelle du synoptique, et on les fait
+// changer de voie ; on y trace, choisit, déforme, glisse et supprime des
+// flèches ; on y pose, glisse, modifie et supprime des commentaires ; on y
+// choisit une zone de travaux pour changer son état et ses coupes de
+// tronçonnage (elle ne se déplace pas), et l'état d'exploitation de chaque
+// voie. Seule l'image courante change ; l'historique (Annuler / Rétablir) est
+// celui du synoptique.
 
-export type OutilImage = 'selection' | 'engin' | 'rame' | 'fleche' | 'main'
+export type OutilImage = 'selection' | 'engin' | 'rame' | 'fleche' | 'texte' | 'main'
 
-export const TOUCHES_IMAGE: Record<OutilImage, string> = { selection: 'S', engin: 'E', rame: 'W', fleche: 'F', main: 'M' }
+export const TOUCHES_IMAGE: Record<OutilImage, string> = { selection: 'S', engin: 'E', rame: 'W', fleche: 'F', texte: 'T', main: 'M' }
 
 export const RAISON_SANS_ECHELLE =
   "Calez d'abord l'échelle du synoptique (bouton « Caler l'échelle… ») : sans elle, les engins ne peuvent pas être à la bonne taille."
 
 const CALQUE_VERROUILLE = 'Le calque « Engins » est verrouillé : décochez « Verrouillé » dans le panneau pour le modifier.'
 const CALQUE_FLECHES_VERROUILLE = 'Le calque « Flèches » est verrouillé : décochez « Verrouillé » dans le panneau pour le modifier.'
+const CALQUE_COMMENTAIRES_VERROUILLE =
+  'Le calque « Commentaires » est verrouillé : décochez « Verrouillé » dans le panneau pour le modifier.'
 
 export function useEditeurImage(args: {
   synoptique: Synoptique
@@ -59,14 +83,16 @@ export function useEditeurImage(args: {
   catalogue: TypeEngin[]
   etatsVoie: EtatVoie[]
   typesFleches: TypeFleche[]
+  etatsExploitation: EtatExploitation[]
   setMessage: (m: Message | null) => void
 }) {
-  const { synoptique: s, index, enregistrer, catalogue, etatsVoie, typesFleches, setMessage } = args
-  const listes: ListesChantier = { catalogue, etatsVoie, typesFleches }
+  const { synoptique: s, index, enregistrer, catalogue, etatsVoie, typesFleches, etatsExploitation, setMessage } = args
+  const listes: ListesChantier = { catalogue, etatsVoie, typesFleches, etatsExploitation }
   const [outil, setOutil] = useState<OutilImage>('selection')
   const [selectionBrute, setSelectionBrute] = useState<ReferenceEngin | null>(null)
   const [zoneBrute, setZoneBrute] = useState<string | null>(null)
   const [flecheBrute, setFlecheBrute] = useState<string | null>(null)
+  const [commentaireBrut, setCommentaireBrut] = useState<string | null>(null)
   const [typeFlecheId, setTypeFleche] = useState<string | null>(typesFleches[0]?.id ?? null)
   // Flèche en cours de tracé : ses points, sur l'image où elle a commencé.
   const [traceBrut, setTraceBrut] = useState<{ index: number; points: Point[] } | null>(null)
@@ -89,27 +115,32 @@ export function useEditeurImage(args: {
   const typeFleche = typeFlecheParId(typesFleches, typeFlecheId ?? '') ?? typesFleches[0]
   const trace = traceBrut && traceBrut.index === index ? traceBrut.points : null
   const calqueFleches = s.calqueFleches
-  // On ne choisit qu'une chose à la fois : engin (ou rame), zone ou flèche.
+  // Un commentaire choisi le reste d'une image à l'autre s'il y est (même
+  // identifiant, copié par « Nouvelle image »).
+  const commentaire: Commentaire | null = commentaireBrut ? (planche.commentaires.find((c) => c.id === commentaireBrut) ?? null) : null
+  const calqueCommentaires = s.calqueCommentaires
+  // On ne choisit qu'une chose à la fois : engin (ou rame), zone, flèche ou commentaire.
+  const rienDAutre = (garder: 'engin' | 'zone' | 'fleche' | 'commentaire') => {
+    if (garder !== 'engin') setSelectionBrute(null)
+    if (garder !== 'zone') setZoneBrute(null)
+    if (garder !== 'fleche') setFlecheBrute(null)
+    if (garder !== 'commentaire') setCommentaireBrut(null)
+  }
   const setSelection = (ref: ReferenceEngin | null) => {
     setSelectionBrute(ref)
-    if (ref) {
-      setZoneBrute(null)
-      setFlecheBrute(null)
-    }
+    if (ref) rienDAutre('engin')
   }
   const choisirZone = (id: string | null) => {
     setZoneBrute(id)
-    if (id) {
-      setSelectionBrute(null)
-      setFlecheBrute(null)
-    }
+    if (id) rienDAutre('zone')
   }
   const choisirFleche = (id: string | null) => {
     setFlecheBrute(id)
-    if (id) {
-      setSelectionBrute(null)
-      setZoneBrute(null)
-    }
+    if (id) rienDAutre('fleche')
+  }
+  const choisirCommentaire = (id: string | null) => {
+    setCommentaireBrut(id)
+    if (id) rienDAutre('commentaire')
   }
   const typeChoisi = catalogue.find((t) => t.id === typeChoisiId) ?? catalogue[0]
   const erreur = (texte: string) => setMessage({ genre: 'erreur', texte })
@@ -249,8 +280,110 @@ export function useEditeurImage(args: {
     })
   }
 
+  // ——— Commentaires ———
+
+  const modifierCommentaires = (transformer: (liste: Commentaire[]) => Commentaire[], cle: string | null = null) => {
+    const suivant = modifierCommentairesImage(s, index, transformer)
+    if (suivant !== s) enregistrer(suivant, cle)
+  }
+
+  const commentairesModifiables = (): boolean => {
+    if (!calqueCommentaires.verrouille) return true
+    erreur(CALQUE_COMMENTAIRES_VERROUILLE)
+    return false
+  }
+
+  // Outil Texte : un clic pose un commentaire (coin haut gauche au point
+  // cliqué), choisi aussitôt pour qu'on tape son texte dans le panneau.
+  const poserCommentaire = (p: Point) => {
+    if (!commentairesModifiables()) return
+    const r = ajouterCommentaire(planche.commentaires, p)
+    const avec = modifierCommentairesImage(s, index, () => r.commentaires)
+    enregistrer(calqueCommentaires.visible ? avec : modifierCalqueCommentaires(avec, { visible: true }))
+    choisirCommentaire(r.id)
+    setOutil('selection')
+    setMessage({ genre: 'info', texte: 'Commentaire posé : tapez son texte dans le panneau de droite (« Commentaire choisi »), glissez-le sur l’image pour le placer.' })
+  }
+
+  const supprimerLeCommentaire = (id: string) => {
+    if (!commentairesModifiables()) return
+    const c = planche.commentaires.find((x) => x.id === id)
+    modifierCommentaires((liste) => supprimerCommentaire(liste, id))
+    if (commentaireBrut === id) setCommentaireBrut(null)
+    const debut = (c?.texte ?? '').split('\n')[0].trim()
+    setMessage({
+      genre: 'info',
+      texte: `Commentaire « ${debut.length > 40 ? `${debut.slice(0, 40)}…` : debut} » retiré de l'image ${index + 1} (les autres images ne changent pas). Ctrl+Z le rétablit.`,
+    })
+  }
+
+  // ——— Engins : changer de voie ———
+
+  // L'engin passe sur une autre voie (ou hors voie : null) en gardant son
+  // numéro, sa couleur, sa description et son type.
+  const changerVoie = (id: string, voieId: string | null) => {
+    if (!modifiable()) return
+    const engin = planche.engins.find((e) => e.id === id)
+    if (!engin) return
+    modifier((p) => changerVoieEngin(p, id, voieId))
+    const nom = `« ${engin.type.modele}${engin.numero.trim() ? ` ${engin.numero.trim()}` : ''} »`
+    const voie = voieId ? planche.voies.find((v) => v.id === voieId) : undefined
+    setMessage({
+      genre: 'info',
+      texte: voie
+        ? `${nom} passe sur « ${voie.nom} » (enraillement), au plus près de là où il était ; glissez-le le long de la voie pour l'ajuster.`
+        : `${nom} quitte la voie (déraillement) : il est libre, glissez-le où il faut ; tournez-le avec la poignée ronde.`,
+    })
+  }
+
+  const changerVoieDeLaRame = (id: string, voieId: string) => {
+    if (!modifiable()) return
+    modifier((p) => changerVoieRame(p, id, voieId))
+  }
+
+  // Une rame qui sort du cadrage : ses wagons ne se verraient pas tous. On le
+  // signale, et un bouton agrandit le cadrage du synoptique juste assez.
+  const rameHorsCadrage = (id: string): boolean => {
+    const rame = planche.rames.find((r) => r.id === id)
+    const r = rame ? empriseRame(planche, rame) : null
+    return r !== null && horsCadrage(s, r)
+  }
+  const montrerToutLaRame = (id: string) => {
+    const rame = planche.rames.find((r) => r.id === id)
+    const r = rame ? empriseRame(planche, rame) : null
+    if (!r || !rame) return
+    const marge = Math.max(r.largeur, r.hauteur) * 0.04 + planche.voies.reduce((m, v) => Math.max(m, v.epaisseur), 0) * 4
+    enregistrer({ ...s, cadrage: cadrageIncluant(s, r, marge) })
+    setVue(null)
+    setMessage({ genre: 'info', texte: `Cadrage du synoptique agrandi pour montrer toute la rame « ${rame.nom} » (sur toutes les images). Ctrl+Z revient au cadrage précédent.` })
+  }
+
+  // ——— Coupes de tronçonnage de la zone choisie ———
+
+  const reglerCoupesZone = (pas: number | null, cle: string | null = null): string | null => {
+    if (!zone) return null
+    if (pas !== null && !s.echelle) return RAISON_SANS_ECHELLE
+    const r = reglerCoupes(s, index, zone.id, pas)
+    if (!r.ok) return r.erreur
+    if (r.valeur !== s) enregistrer(r.valeur, cle)
+    return null
+  }
+
+  // ——— État d'exploitation des voies ———
+
+  const choisirExploitation = (voieId: string, etatId: string | null) => {
+    if (s.calqueExploitation.verrouille) {
+      erreur('Le calque « Exploitation » est verrouillé : décochez « Verrouillé » dans le panneau pour le modifier.')
+      return
+    }
+    const suivant = choisirExploitationVoie(s, index, voieId, etatId)
+    if (suivant === s) return
+    enregistrer(etatId && !s.calqueExploitation.visible ? modifierCalqueExploitation(suivant, { visible: true }) : suivant)
+  }
+
   const supprimerSelection = () => {
     if (selection) supprimer(selection)
+    else if (commentaire) supprimerLeCommentaire(commentaire.id)
     else if (fleche) supprimerLaFleche(fleche.id)
     else if (zone) setMessage({ genre: 'info', texte: `Les zones viennent du plan figé : elles ne se suppriment pas ici, seul leur état change.` })
   }
@@ -295,7 +428,26 @@ export function useEditeurImage(args: {
       setSelectionBrute(null)
       setZoneBrute(null)
       setFlecheBrute(null)
+      setCommentaireBrut(null)
     },
+    // Commentaires.
+    commentaire,
+    choisirCommentaire,
+    calqueCommentaires,
+    changerCalqueCommentaires: (champs: { visible?: boolean; verrouille?: boolean }) => enregistrer(modifierCalqueCommentaires(s, champs)),
+    modifierCommentaires,
+    poserCommentaire,
+    supprimerCommentaire: supprimerLeCommentaire,
+    // Exploitation des voies et coupes.
+    etatsExploitation,
+    calqueExploitation: s.calqueExploitation,
+    changerCalqueExploitation: (champs: { visible?: boolean; verrouille?: boolean }) => enregistrer(modifierCalqueExploitation(s, champs)),
+    choisirExploitation,
+    reglerCoupesZone,
+    changerVoie,
+    changerVoieDeLaRame,
+    rameHorsCadrage,
+    montrerToutLaRame,
     // Flèches.
     fleche,
     choisirFleche,

@@ -1,4 +1,6 @@
 import { useState, type ReactNode } from 'react'
+import { PAS_COUPES_PAR_DEFAUT, texteCoupes } from '../plan/coupes.ts'
+import { formaterNombre, lireNombre } from '../plan/echelle.ts'
 import type { CoteDepart } from '../plan/etatsZones.ts'
 import { entreesLegende, masquerLigneLegende, modifierAfficherLegende, texteEntree, type ListesChantier } from '../plan/legende.ts'
 import {
@@ -148,7 +150,81 @@ export function PanneauZone({ editeur }: { editeur: EditeurImage }) {
           </p>
         </div>
       )}
+      <CoupesDeLaZone editeur={editeur} />
     </Section>
+  )
+}
+
+// ——— Coupes de tronçonnage de la zone choisie ———
+
+// Écart entre deux coupes, en mètres : appliqué à chaque frappe s'il est
+// valable ; refusé, le champ reste rouge avec l'explication.
+function ChampPas(props: { valeur: number; valider: (pas: number) => string | null }) {
+  const [texte, setTexte] = useState(formaterNombre(props.valeur))
+  const [precedente, setPrecedente] = useState(props.valeur)
+  const [erreur, setErreur] = useState<string | null>(null)
+  if (props.valeur !== precedente) {
+    setPrecedente(props.valeur)
+    setTexte(formaterNombre(props.valeur))
+    setErreur(null)
+  }
+  return (
+    <>
+      <input
+        type="text"
+        inputMode="decimal"
+        value={texte}
+        aria-label="Écart entre deux coupes (m)"
+        aria-invalid={erreur !== null}
+        title={erreur ?? undefined}
+        style={{ ...styles.champ, width: 52, textAlign: 'right', borderColor: erreur ? COULEURS.erreur : COULEURS.bordure }}
+        onChange={(e) => {
+          setTexte(e.target.value)
+          const n = lireNombre(e.target.value)
+          setErreur(n === null ? 'Tapez un nombre de mètres.' : props.valider(n))
+        }}
+      />
+      {erreur && (
+        <span role="alert" style={{ color: COULEURS.erreur, fontSize: 12, flexBasis: '100%' }}>
+          {erreur}
+        </span>
+      )}
+    </>
+  )
+}
+
+function CoupesDeLaZone({ editeur }: { editeur: EditeurImage }) {
+  const { zone, planche } = editeur
+  if (!zone) return null
+  const pas = planche.coupes[zone.id] ?? null
+  // Une erreur (synoptique sans échelle…) s'affiche dans le bandeau de message.
+  const signaler = (erreur: string | null) => {
+    if (erreur) editeur.setMessage({ genre: 'erreur', texte: erreur })
+  }
+  return (
+    <div style={{ marginTop: 10 }} data-testid="coupes-zone">
+      <label style={{ ...styles.ligne, fontWeight: 600 }}>
+        <input
+          type="checkbox"
+          checked={pas !== null}
+          aria-label="Coupes de tronçonnage"
+          onChange={(e) => signaler(editeur.reglerCoupesZone(e.target.checked ? PAS_COUPES_PAR_DEFAUT : null))}
+        />
+        Coupes de tronçonnage
+      </label>
+      {pas !== null && (
+        <div style={{ ...styles.ligne, flexWrap: 'wrap' }}>
+          <span>Une coupe tous les</span>
+          <ChampPas valeur={pas} valider={(n) => editeur.reglerCoupesZone(n, `coupes:${zone.id}`)} />
+          <span>m</span>
+        </div>
+      )}
+      <p style={styles.discret}>
+        {pas !== null
+          ? `Traits en travers de la voie, depuis le bout ${planche.extremites.gauche ? `côté ${planche.extremites.gauche}` : 'gauche'} de la zone, à l'échelle du synoptique ; « ${texteCoupes(pas)} » dans la légende.`
+          : 'Montre les panneaux découpés (6 m par défaut) sur cette image.'}
+      </p>
+    </div>
   )
 }
 
@@ -299,7 +375,7 @@ export function PanneauPhasage({ synoptique: s, index, modifier }: { synoptique:
 
 // ——— Légende ———
 
-const GENRES_LEGENDE = { engin: 'Engin', rame: 'Rame', etat: 'État', fleche: 'Flèche' } as const
+const GENRES_LEGENDE = { engin: 'Engin', rame: 'Rame', etat: 'État', fleche: 'Flèche', coupes: 'Coupes', exploitation: 'Voie' } as const
 
 export function PanneauLegende(props: { synoptique: Synoptique; index: number; listes: ListesChantier; modifier: Modifier }) {
   const { synoptique: s, index, modifier } = props

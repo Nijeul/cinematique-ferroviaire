@@ -1,4 +1,5 @@
 import { CHAMPS_CARTOUCHE, type Cartouche } from './cartouche.ts'
+import { lignesDuTexte, miseEnPageCommentaire } from './commentaires.ts'
 import type { Resultat } from './echelle.ts'
 import type { Rectangle } from './elements.ts'
 import type { ListesChantier } from './legende.ts'
@@ -9,7 +10,8 @@ import type { Synoptique } from './synoptique.ts'
 // sans navigateur. Quelles images exporter, où poser chaque planche dans la
 // page (ratio conservé, centrée, petite marge), et, pour PowerPoint, où poser
 // les zones de texte modifiables (bandeau de titre, créneau horaire, encart
-// PHASAGE) pour qu'elles tombent exactement à leur place sur la planche. Et
+// PHASAGE, commentaires de l'image) pour qu'elles tombent exactement à leur
+// place sur la planche. Et
 // la mise en page de la page de garde avec son cartouche.
 //
 // Toutes les mesures de page sont en pouces (unité de PowerPoint ; le PDF
@@ -128,7 +130,7 @@ export const typeImageRendue = (avecFond: boolean): 'image/png' | 'image/jpeg' =
 
 // ——— Zones de texte PowerPoint ———
 
-export type NomZone = 'bandeau' | 'creneau' | 'phasage-titre' | 'phasage-etapes'
+export type NomZone = 'bandeau' | 'creneau' | 'phasage-titre' | 'phasage-etapes' | 'commentaire'
 
 export type ParagrapheZone = { texte: string; gras: boolean }
 
@@ -141,7 +143,8 @@ export type ZoneTexte = {
   y: number
   largeur: number
   hauteur: number
-  fond: string
+  // null : sans fond (commentaire sans cadre).
+  fond: string | null
   bord: { couleur: string; epaisseur: number } | null
   paragraphes: ParagrapheZone[]
   taille: number
@@ -156,8 +159,9 @@ export type ZoneTexte = {
 const INTERLIGNE = 1.3
 
 // Les zones de texte d'une image : le bandeau (s'il y en a un), le créneau,
-// et l'encart PHASAGE (son bandeau gris foncé et ses étapes) s'il n'est pas
-// vide. Les textes sont les textes d'origine (pas coupés en lignes) :
+// l'encart PHASAGE (son bandeau gris foncé et ses étapes) s'il n'est pas
+// vide, et les commentaires de l'image qui se voient dans le cadrage (calque
+// « Commentaires » affiché), par-dessus le plan. Les textes sont les textes d'origine (pas coupés en lignes) :
 // PowerPoint les fait passer à la ligne dans la zone, et ils restent
 // modifiables comme n'importe quelle zone de texte.
 export function zonesTexte(s: Synoptique, index: number, page: MiseEnPage, cible: Rectangle): ZoneTexte[] {
@@ -242,6 +246,29 @@ export function zonesTexte(s: Synoptique, index: number, page: MiseEnPage, cible
       marges: { gauche: retrait, droite: retrait, haut: retrait, bas: 0 },
       interligne: taille * INTERLIGNE,
     })
+  }
+
+  if (s.calqueCommentaires.visible) {
+    const c = page.carte
+    for (const commentaire of image.contenu.commentaires) {
+      const m = miseEnPageCommentaire(commentaire, s)
+      const b = m.boite
+      const visible = b.x < c.x + c.largeur && b.x + b.largeur > c.x && b.y < c.y + c.hauteur && b.y + b.hauteur > c.y
+      if (!visible) continue
+      zones.push({
+        nom: 'commentaire',
+        ...place(b),
+        fond: commentaire.encadre ? '#ffffff' : null,
+        bord: commentaire.encadre ? { couleur: commentaire.couleur, epaisseur: pt(m.taille * 0.08) } : null,
+        paragraphes: lignesDuTexte(commentaire.texte).map((texte) => ({ texte, gras: commentaire.gras })),
+        taille: pt(m.taille),
+        couleur: commentaire.couleur,
+        alignement: 'gauche',
+        vertical: 'haut',
+        marges: { gauche: pt(m.retrait), droite: pt(m.retrait), haut: pt(m.retrait * 0.7), bas: 0 },
+        interligne: pt(m.interligne),
+      })
+    }
   }
   return zones
 }

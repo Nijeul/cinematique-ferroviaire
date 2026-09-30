@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type PointerEvent as EvenementPointeur } from 'react'
+import { commentaireSousPointeur, deplacerCommentaire, type Commentaire } from '../plan/commentaires.ts'
 import { accrocherVoie, poigneeSousPointeur, zoneSousPointeur } from '../plan/detection.ts'
 import {
   ajouterEngin,
@@ -57,6 +58,7 @@ type Glisser =
   | { genre: 'corps'; ref: ReferenceEngin; depart: Point; ecran: Point; origine: PlanImage; cle: string }
   | { genre: 'fleche'; id: string; depart: Point; ecran: Point; origine: Fleche[]; cle: string }
   | { genre: 'pointFleche'; id: string; indice: number; origine: Fleche[]; cle: string }
+  | { genre: 'commentaire'; id: string; depart: Point; ecran: Point; origine: Commentaire[]; cle: string }
 
 let compteurGlisser = 0
 
@@ -129,6 +131,14 @@ export function ImageDeTravail({ editeur }: { editeur: EditeurImage }) {
       editeur.ajouterPointTrace(p, e.shiftKey)
       return
     }
+    if (outil === 'texte') {
+      if (!dansRectangle(cadre, p)) {
+        editeur.setMessage({ genre: 'erreur', texte: "Cliquez dans le cadre de l'image : ce qui est posé en dehors ne se verrait pas." })
+        return
+      }
+      editeur.poserCommentaire(p)
+      return
+    }
     if (outil === 'engin' || outil === 'rame') {
       if (!dansRectangle(cadre, p)) {
         editeur.setMessage({ genre: 'erreur', texte: "Cliquez dans le cadre de l'image : ce qui est posé en dehors ne se verrait pas." })
@@ -149,6 +159,15 @@ export function ImageDeTravail({ editeur }: { editeur: EditeurImage }) {
     if (fleche && poigneeFleche) {
       const indice = Number(poigneeFleche.replace('point-', ''))
       glisser.current = { genre: 'pointFleche', id: fleche.id, indice, origine: planche.fleches, cle: `glisser:${++compteurGlisser}` }
+      e.currentTarget.setPointerCapture(e.pointerId)
+      return
+    }
+    // Les commentaires sont dessinés au-dessus de tout : ils se choisissent d'abord.
+    const commentairesActifs = editeur.calqueCommentaires.visible && !editeur.calqueCommentaires.verrouille
+    const idCommentaire = commentairesActifs && dansRectangle(cadre, p) ? commentaireSousPointeur(planche.commentaires, s, p, TOLERANCE_ELEMENT / vue.zoom) : null
+    if (idCommentaire) {
+      editeur.choisirCommentaire(idCommentaire)
+      glisser.current = { genre: 'commentaire', id: idCommentaire, depart: p, ecran, origine: planche.commentaires, cle: `glisser:${++compteurGlisser}` }
       e.currentTarget.setPointerCapture(e.pointerId)
       return
     }
@@ -210,8 +229,13 @@ export function ImageDeTravail({ editeur }: { editeur: EditeurImage }) {
       glisser.current = { genre: 'vue', x: ecran.x, y: ecran.y }
       return
     }
-    if ((g.genre === 'corps' || g.genre === 'fleche') && Math.hypot(ecran.x - g.ecran.x, ecran.y - g.ecran.y) < SEUIL_GLISSER) return
+    if ((g.genre === 'corps' || g.genre === 'fleche' || g.genre === 'commentaire') && Math.hypot(ecran.x - g.ecran.x, ecran.y - g.ecran.y) < SEUIL_GLISSER) return
     setEnDeplacement(true)
+    if (g.genre === 'commentaire') {
+      const decalage = { x: p.x - g.depart.x, y: p.y - g.depart.y }
+      editeur.modifierCommentaires(() => deplacerCommentaire(g.origine, g.id, decalage), g.cle)
+      return
+    }
     if (g.genre === 'fleche') {
       const decalage = { x: p.x - g.depart.x, y: p.y - g.depart.y }
       editeur.modifierFleches(() => deplacerFleche(g.origine, g.id, decalage), g.cle)
@@ -322,6 +346,7 @@ export function ImageDeTravail({ editeur }: { editeur: EditeurImage }) {
             estChoisi={estChoisi}
             zoneChoisie={editeur.zone?.id ?? null}
             flecheChoisie={fleche?.id ?? null}
+            commentaireChoisi={editeur.commentaire?.id ?? null}
             surLaCarte={
               <>
                 {apercu && <g style={{ pointerEvents: 'none' }}>{apercu}</g>}

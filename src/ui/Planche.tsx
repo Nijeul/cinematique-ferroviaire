@@ -7,6 +7,8 @@ import { projetDeImage, type Synoptique } from '../plan/synoptique.ts'
 import { COULEURS } from './couleurs.ts'
 import { BarreEchelle, DessinEnginsImage } from './DessinEngins.tsx'
 import { MotifBallast } from './DessinEtats.tsx'
+import { DessinCommentaires } from './DessinCommentaires.tsx'
+import { CoupesZones, EchantillonCoupes, EchantillonExploitation, HachuresExploitation } from './DessinExploitation.tsx'
 import { DessinFlechesImage, EchantillonFleche } from './DessinFleches.tsx'
 import { DessinPlan } from './DessinPlan.tsx'
 
@@ -123,6 +125,20 @@ function Echantillon({ p, motif, unite }: { p: EntreePlacee; motif: string; unit
       </g>
     )
   }
+  if (e.genre === 'coupes') {
+    return (
+      <g data-testid="echantillon-coupes">
+        <EchantillonCoupes x={r.x} y={r.y} largeur={r.largeur} hauteur={r.hauteur} />
+      </g>
+    )
+  }
+  if (e.genre === 'exploitation') {
+    return (
+      <g data-testid="echantillon-exploitation">
+        <EchantillonExploitation etat={e.etatExploitation} x={r.x} y={r.y} largeur={r.largeur} hauteur={r.hauteur} />
+      </g>
+    )
+  }
   return (
     <g data-testid="echantillon-fleche">
       <EchantillonFleche type={e.type} x={r.x} y={r.y} largeur={r.largeur} hauteur={r.hauteur} unite={unite} />
@@ -138,11 +154,12 @@ export function DessinPlanche(props: {
   estChoisi?: (ref: ReferenceEngin) => boolean
   zoneChoisie?: string | null
   flecheChoisie?: string | null
+  commentaireChoisi?: string | null
   // Dessiné sur le plan, dans le cadrage (aperçu de pose, point d'accroche).
   surLaCarte?: ReactNode
-  // Export PowerPoint « Textes modifiables » : le bandeau, le créneau et
-  // l'encart PHASAGE sont posés à part, en zones de texte PowerPoint ; leur
-  // place reste blanche sur l'image.
+  // Export PowerPoint « Textes modifiables » : le bandeau, le créneau,
+  // l'encart PHASAGE et les commentaires sont posés à part, en zones de texte
+  // PowerPoint ; leur place reste blanche (ou le plan se voit) sur l'image.
   textesAPart?: boolean
   // Police de tous les textes de la planche (les exports prennent celle des
   // zones de texte PowerPoint).
@@ -171,8 +188,10 @@ export function DessinPlanche(props: {
           affiche={carte}
           etats={{ liste: props.listes.etatsVoie, parZone: image.contenu.etatsZones }}
           estChoisi={(genre, id) => genre === 'zone' && id === props.zoneChoisie}
+          sousLesVoies={<HachuresExploitation planche={planche} etats={props.listes.etatsExploitation} visible={s.calqueExploitation.visible} />}
           engins={
             <>
+              <CoupesZones planche={planche} zoom={zoom} />
               <DessinEnginsImage projet={planche} visible={s.calqueEngins.visible} zoom={zoom} estChoisi={props.estChoisi} />
               <DessinFlechesImage
                 planche={planche}
@@ -184,6 +203,15 @@ export function DessinPlanche(props: {
             </>
           }
         />
+        {dessinerTextes && (
+          <DessinCommentaires
+            commentaires={image.contenu.commentaires}
+            plan={s}
+            visible={s.calqueCommentaires.visible}
+            zoom={zoom}
+            choisi={props.commentaireChoisi}
+          />
+        )}
         {/* Échelle graphique de la planche, en bas à droite du plan. */}
         {s.echelle && (
           <BarreEchelle

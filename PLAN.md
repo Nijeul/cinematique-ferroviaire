@@ -38,10 +38,13 @@ Jamais deux étapes d'avance. Chaque étape est une PR courte qui dit quoi regar
 | 6 | États de la voie par chantier ; état et avancement partiel de chaque zone dans chaque image ; encart PHASAGE ; créneau horaire et bandeau de titre (détail ci-dessous) | une image se lit comme une planche actuelle (hors flèches et légende) | **validé** |
 | 7 | Types de flèches par chantier ; flèches tracées dans les images (sens de travail, sens d'avancement TTX, cheminement, chemin de roule) ; **légende** propre à chaque image, construite d'après ce qu'elle montre : engins numérotés (« 1 — Pelle RR »), rames, états présents, flèches (détail ci-dessous) | la planche s'explique d'elle-même, sans les carrés noirs numérotés | **validé** |
 | 8 | Exports PowerPoint et PDF des images d'un synoptique : une diapositive ou une page par image, textes du bandeau, du créneau et du PHASAGE modifiables dans PowerPoint, page de garde avec cartouche (détail ci-dessous) | un jeu de planches équivalent à l'actuel | **validé** |
-| 9 | Mémoire en ligne (Supabase) : un compte par personne, sur invitation ; chantiers et fonds enregistrés en ligne et partagés par l'équipe ; copie de secours dans le navigateur ; conflits signalés ; page « Équipe » (détail ci-dessous) | on retrouve ses chantiers sur un autre ordinateur, un collègue invité les voit | **en cours** |
+| 9 | Mémoire en ligne (Supabase) : un compte par personne, sur invitation ; chantiers et fonds enregistrés en ligne et partagés par l'équipe ; copie de secours dans le navigateur ; conflits signalés ; page « Équipe » (détail ci-dessous) | on retrouve ses chantiers sur un autre ordinateur, un collègue invité les voit | **fusionnée** |
+| 10 | Outils du synoptique demandés pour le RVB du tunnel : état d'exploitation des voies (hachures, légende, calque), commentaires propres à chaque image, coupes de tronçonnage, changement de voie d'un engin (détail ci-dessous) | le synoptique « RVB tunnel V2 » se construit sans détour : voies interceptées / annoncées / en simultanée, RCT et platelage écrits, coupes visibles, pelles qui passent sur V1 | **en cours** |
 
 L'étape 8 devait être la dernière ; l'étape 9 a été demandée par le commanditaire une fois
-l'étape 8 validée (« Fais en sorte qu'il y ait une mémoire »). Les autres besoins (vidéo,
+l'étape 8 validée (« Fais en sorte qu'il y ait une mémoire »). L'étape 10 est née de la
+construction de son premier synoptique réel (RVB du tunnel, voie 2) : il a demandé d'ajouter
+d'un coup les outils qui manquaient. Les autres besoins (vidéo,
 orthophoto calée, import DXF, 3D en option…) restent à rediscuter.
 
 ### Étape 3 — éléments du plan au calque
@@ -428,6 +431,61 @@ Questions ouvertes de l'étape 9 :
   rouvrant le chantier. Faut-il un rafraîchissement automatique ?
 - **Sauvegardes** : l'offre gratuite n'en fait pas. Faut-il un export régulier de tous les
   chantiers (un bouton « Tout exporter ») ?
+
+### Étape 10 — outils du synoptique : exploitation des voies, commentaires, coupes, changement de voie
+
+Réponses du commanditaire : RCT (retour courant traction) « je veux que ça apparaisse mais
+pas forcément de visuel, peut-être juste écrit » ; voies interceptée / annoncée / simultanée
+« on peut mettre des hachures et mettre dans la légende. On peut avoir un calque pour ça » ;
+platelage « pas de symbole, juste écrit dans le commentaire » ; tronçonnage « je veux voir les
+coupes » ; « les wagons ne doivent jamais disparaître s'ils sont là ».
+
+- **États d'exploitation des voies, par chantier** (section « Exploitation des voies » de la
+  page du chantier, comme les types de flèches) : nom et couleur, aperçu ; modifier, ajouter,
+  réordonner (ordre de la légende), supprimer (confirmation qui dit combien d'images sont
+  concernées ; les voies qui y étaient n'ont plus d'état). Liste par défaut : **Interceptée**
+  (framboise), **Annoncée** (orange), **Simultanée** (bleu), **Restituée** (vert).
+- **Dans chaque image**, panneau « Exploitation des voies » : un état par voie entière (ou
+  aucun). Rendu : **hachures** à 45° de la couleur de l'état, dans une bande un peu plus large
+  que la voie et ses zones, **sous** la voie, les zones et les engins (la voie et l'état de ses
+  zones restent lisibles) ; une ligne dans la légende par état présent, avec ses voies
+  (« Interceptée (Voie 2, Voie 4) »). Calque « Exploitation » : hachures visibles ou masquées
+  (et alors absentes de la légende), verrouillé. « Nouvelle image » recopie les états.
+- **Commentaires de chaque image** : outil **Texte (T)**, un clic pose un commentaire (coin
+  haut gauche au point cliqué) et le choisit ; texte sur une ou plusieurs lignes, taille
+  (petit, moyen, grand, très grand), couleur, gras, encadré (cadre blanc bordé de la couleur)
+  ou non (liseré blanc). On le glisse, on le supprime (Suppr), Annuler / Rétablir. Taille
+  proportionnée au cadrage, comme les textes de la planche. Calque « Commentaires » visible /
+  verrouillé ; « Nouvelle image » recopie les commentaires. Dans l'export PowerPoint
+  « Textes modifiables », chaque commentaire est une **zone de texte PowerPoint** posée à sa
+  place ; en PDF et en « Tout en image », il est dans l'image de la planche.
+- **Coupes de tronçonnage** : zone choisie, case « Coupes de tronçonnage » et écart (6 m par
+  défaut, de 0,5 à 100 m) ; traits noirs en travers de la voie, à l'échelle du synoptique,
+  depuis le bout gauche de la zone (côté Paris / Nord), bouts compris ; le reste d'une division
+  non entière est côté droit. Ligne « Coupes rail tous les 6 m » dans la légende. Recopiées par
+  « Nouvelle image ».
+- **Changer un engin de voie** : dans la liste des engins, « Sur la voie » propose toutes les
+  voies de l'image et « hors voie (déraillé) ». L'engin passe au point de la nouvelle voie le
+  plus proche de là où il était, et garde son numéro, sa couleur, sa description et son type
+  (même ligne de légende). Hors voie, il devient libre à l'endroit où il était. Une rame peut
+  aussi changer de voie (même composition, tête du même côté).
+- **Rame hors du cadrage** : une rame dont un véhicule sort du cadrage est signalée dans sa
+  ligne (« une partie de la rame sort du cadrage ») avec **« Agrandir le cadrage »**, qui
+  élargit le cadrage du synoptique juste assez (toutes les images, Annuler possible). Une rame
+  qui dépasse le bout de sa voie reste dessinée en entier (prolongée dans l'axe), jamais
+  tronquée, et signalée comme avant.
+- Fichier de chantier **version 6** ; les versions 1 à 5 s'ouvrent toujours (liste d'états
+  d'exploitation par défaut, images sans hachures, commentaires ni coupes). Une version plus
+  ancienne de l'application **refuse** d'ouvrir un chantier en version 6 (« version plus
+  récente ») : elle ne peut pas l'abîmer.
+
+Questions ouvertes de l'étape 10 (choix provisoires en place) :
+
+- **État d'exploitation sur un tronçon** (entre deux PK) plutôt que sur la voie entière : non
+  fait (ce n'était « un plus » que si c'était simple). Est-ce nécessaire ?
+- **Couleurs des états d'exploitation** : choisies pour se distinguer des zones (rouge, bleu,
+  jaune) ; modifiables dans la page du chantier. Vos habitudes ?
+- **Coupes** : comptées depuis le bout côté Paris / Nord. Faut-il pouvoir partir de l'autre bout ?
 
 ## Décisions du commanditaire
 

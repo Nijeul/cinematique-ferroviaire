@@ -279,6 +279,31 @@ function AvertissementDepassement({ texte }: { texte: string | null }) {
   )
 }
 
+// Voie de l'engin ou de la rame : la changer le fait passer sur l'autre voie
+// (ou hors voie, pour un engin) en gardant tous ses réglages.
+function ChoixVoie(props: { editeur: EditeurImage; valeur: string | null; nom: string; horsVoie?: boolean; changer: (voieId: string | null) => void }) {
+  const { editeur, valeur } = props
+  return (
+    <label style={styles.sousLigne} onClick={(e) => e.stopPropagation()} data-testid="choix-voie">
+      <span>{valeur === null ? 'Hors voie' : 'Sur la voie'}</span>
+      <select
+        value={valeur ?? ''}
+        aria-label={`Voie de ${props.nom}`}
+        title="Changer de voie en gardant le numéro, la couleur et la description"
+        style={{ ...styles.champ, fontSize: 12, flex: 1 }}
+        onChange={(e) => props.changer(e.target.value === '' ? null : e.target.value)}
+      >
+        {props.horsVoie && <option value="">— hors voie (déraillé) —</option>}
+        {editeur.planche.voies.map((v) => (
+          <option key={v.id} value={v.id}>
+            {v.nom || 'Voie sans nom'}
+          </option>
+        ))}
+      </select>
+    </label>
+  )
+}
+
 function LigneEngin({ editeur, engin }: { editeur: EditeurImage; engin: Engin }) {
   const { planche: projet, modifier } = editeur
   const position = engin.position
@@ -322,10 +347,15 @@ function LigneEngin({ editeur, engin }: { editeur: EditeurImage; engin: Engin })
         nom={engin.type.modele}
         changer={(description) => modifier((p) => modifierEngin(p, engin.id, { description }), `description:${engin.id}`)}
       />
+      <ChoixVoie
+        editeur={editeur}
+        valeur={position.genre === 'voie' ? position.voieId : null}
+        nom={engin.type.modele}
+        horsVoie
+        changer={(voieId) => editeur.changerVoie(engin.id, voieId)}
+      />
       <div style={styles.sousLigne}>
-        {engin.position.genre === 'voie' ? (
-          <span>sur « {voie?.nom} »</span>
-        ) : (
+        {engin.position.genre === 'voie' ? null : (
           <label style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
             hors voie · Angle
             <input
@@ -403,9 +433,17 @@ function LigneRame({ editeur, rame }: { editeur: EditeurImage; rame: Rame }) {
         nom={rame.nom}
         changer={(description) => modifier((p) => modifierRame(p, rame.id, { description }), `description:${rame.id}`)}
       />
-      <div style={styles.sousLigne}>sur « {voie?.nom} »</div>
+      <ChoixVoie editeur={editeur} valeur={rame.voieId} nom={rame.nom} changer={(voieId) => voieId && editeur.changerVoieDeLaRame(rame.id, voieId)} />
       <div style={styles.sousLigne}>{texteComposition(rame.vehicules)}</div>
       <AvertissementDepassement texte={avertissementDepassement(`La rame « ${rame.nom} »`, voie, s?.depassement ?? 0)} />
+      {editeur.rameHorsCadrage(rame.id) && (
+        <div style={{ ...styles.sousLigne, color: COULEURS.erreur, fontWeight: 600 }} role="alert" data-testid="rame-hors-cadrage" onClick={(e) => e.stopPropagation()}>
+          <span>⚠ Une partie de la rame sort du cadrage : ses wagons ne se voient pas tous.</span>
+          <button style={styles.petitBouton} onClick={() => editeur.montrerToutLaRame(rame.id)} title="Agrandit le cadrage du synoptique (toutes les images)">
+            Agrandir le cadrage
+          </button>
+        </div>
+      )}
       {choisie && (
         <div onClick={(e) => e.stopPropagation()} style={{ cursor: 'default' }}>
           <div style={styles.sousLigne}>

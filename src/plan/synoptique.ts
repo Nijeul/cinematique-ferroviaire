@@ -1,9 +1,12 @@
 import { creerCartouche, type Cartouche } from './cartouche.ts'
 import { nouvelIdentifiant } from './edition.ts'
 import type { Rectangle } from './elements.ts'
+import { CALQUE_COMMENTAIRES_PAR_DEFAUT, type Commentaire } from './commentaires.ts'
+import type { Coupes } from './coupes.ts'
 import type { Resultat } from './echelle.ts'
 import type { EnginsEtRames } from './engins.ts'
 import type { EtatsZones } from './etatsZones.ts'
+import { CALQUE_EXPLOITATION_PAR_DEFAUT, type ExploitationVoies } from './exploitation.ts'
 import type { Fleche } from './fleches.ts'
 import type { Calque, Echelle, Fond, Point, Projet } from './projet.ts'
 import { ecrireInstant, formaterHoraire, formaterPlage, lireInstant, minutesDepuisT0 } from './temps.ts'
@@ -20,7 +23,9 @@ import { ecrireInstant, formaterHoraire, formaterPlage, lireInstant, minutesDepu
 // les engins d'une image à l'autre.
 //
 // Chaque image porte aussi l'état de chaque zone de travaux et ses flèches
-// (recopiés par « Nouvelle image », comme les engins), sa légende (calculée
+// (recopiés par « Nouvelle image », comme les engins), l'état d'exploitation
+// de ses voies, ses commentaires et les coupes de tronçonnage de ses zones
+// (recopiés eux aussi), sa légende (calculée
 // d'après ce qu'elle montre, voir legende.ts), et ce qui s'affiche autour du plan
 // comme sur les planches du commanditaire : son créneau horaire (en haut à
 // droite, avec un titre facultatif) et son encart PHASAGE (en bas à gauche,
@@ -34,9 +39,12 @@ import { ecrireInstant, formaterHoraire, formaterPlage, lireInstant, minutesDepu
 
 // Ce qui est dessiné sur une image : tout le plan sauf le fond et l'échelle,
 // gardés une fois au niveau du synoptique, les engins et rames de l'image,
-// l'état de ses zones et ses flèches.
+// l'état de ses zones, ses flèches, l'état d'exploitation de ses voies, ses
+// commentaires et ses coupes de tronçonnage.
+export type Annotations = { exploitation: ExploitationVoies; commentaires: Commentaire[]; coupes: Coupes }
+
 export type ContenuImage = Pick<Projet, 'extremites' | 'calques' | 'cadres' | 'voies' | 'zones' | 'appareils' | 'textes'> &
-  EnginsEtRames & { etatsZones: EtatsZones; fleches: Fleche[] }
+  EnginsEtRames & { etatsZones: EtatsZones; fleches: Fleche[] } & Annotations
 
 // Une étape de l'encart PHASAGE : « 3 – Dépose des rails… ». Le libellé peut
 // tenir sur plusieurs lignes.
@@ -76,10 +84,12 @@ export type Synoptique = {
   // synoptique lui-même s'il n'en a pas (synoptiques de l'étape 4, plan sans
   // échelle).
   echelle: Echelle | null
-  // Calques « Engins » et « Flèches » : visibles, verrouillés. Les mêmes pour
-  // toutes les images.
+  // Calques « Engins », « Flèches », « Exploitation » (hachures des voies) et
+  // « Commentaires » : visibles, verrouillés. Les mêmes pour toutes les images.
   calqueEngins: Calque
   calqueFleches: Calque
+  calqueExploitation: Calque
+  calqueCommentaires: Calque
   // Légende de chaque image, en bas à droite (cochée par défaut).
   afficherLegende: boolean
   // Bandeau de titre, en haut de chaque image (une ou plusieurs lignes) ;
@@ -91,23 +101,26 @@ export type Synoptique = {
 }
 
 // Une image vue comme un plan : le fond et l'échelle du synoptique, les
-// éléments de l'image, ses engins, ses rames, l'état de ses zones et ses
-// flèches.
-export type PlanImage = Projet & EnginsEtRames & { etatsZones: EtatsZones; fleches: Fleche[] }
+// éléments de l'image, ses engins, ses rames, l'état de ses zones, ses
+// flèches, l'état d'exploitation de ses voies, ses commentaires et ses coupes.
+export type PlanImage = Projet & EnginsEtRames & { etatsZones: EtatsZones; fleches: Fleche[] } & Annotations
+
+export const annotationsVides = (): Annotations => ({ exploitation: {}, commentaires: [], coupes: {} })
 
 const copie = <T>(valeur: T): T => structuredClone(valeur)
 
 // Contenu d'une image tiré d'un plan (qui n'a ni engins ni flèches, et dont
-// toutes les zones sont avant travaux) ; `enginsEtRames`, `etatsZones` et
-// `fleches` servent à la relecture d'un synoptique enregistré.
+// toutes les zones sont avant travaux) ; `enginsEtRames`, `etatsZones`,
+// `fleches` et `annotations` servent à la relecture d'un synoptique enregistré.
 export function contenuDe(
   projet: Projet,
   enginsEtRames: EnginsEtRames = { engins: [], rames: [] },
   etatsZones: EtatsZones = {},
   fleches: Fleche[] = [],
+  annotations: Annotations = annotationsVides(),
 ): ContenuImage {
   const { extremites, calques, cadres, voies, zones, appareils, textes } = projet
-  return copie({ extremites, calques, cadres, voies, zones, appareils, textes, ...enginsEtRames, etatsZones, fleches })
+  return copie({ extremites, calques, cadres, voies, zones, appareils, textes, ...enginsEtRames, etatsZones, fleches, ...annotations })
 }
 
 // Une image neuve : créneau sans titre (les heures, début et fin), encart
@@ -154,6 +167,28 @@ export function normaliserCadrage(a: Point, b: Point, plan: { largeur: number; h
 export const rectangleAffiche = (s: Pick<Synoptique, 'cadrage' | 'largeur' | 'hauteur'>): Rectangle =>
   s.cadrage ?? { x: 0, y: 0, largeur: s.largeur, hauteur: s.hauteur }
 
+// Le cadrage agrandi juste ce qu'il faut pour contenir `r` (une rame…), avec
+// une marge, dans les limites du plan. Le même cadrage s'il le contient déjà.
+export function cadrageIncluant(s: Pick<Synoptique, 'cadrage' | 'largeur' | 'hauteur'>, r: Rectangle, marge: number): Rectangle | null {
+  const actuel = rectangleAffiche(s)
+  const contient =
+    r.x >= actuel.x && r.y >= actuel.y && r.x + r.largeur <= actuel.x + actuel.largeur && r.y + r.hauteur <= actuel.y + actuel.hauteur
+  if (contient) return s.cadrage
+  const x1 = Math.max(0, Math.min(actuel.x, r.x - marge))
+  const y1 = Math.max(0, Math.min(actuel.y, r.y - marge))
+  const x2 = Math.min(s.largeur, Math.max(actuel.x + actuel.largeur, r.x + r.largeur + marge))
+  const y2 = Math.min(s.hauteur, Math.max(actuel.y + actuel.hauteur, r.y + r.hauteur + marge))
+  if (x1 <= 0 && y1 <= 0 && x2 >= s.largeur && y2 >= s.hauteur) return null
+  return { x: x1, y: y1, largeur: x2 - x1, hauteur: y2 - y1 }
+}
+
+// Part d'un rectangle qui sort du cadrage : vrai s'il n'y est pas entièrement.
+export function horsCadrage(s: Pick<Synoptique, 'cadrage' | 'largeur' | 'hauteur'>, r: Rectangle): boolean {
+  const c = rectangleAffiche(s)
+  const e = 1e-6
+  return r.x < c.x - e || r.y < c.y - e || r.x + r.largeur > c.x + c.largeur + e || r.y + r.hauteur > c.y + c.hauteur + e
+}
+
 // ——— Création ———
 
 export type Demande = { nom: string; debut: string; fin: string; cadrage: Rectangle | null }
@@ -195,6 +230,8 @@ export function creerSynoptique(
     echelle: projet.echelle ? { ...projet.echelle } : null,
     calqueEngins: { ...CALQUE_ENGINS_PAR_DEFAUT },
     calqueFleches: { ...CALQUE_FLECHES_PAR_DEFAUT },
+    calqueExploitation: { ...CALQUE_EXPLOITATION_PAR_DEFAUT },
+    calqueCommentaires: { ...CALQUE_COMMENTAIRES_PAR_DEFAUT },
     afficherLegende: true,
     bandeau: '',
     cartouche: creerCartouche(),
@@ -230,8 +267,8 @@ export function calerEchelleSynoptique(s: Synoptique, echelle: Echelle): Synopti
 
 // ——— Images ———
 
-// Nouvelle image : copie de l'image courante, engins, rames, états des zones
-// et flèches compris (ainsi que les lignes masquées de sa légende), insérée
+// Nouvelle image : copie de l'image courante, engins, rames, états des zones,
+// flèches, état d'exploitation des voies, commentaires et coupes compris (ainsi que les lignes masquées de sa légende), insérée
 // juste après. Son encart PHASAGE est vide (chaque
 // créneau a ses propres étapes, comme sur les planches du commanditaire) et
 // son créneau n'a pas de titre. Elle commence à la fin de la courante et dure autant,

@@ -8,7 +8,7 @@ import {
   type OptionsExport,
   type Redacteur,
 } from '../plan/export.ts'
-import type { ListesChantier } from '../plan/legende.ts'
+import { listesDe } from '../plan/legende.ts'
 import type { Synoptique } from '../plan/synoptique.ts'
 import { telecharger } from './navigateur.ts'
 import { rendrePlanche } from './rendrePlanche.tsx'
@@ -50,7 +50,7 @@ export async function exporterSynoptique(p: {
   const { chantier, synoptique: s, options, signal, avancer } = p
   const choix = imagesChoisies(s.images.length, p.courante, options.images)
   if (!choix.ok) throw new Error(choix.erreur)
-  const listes: ListesChantier = { etatsVoie: chantier.etatsVoie, typesFleches: chantier.typesFleches, catalogue: chantier.catalogue }
+  const listes = listesDe(chantier)
   const planches = planchesAExporter(s, choix.valeur, listes, options)
   // Chaque image, la page de garde, et l'écriture du fichier.
   const total = planches.length + (options.pageDeGarde ? 1 : 0) + 1

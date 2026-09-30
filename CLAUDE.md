@@ -57,19 +57,21 @@ Le commanditaire fait le contrôle visuel — c'est le cœur de la méthode.
 ```
 src/
   plan/       modèle du plan (sans aucun engin), du chantier et du synoptique, lecture des
-              fichiers (plan, chantier — version 5) et migrations (engins retirés des plans
+              fichiers (plan, chantier — version 6) et migrations (engins retirés des plans
               enregistrés avant la correction de l'étape 5 ; chantiers et synoptiques des
               étapes 4 à 7 complétés), temps (minutes depuis T0 → « Ve/Sa 01h30 »), adresses
               des écrans, vue et cadrage, géométrie du tracé et le long des voies (dont le
               tracé parallèle, trace.ts), zones / appareils / cadres / textes, échelle,
               catalogue d'engins (liste par défaut dans catalogue.ts), engins et rames à
               l'échelle posés dans les images d'un synoptique, avec leur description pour la
-              légende (engins.ts, synoptique.ts), états de la voie d'un chantier (liste par
+              légende, et leur changement de voie (engins.ts, synoptique.ts), états de la voie d'un chantier (liste par
               défaut et texture ballast dans etatsVoie.ts), état et avancement partiel de
               chaque zone dans une image (etatsZones.ts), types de flèches d'un chantier (liste
               par défaut) et flèches des images : pointes, double trait, contrainte Maj,
-              sélection (fleches.ts), légende de chaque image construite d'après ce qu'elle
-              montre (legende.ts), mise en page d'une image en planche : bandeau de titre,
+              sélection (fleches.ts), états d'exploitation d'un chantier (liste par défaut) et
+              des voies de chaque image, hachures (exploitation.ts), commentaires des images
+              (commentaires.ts), coupes de tronçonnage des zones (coupes.ts), légende de
+              chaque image construite d'après ce qu'elle montre (legende.ts), mise en page d'une image en planche : bandeau de titre,
               créneau horaire, encart PHASAGE et ses étapes, cadre LÉGENDE en colonnes
               (planche.ts), cartouche de la page de garde (cartouche.ts), exports : choix
               des images, planche ajustée dans la page, zones de texte PowerPoint à leur
@@ -87,11 +89,13 @@ src/
   ui/         écrans React (accueil, chantier avec ses états de la voie, ses types de flèches
               (TypesFleches) et son catalogue, assistant « Nouveau plan », plan, synoptique),
               calage de l'échelle (plan et synoptique), dessin SVG du plan, des engins, des
-              zones selon leur état (DessinEtats), des flèches (DessinFleches) et de la
+              zones selon leur état (DessinEtats), des flèches (DessinFleches), des hachures
+              d'exploitation et des coupes (DessinExploitation), des commentaires
+              (DessinCommentaires) et de la
               planche entière avec sa légende (Planche), panneau Calques du plan, édition de
               l'image courante d'un synoptique (useEditeurImage, ImageDeTravail,
-              PanneauEngins, PanneauFleches, PanneauImage : zone choisie, créneau, phasage,
-              légende), fenêtres « Exporter… » et cartouche (FenetreExport), rendu d'une
+              PanneauEngins, PanneauFleches, PanneauCommentaires, PanneauExploitation,
+              PanneauImage : zone choisie et ses coupes, créneau, phasage, légende), fenêtres « Exporter… » et cartouche (FenetreExport), rendu d'une
               planche en image pour les exports, avec le même dessin que l'écran
               (rendrePlanche), export image après image (exporter), connexion, nouveau mot de
               passe et compte non membre (EcranConnexion), page Équipe (EcranEquipe), mémoire
@@ -102,9 +106,11 @@ src/
 fixtures/     jeux de données d'exemple, anonymisés (dont un plan des étapes 2-3 et un
               chantier avec plans à l'échelle sans engins, un synoptique dont les images
               portent des engins et une rame à des positions différentes, un synoptique de
-              4 images qui raconte les états d'une zone avec bandeau, créneaux et phasage, et
+              4 images qui raconte les états d'une zone avec bandeau, créneaux et phasage,
               un synoptique de 2 images avec des flèches de chaque type, des engins numérotés
-              avec description, une rame « TTX 1 » et un cartouche aux valeurs fictives)
+              avec description, une rame « TTX 1 » et un cartouche aux valeurs fictives, et
+              un synoptique de 2 images avec voies interceptée / annoncée / simultanée,
+              commentaires et coupes de tronçonnage)
 sources/      synoptiques réels fournis par le commanditaire (facultatif, jamais versionnés :
               données réelles ; il importe ses propres plans dans l'application)
 supabase/     migrations SQL du projet Supabase (tables membres et chantiers, règles

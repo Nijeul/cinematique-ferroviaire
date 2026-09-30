@@ -20,6 +20,7 @@ import type { Projet } from '../plan/projet.ts'
 import { formaterDuree, formaterPlage } from '../plan/temps.ts'
 import { AssistantNouveauPlan } from './AssistantNouveauPlan.tsx'
 import { CatalogueEngins } from './CatalogueEngins.tsx'
+import { EtatsExploitation } from './EtatsExploitation.tsx'
 import { EtatsVoie } from './EtatsVoie.tsx'
 import { TypesFleches } from './TypesFleches.tsx'
 import { BandeauMessage, BarreNavigation, ChampRenommer, Confirmation, LigneListe, Page } from './commun.tsx'
@@ -242,6 +243,7 @@ export function EcranChantier(props: {
 
         <EtatsVoie chantier={chantier} modifierChantier={modifierChantier} />
         <TypesFleches chantier={chantier} modifierChantier={modifierChantier} />
+        <EtatsExploitation chantier={chantier} modifierChantier={modifierChantier} />
         <CatalogueEngins chantier={chantier} modifierChantier={modifierChantier} />
       </Page>
       {assistant && <AssistantNouveauPlan nomPropose={nomPlanPropose(chantier)} creer={creerPlan} fermer={() => setAssistant(false)} />}

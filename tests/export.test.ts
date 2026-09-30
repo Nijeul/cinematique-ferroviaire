@@ -24,7 +24,7 @@ import {
   type Redacteur,
   type ZoneTexte,
 } from '../src/plan/export.ts'
-import { lireChantier, serialiserChantier } from '../src/plan/fichierChantier.ts'
+import { lireChantier, serialiserChantier, VERSION_CHANTIER } from '../src/plan/fichierChantier.ts'
 import type { ListesChantier } from '../src/plan/legende.ts'
 import { miseEnPage } from '../src/plan/planche.ts'
 import type { Synoptique } from '../src/plan/synoptique.ts'
@@ -36,7 +36,7 @@ const fixture = (): Chantier => {
   if (!lu.ok) throw new Error(lu.erreurs.join('\n'))
   return lu.chantier
 }
-const listesDe = (c: Chantier): ListesChantier => ({ etatsVoie: c.etatsVoie, typesFleches: c.typesFleches, catalogue: c.catalogue })
+const listesDe = (c: Chantier): ListesChantier => ({ etatsVoie: c.etatsVoie, typesFleches: c.typesFleches, catalogue: c.catalogue, etatsExploitation: c.etatsExploitation })
 const synoptique = (c: Chantier, id: string): Synoptique => c.synoptiques.find((s) => s.id === id)!
 
 const proche = (a: number, b: number, tolerance = 1e-9) => Math.abs(a - b) <= tolerance
@@ -269,12 +269,12 @@ describe('cartouche de la page de garde', () => {
     expect(resumeCartouche({ ...creerCartouche(), emetteur: 'X' })).toBe('rempli en partie')
   })
 
-  it('voyage avec l’export et l’import du chantier (fichier version 5)', () => {
+  it('voyage avec l’export et l’import du chantier (depuis le fichier version 5)', () => {
     const c = fixture()
     expect(synoptique(c, 'synoptique-3').cartouche).toMatchObject({ emetteur: 'Entreprise fictive', indice: 'B', etabliPar: 'A. Exemple' })
     const relu = lireChantier(serialiserChantier(c))
     expect(relu.ok && relu.chantier).toEqual(c)
-    expect(JSON.parse(serialiserChantier(c)).version).toBe(5)
+    expect(JSON.parse(serialiserChantier(c)).version).toBe(VERSION_CHANTIER)
   })
 
   it('migration : un fichier de l’étape 7 (version 4) s’ouvre, cartouches vides', () => {

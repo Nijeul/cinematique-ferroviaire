@@ -5,7 +5,7 @@ import { ajusterDansPage, DIAPOSITIVE, POLICE_EXPORT, type InfosDocument, type P
 // (import dynamique depuis l'interface) : il ne pèse pas sur l'ouverture de
 // l'application. Une diapositive 16/9 par image : l'image de la planche, et
 // par-dessus, en mode « Textes modifiables », les zones de texte natives du
-// bandeau, du créneau et de l'encart PHASAGE, à leur place. La page de garde
+// bandeau, du créneau, de l'encart PHASAGE et des commentaires, à leur place. La page de garde
 // a son cartouche en tableau PowerPoint natif. Aucun accès au navigateur ici :
 // les images arrivent déjà rendues (data URL), ce qui permet de tester sous Node.
 
@@ -30,7 +30,7 @@ function ajouterZone(diapo: PptxGenJS.Slide, zone: ZoneTexte): void {
     y: zone.y,
     w: zone.largeur,
     h: zone.hauteur,
-    fill: { color: couleur(zone.fond) },
+    fill: zone.fond ? { color: couleur(zone.fond) } : undefined,
     line: zone.bord ? { color: couleur(zone.bord.couleur), width: zone.bord.epaisseur } : undefined,
     fontFace: POLICE_PPTX,
     fontSize: arrondi(zone.taille),
