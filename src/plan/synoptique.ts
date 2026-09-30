@@ -1,3 +1,4 @@
+import { creerCartouche, type Cartouche } from './cartouche.ts'
 import { nouvelIdentifiant } from './edition.ts'
 import type { Rectangle } from './elements.ts'
 import type { Resultat } from './echelle.ts'
@@ -84,6 +85,8 @@ export type Synoptique = {
   // Bandeau de titre, en haut de chaque image (une ou plusieurs lignes) ;
   // vide : pas de bandeau.
   bandeau: string
+  // Cartouche de la page de garde des exports (PowerPoint, PDF).
+  cartouche: Cartouche
   images: ImageSynoptique[]
 }
 
@@ -194,6 +197,7 @@ export function creerSynoptique(
     calqueFleches: { ...CALQUE_FLECHES_PAR_DEFAUT },
     afficherLegende: true,
     bandeau: '',
+    cartouche: creerCartouche(),
     images: [nouvelleImageVide('image-1', 0, demande.fin, contenuDe(projet))],
   }
 }

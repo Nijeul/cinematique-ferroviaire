@@ -394,7 +394,7 @@ describe('export et import', () => {
     }
     const texte = serialiserChantier(c)
     expect(JSON.parse(texte).version).toBe(VERSION_CHANTIER)
-    expect(VERSION_CHANTIER).toBe(4)
+    expect(VERSION_CHANTIER).toBe(5)
     const relu = lireChantier(texte)
     expect(relu.ok).toBe(true)
     if (relu.ok) expect(relu.chantier).toEqual(c)

@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { ecrireAdresse } from '../plan/adresse.ts'
+import { modifierCartouche, resumeCartouche } from '../plan/cartouche.ts'
 import { remplacerSynoptique, texteImages, type Chantier } from '../plan/chantier.ts'
 import type { Rectangle } from '../plan/elements.ts'
 import { annuler, creerHistorique, enregistrer, peutAnnuler, peutRetablir, retablir } from '../plan/historique.ts'
 import { descriptionEchelle } from '../plan/echelle.ts'
+import { OPTIONS_PAR_DEFAUT, type OptionsExport } from '../plan/export.ts'
 import type { Echelle } from '../plan/projet.ts'
 import type { ListesChantier } from '../plan/legende.ts'
 import { miseEnPage } from '../plan/planche.ts'
@@ -23,6 +25,7 @@ import { FenetreEchelle } from './CalageEchelle.tsx'
 import { ChoixCadrage } from './ChoixCadrage.tsx'
 import { BandeauMessage, BarreNavigation, BoutonsFenetre, ChampInstant, Fenetre } from './commun.tsx'
 import { COULEURS } from './couleurs.ts'
+import { FenetreCartouche, FenetreExport } from './FenetreExport.tsx'
 import { ImageDeTravail } from './ImageDeTravail.tsx'
 import { CalqueEngins, ChoixType, RameAPoser } from './PanneauEngins.tsx'
 import { CalqueFleches, ChoixTypeFleche, PanneauFleche } from './PanneauFleches.tsx'
@@ -39,7 +42,9 @@ import { RAISON_SANS_ECHELLE, TOUCHES_IMAGE, useEditeurImage, type EditeurImage,
 // montre la légende. Chaque image a ses propres engins, flèches et états de
 // zones ; « Nouvelle image » les recopie, il ne reste qu'à changer ce qui
 // bouge. Horaires, nombre d'images et propriétés du synoptique (dont le
-// bandeau de titre) se modifient aussi — le tout avec Annuler / Rétablir.
+// bandeau de titre et cartouche) se modifient aussi — le tout avec Annuler /
+// Rétablir. « Exporter… » produit le PowerPoint ou le PDF des images, sans
+// rien modifier.
 
 // L'image courante fait partie de l'historique : Annuler ramène sur l'image
 // qu'on venait de modifier.
@@ -242,7 +247,11 @@ export function EcranSynoptique(props: {
     creerHistorique<Etat>({ synoptique: initial, index: Math.min(initial.images.length, Math.max(1, props.imageInitiale)) - 1 }),
   )
   const [message, setMessage] = useState<Message | null>(null)
-  const [fenetre, setFenetre] = useState<'cadrage' | 'echelle' | null>(null)
+  const [fenetre, setFenetre] = useState<'cadrage' | 'echelle' | 'export' | 'cartouche' | null>(null)
+  // Cartouche ouvert depuis la fenêtre d'export : on y revient ensuite.
+  const [cartoucheDepuisExport, setCartoucheDepuisExport] = useState(false)
+  // Réglages du dernier export, repris à la prochaine ouverture.
+  const [optionsExport, setOptionsExport] = useState<OptionsExport>(OPTIONS_PAR_DEFAUT)
   const { synoptique: s } = historique.present
   const index = Math.min(historique.present.index, s.images.length - 1)
   const image = s.images[index]
@@ -440,6 +449,13 @@ export function EcranSynoptique(props: {
           <button style={styleBouton()} disabled={!peutRetablir(historique)} onClick={faireRetablir} title="Ctrl+Y">
             ↷ Rétablir
           </button>
+          <button
+            style={styleBouton()}
+            onClick={() => setFenetre('export')}
+            title="PowerPoint ou PDF des images de ce synoptique, avec page de garde"
+          >
+            Exporter…
+          </button>
         </div>
       </header>
       <BarreOutilsImage editeur={editeur} />
@@ -550,6 +566,20 @@ export function EcranSynoptique(props: {
                 Modifier…
               </button>
             </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, fontSize: 13 }}>
+              <span style={{ flex: 1 }}>
+                Cartouche (page de garde) : <strong>{resumeCartouche(s.cartouche)}</strong>
+              </span>
+              <button
+                style={styleBouton()}
+                onClick={() => {
+                  setCartoucheDepuisExport(false)
+                  setFenetre('cartouche')
+                }}
+              >
+                Remplir…
+              </button>
+            </div>
           </Section>
           <Section titre="Origine">
             <p style={{ ...styleDiscret, lineHeight: 1.5 }}>
@@ -571,6 +601,30 @@ export function EcranSynoptique(props: {
               modifier({ ...s, cadrage })
               editeur.setVue(null)
             }
+          }}
+        />
+      )}
+      {fenetre === 'export' && (
+        <FenetreExport
+          chantier={chantier}
+          synoptique={s}
+          index={index}
+          options={optionsExport}
+          changerOptions={setOptionsExport}
+          remplirCartouche={() => {
+            setCartoucheDepuisExport(true)
+            setFenetre('cartouche')
+          }}
+          fermer={() => setFenetre(null)}
+        />
+      )}
+      {fenetre === 'cartouche' && (
+        <FenetreCartouche
+          cartouche={s.cartouche}
+          fermer={() => setFenetre(cartoucheDepuisExport ? 'export' : null)}
+          valider={(cartouche) => {
+            if (JSON.stringify(cartouche) !== JSON.stringify(s.cartouche)) modifier(modifierCartouche(s, cartouche))
+            setFenetre(cartoucheDepuisExport ? 'export' : null)
           }}
         />
       )}

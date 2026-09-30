@@ -127,6 +127,23 @@ export function couperLignes(texte: string, largeurMax: number, taille: number, 
 
 // ——— Mise en page ———
 
+// Couleurs relevées sur les planches du commanditaire : communes au dessin de
+// la planche et aux zones de texte des exports PowerPoint.
+export const COULEURS_PLANCHE = {
+  fondBandeau: '#e4eff9',
+  bordBandeau: '#1f4e8c',
+  fondCreneau: '#efefef',
+  bordCreneau: '#e0201b',
+  entetePhasage: '#76726f',
+  fondPhasage: '#ececec',
+  textePhasage: '#3c3c3c',
+  texte: '#1c2430',
+} as const
+
+// Épaisseur du bord du bandeau et du créneau, en traits de planche (voir
+// `MiseEnPage.trait`).
+export const BORDS_PLANCHE = { bandeau: 2.2, creneau: 2.6 } as const
+
 export type LigneTexte = { texte: string; x: number; y: number; taille: number; gras: boolean }
 
 // Ligne de la légende : ses `grasJusqua` premiers caractères sont en gras (le
@@ -140,6 +157,10 @@ export type MiseEnPage = {
   // La partie du plan montrée (cadrage), et la planche entière avec ses bandes.
   carte: Rectangle
   planche: Rectangle
+  // Trait de base des cadres (bords du bandeau et du créneau), et retrait du
+  // texte dans les cadres, en unités du plan.
+  trait: number
+  retrait: number
   bandeau: { boite: Rectangle; lignes: LigneTexte[] } | null
   creneau: { boite: Rectangle; lignes: LigneTexte[] }
   // Encart PHASAGE de l'image : null s'il est vide.
@@ -305,9 +326,10 @@ function placerLegende(c: Colonnes, x: number, y: number, m: Mesures): EntreePla
   return placees
 }
 
-// Lignes du bandeau de titre, en gras, centrées.
-function lignesBandeau(texte: string, m: Mesures): string[] {
-  return texte.trim() === '' ? [] : couperLignes(texte.trim(), m.largeurBandeau - 2 * m.retrait, m.titre, true)
+// Lignes du bandeau de titre, en gras, centrées, dans un bandeau de largeur
+// donnée.
+function lignesBandeau(texte: string, largeur: number, m: Mesures): string[] {
+  return texte.trim() === '' ? [] : couperLignes(texte.trim(), largeur - 2 * m.retrait, m.titre, true)
 }
 
 // Contenu du créneau : lignes et largeur de la boîte.
@@ -333,6 +355,9 @@ function lignesPhasage(phasage: EtapePhasage[], m: Mesures): string[] {
 const hauteurEntetePhasage = (m: Mesures) => m.phasage * 1.9
 const hauteurCorpsPhasage = (lignes: number, m: Mesures) => lignes * PROPORTIONS.interligne * m.phasage + 2 * m.retrait
 
+// Écart entre le créneau et le bord droit du plan, en unités.
+const ECART_CRENEAU = 2
+
 export function miseEnPage(s: Synoptique, index: number, listes: ListesChantier): MiseEnPage {
   const carte = rectangleAffiche(s)
   const image = s.images[index]
@@ -345,10 +370,17 @@ export function miseEnPage(s: Synoptique, index: number, listes: ListesChantier)
   const largeurLegende = carte.largeur - m.largeurPhasage - m.marge
 
   // Bande du haut : assez haute pour le bandeau et pour le plus haut des
-  // créneaux du synoptique.
-  const bandeauLignes = lignesBandeau(s.bandeau, m)
-  const hauteurBandeau = bandeauLignes.length > 0 ? bandeauLignes.length * PROPORTIONS.interligne * m.titre + 2 * m.retrait : 0
+  // créneaux du synoptique. Le bandeau, centré, s'arrête avant le plus large
+  // des créneaux (à droite), pour ne pas le toucher (sauf sur un cadrage très
+  // étroit, où il garde au moins le quart de la largeur).
   const creneaux = s.images.map((im) => contenuCreneau(s.t0, im, m))
+  const gaucheCreneaux = carte.largeur - ECART_CRENEAU * m.u - Math.max(...creneaux.map((c) => c.largeur))
+  const largeurBandeau = Math.max(
+    carte.largeur * 0.25,
+    Math.min(m.largeurBandeau, carte.largeur * 0.7, 2 * (gaucheCreneaux - m.marge - carte.largeur / 2)),
+  )
+  const bandeauLignes = lignesBandeau(s.bandeau, largeurBandeau, m)
+  const hauteurBandeau = bandeauLignes.length > 0 ? bandeauLignes.length * PROPORTIONS.interligne * m.titre + 2 * m.retrait : 0
   const hauteurHaut = Math.max(hauteurBandeau, ...creneaux.map((c) => c.hauteur)) + 2 * m.marge
   const haut = carte.y - hauteurHaut
 
@@ -369,11 +401,15 @@ export function miseEnPage(s: Synoptique, index: number, listes: ListesChantier)
 
   let bandeau: MiseEnPage['bandeau'] = null
   if (bandeauLignes.length > 0) {
-    const largeur = Math.min(m.largeurBandeau, carte.largeur * 0.7)
-    const boite = { x: carte.x + (carte.largeur - largeur) / 2, y: centreVertical(hauteurBandeau), largeur, hauteur: hauteurBandeau }
+    const boite = {
+      x: carte.x + (carte.largeur - largeurBandeau) / 2,
+      y: centreVertical(hauteurBandeau),
+      largeur: largeurBandeau,
+      hauteur: hauteurBandeau,
+    }
     const lignes = aligner(
       bandeauLignes.map((texte) => ({ texte, gras: true })),
-      boite.x + largeur / 2,
+      boite.x + largeurBandeau / 2,
       boite.y + m.retrait,
       m.titre,
     )
@@ -381,7 +417,7 @@ export function miseEnPage(s: Synoptique, index: number, listes: ListesChantier)
   }
 
   const c = creneaux[index]
-  const boiteCreneau = { x: carte.x + carte.largeur - 2 * m.u - c.largeur, y: centreVertical(c.hauteur), largeur: c.largeur, hauteur: c.hauteur }
+  const boiteCreneau = { x: carte.x + carte.largeur - ECART_CRENEAU * m.u - c.largeur, y: centreVertical(c.hauteur), largeur: c.largeur, hauteur: c.hauteur }
   const creneau = { boite: boiteCreneau, lignes: aligner(c.lignes, boiteCreneau.x + c.largeur / 2, boiteCreneau.y + m.retrait * 0.8, m.creneau) }
 
   let phasage: MiseEnPage['phasage'] = null
@@ -413,5 +449,5 @@ export function miseEnPage(s: Synoptique, index: number, listes: ListesChantier)
     }
   }
 
-  return { carte, planche, bandeau, creneau, phasage, legende }
+  return { carte, planche, trait: carte.largeur / 700, retrait: m.retrait, bandeau, creneau, phasage, legende }
 }
