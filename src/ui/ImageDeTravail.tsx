@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type PointerEvent as EvenementPointeur } from 'react'
+import { commentaireSousPointeur, deplacerCommentaire, validerTexteCommentaire, type Commentaire } from '../plan/commentaires.ts'
 import { accrocherVoie, poigneeSousPointeur, zoneSousPointeur } from '../plan/detection.ts'
 import {
   ajouterEngin,
@@ -31,6 +32,7 @@ import type { PlanImage } from '../plan/synoptique.ts'
 import { projeterSurPolyligne } from '../plan/trace.ts'
 import { ajusterSurRectangle, deplacer, facteurMolette, versPlan, zoomerAutour, type Vue } from '../plan/vue.ts'
 import { COULEURS } from './couleurs.ts'
+import { EditionCommentaire } from './DessinCommentaires.tsx'
 import { DessinEngin, DessinRame } from './DessinEngins.tsx'
 import { TraceFleche } from './DessinFleches.tsx'
 import { DessinPlanche } from './Planche.tsx'
@@ -42,7 +44,8 @@ import type { EditeurImage } from './useEditeurImage.ts'
 // son état dans le panneau — et par-dessus ses engins et ses rames, qu'on
 // pose, choisit et glisse, et ses flèches, qu'on trace point par point, dont
 // on glisse les points ou toute la flèche. Molette : zoom ; Main, Espace ou
-// clic molette : déplacer la vue.
+// clic molette : déplacer la vue. Un double-clic sur un commentaire (outil
+// Sélection ou Texte) ouvre son texte à sa place, sur l'image.
 // Tolérances en pixels d'écran, donc identiques à tout zoom.
 const TOLERANCE_ELEMENT = 6
 const TOLERANCE_ACCROCHE = 12
@@ -57,8 +60,14 @@ type Glisser =
   | { genre: 'corps'; ref: ReferenceEngin; depart: Point; ecran: Point; origine: PlanImage; cle: string }
   | { genre: 'fleche'; id: string; depart: Point; ecran: Point; origine: Fleche[]; cle: string }
   | { genre: 'pointFleche'; id: string; indice: number; origine: Fleche[]; cle: string }
+  | { genre: 'commentaire'; id: string; depart: Point; ecran: Point; origine: Commentaire[]; cle: string }
 
 let compteurGlisser = 0
+let compteurEdition = 0
+
+// Commentaire dont on tape le texte sur l'image : sur quelle image, et le
+// texte en cours (validé d'un coup, en une seule étape d'annulation).
+type Edition = { index: number; id: string; texte: string; ouverture: number }
 
 const dansRectangle = (r: { x: number; y: number; largeur: number; hauteur: number }, p: Point): boolean =>
   p.x >= r.x && p.x <= r.x + r.largeur && p.y >= r.y && p.y <= r.y + r.hauteur
@@ -71,6 +80,10 @@ export function ImageDeTravail({ editeur }: { editeur: EditeurImage }) {
   const [curseur, setCurseur] = useState<Point | null>(null)
   const [curseurMaj, setCurseurMaj] = useState(false)
   const [enDeplacement, setEnDeplacement] = useState(false)
+  const [editionBrute, setEdition] = useState<Edition | null>(null)
+  // L'édition ouverte (numéro d'ouverture) : on ne la termine qu'une fois,
+  // même si Entrée, la perte du focus et un clic ailleurs se suivent.
+  const editionOuverte = useRef<number | null>(null)
 
   useEffect(() => {
     const svg = svgRef.current
@@ -110,7 +123,45 @@ export function ImageDeTravail({ editeur }: { editeur: EditeurImage }) {
   const poigneesFleche = outil === 'selection' && fleche && flechesActives ? fleche.points.map((point, i) => ({ cle: `point-${i}`, point })) : []
   const unite = uniteFleche(planche)
 
+  // Édition sur l'image : seulement sur l'image où elle a commencé, tant que
+  // le commentaire existe et que son calque est modifiable.
+  const commentairesActifs = editeur.calqueCommentaires.visible && !editeur.calqueCommentaires.verrouille
+  const edition =
+    editionBrute && editionBrute.index === editeur.index && commentairesActifs && planche.commentaires.some((c) => c.id === editionBrute.id)
+      ? editionBrute
+      : null
+  const commentaireEdite = edition ? (planche.commentaires.find((c) => c.id === edition.id) ?? null) : null
+  const commentaireSous = (p: Point): string | null =>
+    commentairesActifs && dansRectangle(cadre, p) ? commentaireSousPointeur(planche.commentaires, s, p, TOLERANCE_ELEMENT / vue.zoom) : null
+  const choisirEtGlisserCommentaire = (id: string, p: Point, ecran: Point, e: EvenementPointeur<SVGSVGElement>) => {
+    editeur.choisirCommentaire(id)
+    glisser.current = { genre: 'commentaire', id, depart: p, ecran, origine: planche.commentaires, cle: `glisser:${++compteurGlisser}` }
+    e.currentTarget.setPointerCapture(e.pointerId)
+  }
+  const ouvrirEdition = (e: { clientX: number; clientY: number }) => {
+    const id = commentaireSous(versPlan(vue, pointEcran(e)))
+    const c = id ? planche.commentaires.find((x) => x.id === id) : null
+    if (!c) return
+    editeur.choisirCommentaire(c.id)
+    const ouverture = ++compteurEdition
+    editionOuverte.current = ouverture
+    setEdition({ index: editeur.index, id: c.id, texte: c.texte, ouverture })
+  }
+  // Valide (une seule étape d'annulation) ou abandonne le texte tapé.
+  const terminerEdition = (garder: boolean) => {
+    if (!edition || editionOuverte.current !== edition.ouverture) return
+    editionOuverte.current = null
+    if (garder) editeur.modifierCommentaires((liste) => validerTexteCommentaire(liste, edition.id, edition.texte))
+    setEdition(null)
+  }
+
   const surAppui = (e: EvenementPointeur<SVGSVGElement>) => {
+    // Un clic hors du texte en cours d'édition le valide, et ne fait rien d'autre.
+    if (edition) {
+      e.preventDefault()
+      terminerEdition(true)
+      return
+    }
     const ecran = pointEcran(e)
     const p = versPlan(vue, ecran)
     if (e.button === 1 || (e.button === 0 && (outil === 'main' || espace))) {
@@ -127,6 +178,21 @@ export function ImageDeTravail({ editeur }: { editeur: EditeurImage }) {
         return
       }
       editeur.ajouterPointTrace(p, e.shiftKey)
+      return
+    }
+    if (outil === 'texte') {
+      // Sur un commentaire existant : on le choisit et on peut le glisser
+      // (double-clic : on modifie son texte) ; ailleurs, on en pose un.
+      const sous = commentaireSous(p)
+      if (sous) {
+        choisirEtGlisserCommentaire(sous, p, ecran, e)
+        return
+      }
+      if (!dansRectangle(cadre, p)) {
+        editeur.setMessage({ genre: 'erreur', texte: "Cliquez dans le cadre de l'image : ce qui est posé en dehors ne se verrait pas." })
+        return
+      }
+      editeur.poserCommentaire(p)
       return
     }
     if (outil === 'engin' || outil === 'rame') {
@@ -150,6 +216,12 @@ export function ImageDeTravail({ editeur }: { editeur: EditeurImage }) {
       const indice = Number(poigneeFleche.replace('point-', ''))
       glisser.current = { genre: 'pointFleche', id: fleche.id, indice, origine: planche.fleches, cle: `glisser:${++compteurGlisser}` }
       e.currentTarget.setPointerCapture(e.pointerId)
+      return
+    }
+    // Les commentaires sont dessinés au-dessus de tout : ils se choisissent d'abord.
+    const idCommentaire = commentaireSous(p)
+    if (idCommentaire) {
+      choisirEtGlisserCommentaire(idCommentaire, p, ecran, e)
       return
     }
     const idFleche = flechesActives ? flecheSousPointeur(planche.fleches, editeur.typesFleches, unite, p, TOLERANCE_ELEMENT / vue.zoom) : null
@@ -210,8 +282,13 @@ export function ImageDeTravail({ editeur }: { editeur: EditeurImage }) {
       glisser.current = { genre: 'vue', x: ecran.x, y: ecran.y }
       return
     }
-    if ((g.genre === 'corps' || g.genre === 'fleche') && Math.hypot(ecran.x - g.ecran.x, ecran.y - g.ecran.y) < SEUIL_GLISSER) return
+    if ((g.genre === 'corps' || g.genre === 'fleche' || g.genre === 'commentaire') && Math.hypot(ecran.x - g.ecran.x, ecran.y - g.ecran.y) < SEUIL_GLISSER) return
     setEnDeplacement(true)
+    if (g.genre === 'commentaire') {
+      const decalage = { x: p.x - g.depart.x, y: p.y - g.depart.y }
+      editeur.modifierCommentaires(() => deplacerCommentaire(g.origine, g.id, decalage), g.cle)
+      return
+    }
     if (g.genre === 'fleche') {
       const decalage = { x: p.x - g.depart.x, y: p.y - g.depart.y }
       editeur.modifierFleches(() => deplacerFleche(g.origine, g.id, decalage), g.cle)
@@ -307,7 +384,10 @@ export function ImageDeTravail({ editeur }: { editeur: EditeurImage }) {
       onPointerUp={surRelache}
       onPointerCancel={surRelache}
       onPointerLeave={() => setCurseur(null)}
-      onDoubleClick={() => outil === 'fleche' && editeur.terminerFleche(4 / vue.zoom)}
+      onDoubleClick={(e) => {
+        if (outil === 'fleche') editeur.terminerFleche(4 / vue.zoom)
+        else if ((outil === 'selection' || outil === 'texte') && !espace) ouvrirEdition(e)
+      }}
       onContextMenu={(e) => e.preventDefault()}
       data-testid="image-synoptique"
     >
@@ -322,8 +402,22 @@ export function ImageDeTravail({ editeur }: { editeur: EditeurImage }) {
             estChoisi={estChoisi}
             zoneChoisie={editeur.zone?.id ?? null}
             flecheChoisie={fleche?.id ?? null}
+            commentaireChoisi={editeur.commentaire?.id ?? null}
+            commentaireEnEdition={commentaireEdite?.id ?? null}
             surLaCarte={
               <>
+                {edition && commentaireEdite && (
+                  <EditionCommentaire
+                    key={edition.ouverture}
+                    commentaire={commentaireEdite}
+                    texte={edition.texte}
+                    plan={s}
+                    zoom={vue.zoom}
+                    changer={(texte) => setEdition({ ...edition, texte })}
+                    valider={() => terminerEdition(true)}
+                    annuler={() => terminerEdition(false)}
+                  />
+                )}
                 {apercu && <g style={{ pointerEvents: 'none' }}>{apercu}</g>}
                 {traceFleche}
                 {accroche && (

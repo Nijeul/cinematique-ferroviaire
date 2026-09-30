@@ -32,7 +32,8 @@ import { COULEURS } from './couleurs.ts'
 import { ZoneSelonEtat } from './DessinEtats.tsx'
 
 // Le dessin d'un plan, sans interaction : la feuille et le fond, puis au
-// calque, du dessous vers le dessus : cadres, voies, zones, appareils,
+// calque, du dessous vers le dessus : cadres, (hachures d'exploitation d'une
+// image de synoptique, passées dans `sousLesVoies`), voies, zones, appareils,
 // (engins et rames d'une image de synoptique, passés dans `engins`), textes.
 // Sert au plan de travail, aux images d'un synoptique et à leurs vignettes.
 // Coordonnées en pixels du plan ; `zoom` règle l'épaisseur des repères de
@@ -265,6 +266,10 @@ export function DessinPlan(props: {
   affiche?: Rectangle
   estChoisi?: (genre: Genre, id: string) => boolean
   engins?: ReactNode
+  sousLesVoies?: ReactNode
+  // Dans une planche, la feuille n'a pas de bord : un cadrage agrandi au-delà
+  // du plan ne montre pas de trait gris à la limite du fond.
+  sansBordFeuille?: boolean
   etats?: { liste: EtatVoie[]; parZone: EtatsZones }
 }) {
   const { projet } = props
@@ -289,7 +294,7 @@ export function DessinPlan(props: {
         width={projet.largeur}
         height={projet.hauteur}
         fill="#ffffff"
-        stroke={COULEURS.bordFeuille}
+        stroke={props.sansBordFeuille ? 'none' : COULEURS.bordFeuille}
         strokeWidth={1 / vue.zoom}
       />
       {fond && calques.fond.visible && fond.image && (
@@ -337,6 +342,8 @@ export function DessinPlan(props: {
             tailleNom={tailleEtiquetteZone({ epaisseur: epaisseurTrace })}
           />
         ))}
+
+      {props.sousLesVoies}
 
       {voiesVisibles &&
         projet.voies.map((voie) => (

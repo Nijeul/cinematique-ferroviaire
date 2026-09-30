@@ -1,4 +1,6 @@
-import { useState, type ReactNode } from 'react'
+import { useRef, useState, type ReactNode } from 'react'
+import { PAS_COUPES_PAR_DEFAUT, texteCoupes } from '../plan/coupes.ts'
+import { formaterNombre, lireNombre } from '../plan/echelle.ts'
 import type { CoteDepart } from '../plan/etatsZones.ts'
 import { entreesLegende, masquerLigneLegende, modifierAfficherLegende, texteEntree, type ListesChantier } from '../plan/legende.ts'
 import {
@@ -10,7 +12,10 @@ import {
   numeroEtapePropose,
   supprimerEtape,
 } from '../plan/planche.ts'
+import { modifierOpaciteFond, pourcentOpaciteFond } from '../plan/fondSynoptique.ts'
+import { modifierNumerosEngins } from '../plan/numerosEngins.ts'
 import type { HeuresCreneau, Synoptique } from '../plan/synoptique.ts'
+import { afficherToutesLesZones, afficherZone, texteZonesAffichees, zonesDuSynoptique } from '../plan/zonesAffichees.ts'
 import { COULEURS } from './couleurs.ts'
 import { ApercuEtat } from './DessinEtats.tsx'
 import { styleChamp, stylesPanneau as styles } from './styles.ts'
@@ -148,7 +153,81 @@ export function PanneauZone({ editeur }: { editeur: EditeurImage }) {
           </p>
         </div>
       )}
+      <CoupesDeLaZone editeur={editeur} />
     </Section>
+  )
+}
+
+// ——— Coupes de tronçonnage de la zone choisie ———
+
+// Écart entre deux coupes, en mètres : appliqué à chaque frappe s'il est
+// valable ; refusé, le champ reste rouge avec l'explication.
+function ChampPas(props: { valeur: number; valider: (pas: number) => string | null }) {
+  const [texte, setTexte] = useState(formaterNombre(props.valeur))
+  const [precedente, setPrecedente] = useState(props.valeur)
+  const [erreur, setErreur] = useState<string | null>(null)
+  if (props.valeur !== precedente) {
+    setPrecedente(props.valeur)
+    setTexte(formaterNombre(props.valeur))
+    setErreur(null)
+  }
+  return (
+    <>
+      <input
+        type="text"
+        inputMode="decimal"
+        value={texte}
+        aria-label="Écart entre deux coupes (m)"
+        aria-invalid={erreur !== null}
+        title={erreur ?? undefined}
+        style={{ ...styles.champ, width: 52, textAlign: 'right', borderColor: erreur ? COULEURS.erreur : COULEURS.bordure }}
+        onChange={(e) => {
+          setTexte(e.target.value)
+          const n = lireNombre(e.target.value)
+          setErreur(n === null ? 'Tapez un nombre de mètres.' : props.valider(n))
+        }}
+      />
+      {erreur && (
+        <span role="alert" style={{ color: COULEURS.erreur, fontSize: 12, flexBasis: '100%' }}>
+          {erreur}
+        </span>
+      )}
+    </>
+  )
+}
+
+function CoupesDeLaZone({ editeur }: { editeur: EditeurImage }) {
+  const { zone, planche } = editeur
+  if (!zone) return null
+  const pas = planche.coupes[zone.id] ?? null
+  // Une erreur (synoptique sans échelle…) s'affiche dans le bandeau de message.
+  const signaler = (erreur: string | null) => {
+    if (erreur) editeur.setMessage({ genre: 'erreur', texte: erreur })
+  }
+  return (
+    <div style={{ marginTop: 10 }} data-testid="coupes-zone">
+      <label style={{ ...styles.ligne, fontWeight: 600 }}>
+        <input
+          type="checkbox"
+          checked={pas !== null}
+          aria-label="Coupes de tronçonnage"
+          onChange={(e) => signaler(editeur.reglerCoupesZone(e.target.checked ? PAS_COUPES_PAR_DEFAUT : null))}
+        />
+        Coupes de tronçonnage
+      </label>
+      {pas !== null && (
+        <div style={{ ...styles.ligne, flexWrap: 'wrap' }}>
+          <span>Une coupe tous les</span>
+          <ChampPas valeur={pas} valider={(n) => editeur.reglerCoupesZone(n, `coupes:${zone.id}`)} />
+          <span>m</span>
+        </div>
+      )}
+      <p style={styles.discret}>
+        {pas !== null
+          ? `Traits en travers de la voie, depuis le bout ${planche.extremites.gauche ? `côté ${planche.extremites.gauche}` : 'gauche'} de la zone, à l'échelle du synoptique ; « ${texteCoupes(pas)} » dans la légende.`
+          : 'Montre les panneaux découpés (6 m par défaut) sur cette image.'}
+      </p>
+    </div>
   )
 }
 
@@ -299,7 +378,7 @@ export function PanneauPhasage({ synoptique: s, index, modifier }: { synoptique:
 
 // ——— Légende ———
 
-const GENRES_LEGENDE = { engin: 'Engin', rame: 'Rame', etat: 'État', fleche: 'Flèche' } as const
+const GENRES_LEGENDE = { engin: 'Engin', rame: 'Rame', etat: 'État', fleche: 'Flèche', coupes: 'Coupes', exploitation: 'Voie' } as const
 
 export function PanneauLegende(props: { synoptique: Synoptique; index: number; listes: ListesChantier; modifier: Modifier }) {
   const { synoptique: s, index, modifier } = props
@@ -340,6 +419,143 @@ export function PanneauLegende(props: { synoptique: Synoptique; index: number; l
           ))}
         </ul>
       </fieldset>
+    </Section>
+  )
+}
+
+// ——— Zones affichées du synoptique ———
+
+// Les zones de travaux du plan figé, chacune avec sa case « affichée ». Une
+// zone décochée disparaît de toutes les images du synoptique (tracé, nom,
+// état, coupes, légende, exports) ; son état et ses coupes sont gardés.
+export function PanneauZonesAffichees(props: { synoptique: Synoptique; modifier: Modifier }) {
+  const { synoptique: s, modifier } = props
+  const zones = zonesDuSynoptique(s)
+  return (
+    <Section
+      titre={
+        <>
+          Zones affichées <span style={{ fontWeight: 400, textTransform: 'none' }}>· {texteZonesAffichees(s)}</span>
+        </>
+      }
+      testid="panneau-zones-affichees"
+    >
+      {zones.length === 0 ? (
+        <p style={styles.discret}>Le plan de ce synoptique n'a pas de zone de travaux.</p>
+      ) : (
+        <>
+          <div style={{ ...styles.ligne, gap: 6 }}>
+            <button style={styles.petitBouton} disabled={zones.every((z) => z.affichee)} onClick={() => modifier(afficherToutesLesZones(s, true))}>
+              Tout afficher
+            </button>
+            <button style={styles.petitBouton} disabled={zones.every((z) => !z.affichee)} onClick={() => modifier(afficherToutesLesZones(s, false))}>
+              Tout masquer
+            </button>
+          </div>
+          <ul style={{ listStyle: 'none', margin: 0, padding: 0 }} data-testid="liste-zones-affichees">
+            {zones.map(({ zone, voie, affichee }) => (
+              <li key={zone.id} style={{ margin: '3px 0' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }} data-testid="ligne-zone-affichee" data-zone={zone.nom}>
+                  <input
+                    type="checkbox"
+                    checked={affichee}
+                    aria-label={`Afficher la zone « ${zone.nom} »`}
+                    onChange={(e) => modifier(afficherZone(s, zone.id, e.target.checked))}
+                  />
+                  <span style={{ width: 14, height: 10, flexShrink: 0, background: zone.couleur, opacity: affichee ? 1 : 0.35, border: `1px solid ${COULEURS.bordure}` }} />
+                  <span
+                    style={{
+                      flex: 1,
+                      minWidth: 0,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      color: affichee ? undefined : COULEURS.discret,
+                      textDecoration: affichee ? undefined : 'line-through',
+                    }}
+                  >
+                    {zone.nom || 'Zone sans nom'}
+                  </span>
+                  {voie !== '' && <span style={{ color: COULEURS.discret, fontSize: 12, flexShrink: 0 }}>{voie}</span>}
+                </label>
+              </li>
+            ))}
+          </ul>
+          <p style={styles.discret}>
+            Pour toutes les images de ce synoptique. Une zone décochée disparaît de l'image, de la planche, de la légende et des exports ;
+            son état et ses coupes sont gardés et reviennent quand on la recoche.
+          </p>
+        </>
+      )}
+    </Section>
+  )
+}
+
+// ——— Fond de plan du synoptique ———
+
+// Opacité du fond de plan, pour toutes les images du synoptique (l'image de
+// travail, la planche, les vignettes et les exports). Le plan d'origine ne
+// change pas. Une série de mouvements du curseur (un glissé) s'annule d'un
+// seul Ctrl+Z ; un nouveau glissé est une nouvelle étape.
+export function PanneauFondSynoptique(props: { synoptique: Synoptique; index: number; modifier: Modifier }) {
+  const { synoptique: s, index, modifier } = props
+  const glisse = useRef(0)
+  const pourcent = pourcentOpaciteFond(s, index)
+  const sansFond = !s.fond?.image
+  return (
+    <Section titre="Fond de plan" testid="panneau-fond-synoptique">
+      <label style={styles.ligne}>
+        <span style={{ flexShrink: 0 }}>Opacité du fond de plan</span>
+        <input
+          type="range"
+          min={0}
+          max={100}
+          step={1}
+          value={pourcent}
+          disabled={sansFond}
+          aria-label="Opacité du fond de plan"
+          style={{ flex: 1, minWidth: 0 }}
+          onPointerDown={() => {
+            glisse.current += 1
+          }}
+          onChange={(e) => modifier(modifierOpaciteFond(s, Number(e.target.value)), `opacite-fond:${glisse.current}`)}
+        />
+        <span style={{ width: 44, textAlign: 'right', whiteSpace: 'nowrap', fontWeight: 600 }} data-testid="valeur-opacite-fond">
+          {pourcent} %
+        </span>
+      </label>
+      <p style={styles.discret}>
+        {sansFond
+          ? "Ce synoptique n'a pas de fond de plan."
+          : `Pour toutes les images de ce synoptique et ses exports. Le plan « ${s.origine.nomPlan} » ne change pas.`}
+      </p>
+    </Section>
+  )
+}
+
+// ——— Numéros des engins ———
+
+// Bulles numérotées des engins et des rames, pour toutes les images du
+// synoptique. Décochée : plus de bulles, ni de numéros dans la légende ; les
+// numéros restent enregistrés et reviennent quand on la recoche.
+export function PanneauNumerosEngins(props: { synoptique: Synoptique; modifier: Modifier }) {
+  const { synoptique: s, modifier } = props
+  return (
+    <Section titre="Numéros des engins" testid="panneau-numeros-engins">
+      <label style={{ ...styles.ligne, fontWeight: 600 }}>
+        <input
+          type="checkbox"
+          checked={s.numerosEngins}
+          aria-label="Numéros des engins sur l'image"
+          onChange={(e) => modifier(modifierNumerosEngins(s, e.target.checked))}
+        />
+        Numéros des engins sur l'image
+      </label>
+      <p style={styles.discret}>
+        {s.numerosEngins
+          ? 'Les bulles numérotées des engins et des rames s’affichent sur toutes les images, les numéros aussi dans la légende.'
+          : 'Aucune bulle numérotée sur les images ni dans les exports ; la légende garde les descriptions, sans numéro. Les numéros restent enregistrés sur chaque engin.'}
+      </p>
     </Section>
   )
 }

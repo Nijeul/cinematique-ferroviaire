@@ -28,7 +28,7 @@ const fixture = (): Chantier => {
   if (!lu.ok) throw new Error(lu.erreurs.join('\n'))
   return lu.chantier
 }
-const listesDe = (c: Chantier): ListesChantier => ({ etatsVoie: c.etatsVoie, typesFleches: c.typesFleches, catalogue: c.catalogue })
+const listesDe = (c: Chantier): ListesChantier => ({ etatsVoie: c.etatsVoie, typesFleches: c.typesFleches, catalogue: c.catalogue, etatsExploitation: c.etatsExploitation })
 const textes = (s: Synoptique, i: number, listes: ListesChantier) => legendeAffichee(s, i, listes).map(texteEntree)
 
 const CATALOGUE = creerCatalogue()

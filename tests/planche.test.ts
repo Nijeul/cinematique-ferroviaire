@@ -1,3 +1,4 @@
+import { creerEtatsExploitation } from '../src/plan/exploitation.ts'
 import { describe, expect, it } from 'vitest'
 import {
   ajouterEtape,
@@ -19,7 +20,7 @@ import { creerSynoptique, modifierHorairesImage, nouvelleImage, type Synoptique 
 import { partiesHoraire } from '../src/plan/temps.ts'
 
 const QUAND = '2026-09-29T15:00:00.000Z'
-const LISTES = { etatsVoie: creerEtatsVoie(), typesFleches: creerTypesFleches(), catalogue: creerCatalogue() }
+const LISTES = { etatsVoie: creerEtatsVoie(), typesFleches: creerTypesFleches(), catalogue: creerCatalogue(), etatsExploitation: creerEtatsExploitation() }
 
 const valeur = <T>(r: { ok: true; valeur: T } | { ok: false; erreur: string }): T => {
   if (!r.ok) throw new Error(r.erreur)

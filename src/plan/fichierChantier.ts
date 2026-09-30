@@ -4,13 +4,19 @@ import { lireCartouche } from './cartouche.ts'
 import { creerCatalogue } from './catalogue.ts'
 import { creerEtatsVoie, type EtatVoie } from './etatsVoie.ts'
 import type { EtatsZones } from './etatsZones.ts'
+import { CALQUE_COMMENTAIRES_PAR_DEFAUT } from './commentaires.ts'
+import { CALQUE_EXPLOITATION_PAR_DEFAUT, creerEtatsExploitation, type EtatExploitation } from './exploitation.ts'
 import { creerTypesFleches, type TypeFleche } from './fleches.ts'
 import {
   avisEnginsRetires,
   lireCatalogue,
+  lireCommentaires,
   lireCorpsProjet,
+  lireCoupes,
   lireEnginsEtRames,
+  lireEtatsExploitation,
   lireEtatsVoie,
+  lireExploitation,
   lireFleches,
   lireProjet,
   lireTypesFleches,
@@ -26,6 +32,7 @@ import {
   type ImageSynoptique,
   type Synoptique,
 } from './synoptique.ts'
+import { NUMEROS_ENGINS_PAR_DEFAUT } from './numerosEngins.ts'
 import { lireInstant } from './temps.ts'
 
 // Fichier d'un chantier entier — plans, synoptiques, fonds et catalogue
@@ -49,9 +56,20 @@ import { lireInstant } from './temps.ts'
 // images sans flèches, légende affichée en entier.
 // Version 5 (étape 8) : cartouche de chaque synoptique (page de garde des
 // exports). Une version 4 s'ouvre toujours : cartouches vides.
+// Version 6 (étape 10) : états d'exploitation des voies du chantier ; dans
+// chaque image, état d'exploitation de ses voies, commentaires et coupes de
+// tronçonnage ; calques « Exploitation » et « Commentaires » de chaque
+// synoptique. Une version 5 s'ouvre toujours : liste d'états d'exploitation
+// par défaut, images sans hachures, sans commentaires, sans coupes. Une
+// version plus ancienne de l'application refuse d'ouvrir une version 6
+// (« version plus récente ») : elle ne peut donc pas l'abîmer.
+// Complément de l'étape 10, toujours en version 6 : zones masquées de chaque
+// synoptique (`zonesMasquees`), facultatives ; absentes, toutes les zones
+// sont affichées. Case « Numéros des engins sur l'image » (`numerosEngins`),
+// facultative ; absente, les numéros sont affichés.
 
 export const FORMAT_CHANTIER = 'cinematique-ferroviaire/chantier'
-export const VERSION_CHANTIER = 5
+export const VERSION_CHANTIER = 6
 const EXTENSION_CHANTIER = '.chantier.json'
 
 export function serialiserChantier(c: Chantier): string {
@@ -115,11 +133,25 @@ function lireLegendeMasquee(brut: unknown, quelle: string, erreurs: string[]): s
   return [...brut]
 }
 
+// Zones masquées d'un synoptique : des identifiants de zones de ses images ;
+// ceux d'une zone qui n'existe pas sont ignorés.
+function lireZonesMasquees(brut: unknown, images: ImageSynoptique[], libelle: string, erreurs: string[]): string[] {
+  if (brut === undefined) return []
+  if (!Array.isArray(brut) || !brut.every((id) => typeof id === 'string')) {
+    erreurs.push(`${libelle} : la liste des zones masquées est illisible.`)
+    return []
+  }
+  const existantes = new Set(images.flatMap((im) => im.contenu.zones.map((z) => z.id)))
+  return [...new Set(brut)].filter((id) => existantes.has(id))
+}
+
 function lireCadrage(brut: unknown, largeur: number, hauteur: number): Rectangle | null | undefined {
   if (brut === null) return null
   if (!estObjet(brut) || !estNombre(brut.x) || !estNombre(brut.y) || !estNombre(brut.largeur) || !estNombre(brut.hauteur)) return undefined
   const { x, y, largeur: l, hauteur: h } = brut
-  if (l <= 0 || h <= 0 || x < 0 || y < 0 || x + l > largeur + 1e-6 || y + h > hauteur + 1e-6) return undefined
+  // Il peut déborder du plan (« Agrandir le cadrage » pour une rame garée
+  // au-delà du bout d'une voie), mais doit en montrer une partie.
+  if (l <= 0 || h <= 0 || x >= largeur || y >= hauteur || x + l <= 0 || y + h <= 0) return undefined
   return { x, y, largeur: l, hauteur: h }
 }
 
@@ -184,7 +216,14 @@ function lireEtatsZones(brut: unknown, zones: Zone[], etats: Set<string>, quelle
   return resultat
 }
 
-function lireSynoptique(brut: unknown, i: number, erreurs: string[], etatsVoie: EtatVoie[], typesFleches: TypeFleche[]): Synoptique | null {
+function lireSynoptique(
+  brut: unknown,
+  i: number,
+  erreurs: string[],
+  etatsVoie: EtatVoie[],
+  typesFleches: TypeFleche[],
+  etatsExploitation: EtatExploitation[],
+): Synoptique | null {
   const nom = estObjet(brut) && typeof brut.nom === 'string' ? ` (« ${brut.nom} »)` : ''
   const libelle = `Synoptique n°${i + 1}${nom}`
   if (!estObjet(brut)) {
@@ -206,7 +245,7 @@ function lireSynoptique(brut: unknown, i: number, erreurs: string[], etatsVoie: 
 
   const { largeur, hauteur, fond, echelle } = plan.projet
   const cadrage = lireCadrage(brut.cadrage ?? null, largeur, hauteur)
-  if (cadrage === undefined) erreurs.push(`${libelle} : le cadrage sort du plan ou est illisible.`)
+  if (cadrage === undefined) erreurs.push(`${libelle} : le cadrage ne montre rien du plan ou est illisible.`)
 
   const fin = brut.fin as number
   const brutes = Array.isArray(brut.images) ? brut.images : []
@@ -241,6 +280,11 @@ function lireSynoptique(brut: unknown, i: number, erreurs: string[], etatsVoie: 
     const fleches = lireFleches(contenu.fleches, new Set(typesFleches.map((t) => t.id)), erreursFleches)
     erreurs.push(...erreursFleches.map((e) => `${quelle} : ${e}`))
     const legendeMasquee = lireLegendeMasquee(im.legendeMasquee, quelle, erreurs)
+    const erreursAnnotations: string[] = []
+    const exploitation = lireExploitation(contenu.exploitation, lu.projet.voies, new Set(etatsExploitation.map((e) => e.id)), erreursAnnotations)
+    const commentaires = lireCommentaires(contenu.commentaires, erreursAnnotations)
+    const coupes = lireCoupes(contenu.coupes, lu.projet.zones, erreursAnnotations)
+    erreurs.push(...erreursAnnotations.map((e) => `${quelle} : ${e}`))
     if (im.titre !== undefined && typeof im.titre !== 'string') erreurs.push(`${quelle} : titre du créneau illisible.`)
     if (im.heures !== undefined && !HEURES.includes(im.heures as HeuresCreneau)) erreurs.push(`${quelle} : heures du créneau illisibles.`)
     if (erreurs.length > avantImage) return
@@ -252,9 +296,10 @@ function lireSynoptique(brut: unknown, i: number, erreurs: string[], etatsVoie: 
       heures: (im.heures as HeuresCreneau | undefined) ?? 'plage',
       phasage,
       legendeMasquee,
-      contenu: contenuDe(lu.projet, engins, etatsZones, fleches),
+      contenu: contenuDe(lu.projet, engins, etatsZones, fleches, { exploitation, commentaires, coupes }),
     })
   })
+  const zonesMasquees = lireZonesMasquees(brut.zonesMasquees, images, libelle, erreurs)
   if (erreurs.length > avant || cadrage === undefined) return null
   return {
     id: brut.id as string,
@@ -269,7 +314,11 @@ function lireSynoptique(brut: unknown, i: number, erreurs: string[], etatsVoie: 
     echelle,
     calqueEngins: lireCalque(brut.calqueEngins, CALQUE_ENGINS_PAR_DEFAUT),
     calqueFleches: lireCalque(brut.calqueFleches, CALQUE_FLECHES_PAR_DEFAUT),
+    calqueExploitation: lireCalque(brut.calqueExploitation, CALQUE_EXPLOITATION_PAR_DEFAUT),
+    calqueCommentaires: lireCalque(brut.calqueCommentaires, CALQUE_COMMENTAIRES_PAR_DEFAUT),
     afficherLegende: typeof brut.afficherLegende === 'boolean' ? brut.afficherLegende : true,
+    zonesMasquees,
+    numerosEngins: typeof brut.numerosEngins === 'boolean' ? brut.numerosEngins : NUMEROS_ENGINS_PAR_DEFAUT,
     bandeau: typeof brut.bandeau === 'string' ? brut.bandeau : '',
     cartouche: lireCartouche(brut.cartouche),
     images,
@@ -307,7 +356,9 @@ export function lireChantier(texte: string): LectureChantier {
   const catalogue = brut.catalogue === undefined ? creerCatalogue() : lireCatalogue(brut.catalogue, erreurs)
   const etatsVoie = brut.etatsVoie === undefined ? creerEtatsVoie() : lireEtatsVoie(brut.etatsVoie, erreurs)
   const typesFleches = brut.typesFleches === undefined ? creerTypesFleches() : lireTypesFleches(brut.typesFleches, erreurs)
-  const synoptiques = synoptiquesBruts.map((s: unknown, i: number) => lireSynoptique(s, i, erreurs, etatsVoie, typesFleches))
+  const etatsExploitation =
+    brut.etatsExploitation === undefined ? creerEtatsExploitation() : lireEtatsExploitation(brut.etatsExploitation, erreurs)
+  const synoptiques = synoptiquesBruts.map((s: unknown, i: number) => lireSynoptique(s, i, erreurs, etatsVoie, typesFleches, etatsExploitation))
   if (erreurs.length > 0) return { ok: false, erreurs }
   return {
     ok: true,
@@ -320,6 +371,7 @@ export function lireChantier(texte: string): LectureChantier {
       catalogue,
       etatsVoie,
       typesFleches,
+      etatsExploitation,
     },
     avis,
   }

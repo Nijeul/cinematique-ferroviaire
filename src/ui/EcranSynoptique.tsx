@@ -29,7 +29,9 @@ import { FenetreCartouche, FenetreExport } from './FenetreExport.tsx'
 import { ImageDeTravail } from './ImageDeTravail.tsx'
 import { CalqueEngins, ChoixType, RameAPoser } from './PanneauEngins.tsx'
 import { CalqueFleches, ChoixTypeFleche, PanneauFleche } from './PanneauFleches.tsx'
-import { PanneauCreneau, PanneauLegende, PanneauPhasage, PanneauZone } from './PanneauImage.tsx'
+import { CalqueCommentaires, PanneauCommentaire } from './PanneauCommentaires.tsx'
+import { PanneauExploitation } from './PanneauExploitation.tsx'
+import { PanneauCreneau, PanneauLegende, PanneauPhasage, PanneauFondSynoptique, PanneauNumerosEngins, PanneauZone, PanneauZonesAffichees } from './PanneauImage.tsx'
 import { DessinPlanche } from './Planche.tsx'
 import { POLICE, styleBouton, styleBoutonDanger, styleBoutonPrincipal, styleChamp, styleDiscret, styleTitreSection } from './styles.ts'
 import type { Message } from './useEditeur.ts'
@@ -42,7 +44,9 @@ import { RAISON_SANS_ECHELLE, TOUCHES_IMAGE, useEditeurImage, type EditeurImage,
 // montre la légende. Chaque image a ses propres engins, flèches et états de
 // zones ; « Nouvelle image » les recopie, il ne reste qu'à changer ce qui
 // bouge. Horaires, nombre d'images et propriétés du synoptique (dont le
-// bandeau de titre et cartouche) se modifient aussi — le tout avec Annuler /
+// bandeau de titre, le cartouche, les zones affichées, l'opacité du fond et
+// les numéros des engins)
+// se modifient aussi — le tout avec Annuler /
 // Rétablir. « Exporter… » produit le PowerPoint ou le PDF des images, sans
 // rien modifier.
 
@@ -155,11 +159,12 @@ function FenetreCadrage(props: { synoptique: Synoptique; index: number; valider:
 }
 
 const OUTILS_IMAGE: { outil: OutilImage; libelle: string; titre: string }[] = [
-  { outil: 'selection', libelle: 'Sélection', titre: 'Choisir un engin ou une rame (le glisser, le supprimer), ou une zone (changer son état)' },
+  { outil: 'selection', libelle: 'Sélection', titre: 'Choisir un engin, une rame, une flèche ou un commentaire (le glisser, le supprimer), ou une zone (changer son état)' },
   { outil: 'main', libelle: 'Main', titre: 'Déplacer la vue' },
   { outil: 'engin', libelle: 'Engin', titre: "Engin à l'échelle : sur une voie (il la suit) ou hors voie" },
   { outil: 'rame', libelle: 'Rame', titre: 'Train : véhicules bout à bout le long d’une voie' },
   { outil: 'fleche', libelle: 'Flèche', titre: 'Flèche : sens de travail, avancement du TTX, cheminement, chemin de roule…' },
+  { outil: 'texte', libelle: 'Texte', titre: 'Commentaire posé sur l’image : « RCT en place », « Enraillement sur platelage »…' },
 ]
 
 // Outils de l'image courante : Engin et Rame sont grisés tant que le
@@ -222,15 +227,20 @@ function consigne(editeur: EditeurImage): string {
       return editeur.typeFleche
         ? `Flèche « ${editeur.typeFleche.nom} » : un clic par point · double-clic ou Entrée pour finir · Maj : horizontal, vertical, 45° · Suppr : retirer le dernier point · Échap : annuler`
         : 'Liste des flèches vide : ajoutez des types dans la page du chantier'
+    case 'texte':
+      return `Cliquez sur l'image pour y poser un commentaire (son coin haut gauche) · double-clic sur un commentaire : modifier son texte sur place (Entrée : valider, Maj+Entrée : à la ligne, Échap : annuler)${fleches}`
     case 'main':
       return `Glissez pour déplacer la vue · molette : zoom${fleches}`
     case 'selection':
+      if (editeur.commentaire) {
+        return `Commentaire choisi : glissez-le pour le déplacer · double-clic : modifier son texte sur place (Entrée : valider, Maj+Entrée : à la ligne, Échap : annuler), ou dans le panneau · Suppr : le retirer de cette image · Échap : le libérer${fleches}`
+      }
       if (editeur.fleche) {
         return `Flèche choisie : glissez un point rond pour le déplacer (Maj : horizontal, vertical, 45°), ou le trait pour déplacer toute la flèche · Suppr : la retirer de cette image · Échap : la libérer${fleches}`
       }
       return editeur.zone
         ? `Zone « ${editeur.zone.nom} » : choisissez son état dans le panneau, ou touches 1 à ${Math.min(9, editeur.etatsVoie.length)} · Échap : la libérer${fleches}`
-        : `Cliquez un engin, une rame ou une flèche pour le choisir, puis glissez-le · cliquez une zone pour changer son état · Suppr : retirer de cette image · molette : zoom${fleches}`
+        : `Cliquez un engin, une rame, une flèche ou un commentaire pour le choisir, puis glissez-le · cliquez une zone pour changer son état ou ses coupes · Suppr : retirer de cette image · molette : zoom${fleches}`
   }
 }
 
@@ -278,6 +288,7 @@ export function EcranSynoptique(props: {
     catalogue: chantier.catalogue,
     etatsVoie: chantier.etatsVoie,
     typesFleches: chantier.typesFleches,
+    etatsExploitation: chantier.etatsExploitation,
     setMessage,
   })
 
@@ -510,9 +521,13 @@ export function EcranSynoptique(props: {
         >
           <PanneauZone editeur={editeur} />
           <PanneauFleche editeur={editeur} />
+          <PanneauCommentaire editeur={editeur} />
           {editeur.outil === 'engin' && <ChoixType editeur={editeur} />}
           {editeur.outil === 'rame' && <RameAPoser editeur={editeur} />}
           {editeur.outil === 'fleche' && <ChoixTypeFleche editeur={editeur} />}
+          <PanneauZonesAffichees synoptique={s} modifier={(suivant, cle = null) => modifier(suivant, index, cle)} />
+          <PanneauFondSynoptique synoptique={s} index={index} modifier={(suivant, cle = null) => modifier(suivant, index, cle)} />
+          <PanneauNumerosEngins synoptique={s} modifier={(suivant, cle = null) => modifier(suivant, index, cle)} />
           <Section titre={`Image ${index + 1} sur ${s.images.length}`}>
             <ChampInstant libelle="Début" valeur={instantDepuisT0(s.t0, image.debut)} changer={horaireImage('debut')} />
             <ChampInstant libelle="Fin" valeur={instantDepuisT0(s.t0, image.fin)} changer={horaireImage('fin')} />
@@ -531,6 +546,8 @@ export function EcranSynoptique(props: {
           <PanneauLegende synoptique={s} index={index} listes={editeur.listes} modifier={(suivant, cle = null) => modifier(suivant, index, cle)} />
           <CalqueEngins editeur={editeur} />
           <CalqueFleches editeur={editeur} />
+          <CalqueCommentaires editeur={editeur} />
+          <PanneauExploitation editeur={editeur} />
           <Section titre="Synoptique">
             <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
               <span style={{ width: 40, flexShrink: 0 }}>Nom</span>

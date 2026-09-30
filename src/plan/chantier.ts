@@ -14,6 +14,18 @@ import {
 } from './etatsVoie.ts'
 import { imagesAvecEtat, remplacerEtat } from './etatsZones.ts'
 import {
+  ajouterEtatExploitation,
+  CALQUE_EXPLOITATION_PAR_DEFAUT,
+  creerEtatsExploitation,
+  deplacerEtatExploitation,
+  imagesAvecEtatExploitation,
+  modifierEtatExploitation,
+  retirerEtatExploitation,
+  type ChampsEtatExploitation,
+  type EtatExploitation,
+} from './exploitation.ts'
+import { CALQUE_COMMENTAIRES_PAR_DEFAUT } from './commentaires.ts'
+import {
   ajouterTypeFleche,
   creerTypesFleches,
   deplacerTypeFleche,
@@ -49,6 +61,9 @@ export type Chantier = {
   // Les types de flèches qu'on trace dans les images (sens de travail,
   // chemin de roule…), dans l'ordre de la légende.
   typesFleches: TypeFleche[]
+  // Les états d'exploitation qu'on attribue aux voies dans les images
+  // (Interceptée, Annoncée…), dans l'ordre de la légende.
+  etatsExploitation: EtatExploitation[]
 }
 
 export function creerChantier(id: string, nom: string, maintenant: string): Chantier {
@@ -61,6 +76,7 @@ export function creerChantier(id: string, nom: string, maintenant: string): Chan
     catalogue: creerCatalogue(),
     etatsVoie: creerEtatsVoie(),
     typesFleches: creerTypesFleches(),
+    etatsExploitation: creerEtatsExploitation(),
   }
 }
 
@@ -239,6 +255,37 @@ export const supprimerTypeFlecheChantier = (c: Chantier, id: string): Chantier =
   synoptiques: c.synoptiques.map((s) => retirerFlechesDuType(s, id)),
 })
 
+// ——— États d'exploitation des voies ———
+//
+// Comme les types de flèches : les voies des images désignent un état de la
+// liste, changer la couleur d'un état change toutes les images qui l'utilisent.
+
+export function ajouterEtatExploitationChantier(c: Chantier, nom: string): Resultat<{ chantier: Chantier; id: string }> {
+  const r = ajouterEtatExploitation(c.etatsExploitation, nom)
+  return r.ok ? { ok: true, valeur: { id: r.valeur.id, chantier: { ...c, etatsExploitation: r.valeur.liste } } } : r
+}
+
+export function modifierEtatExploitationChantier(c: Chantier, id: string, champs: ChampsEtatExploitation): Resultat<Chantier> {
+  const r = modifierEtatExploitation(c.etatsExploitation, id, champs)
+  return r.ok ? { ok: true, valeur: { ...c, etatsExploitation: r.valeur } } : r
+}
+
+export const deplacerEtatExploitationChantier = (c: Chantier, id: string, vers: -1 | 1): Chantier => ({
+  ...c,
+  etatsExploitation: deplacerEtatExploitation(c.etatsExploitation, id, vers),
+})
+
+// Nombre d'images du chantier où une voie est dans cet état (pour la
+// confirmation avant de le supprimer).
+export const imagesDeLEtatExploitation = (c: Chantier, id: string): number => imagesAvecEtatExploitation(c.synoptiques, id)
+
+// Supprime un état de la liste : les voies qui y étaient n'ont plus d'état.
+export const supprimerEtatExploitationChantier = (c: Chantier, id: string): Chantier => ({
+  ...c,
+  etatsExploitation: c.etatsExploitation.filter((e) => e.id !== id),
+  synoptiques: c.synoptiques.map((s) => retirerEtatExploitation(s, id)),
+})
+
 // ——— Synoptiques ———
 
 export function ajouterSynoptique(
@@ -318,13 +365,21 @@ export function chantierRecupere(id: string, projet: Projet, maintenant: string)
 // correction de l'étape 5 peut avoir des engins sur ses plans : ils en sont
 // retirés, avec un avis par plan à montrer une fois (le chantier corrigé est
 // aussitôt réenregistré). Les engins de ses synoptiques restent dans leurs
-// images.
+// images. Avant l'étape 10, il n'a ni états d'exploitation, ni commentaires,
+// ni coupes : il reçoit la liste d'états d'exploitation par défaut, et ses
+// images n'ont ni hachures, ni commentaires, ni coupes. Avant le complément
+// de l'étape 10, ses synoptiques n'ont pas de zones masquées : toutes leurs
+// zones sont affichées, et les numéros de leurs engins aussi.
 type Souple = Record<string, unknown>
 
 // Calques d'un plan ou d'une image : ceux d'aujourd'hui, sans le calque
-// « Engins » que les plans avaient avant la correction de l'étape 5.
+// « Engins » que les plans avaient avant la correction de l'étape 5. Un
+// calque « Fond » incomplet reçoit ce qui lui manque (opacité pleine…) : le
+// curseur d'opacité du synoptique en a besoin.
 const calquesDe = (brut: unknown): Souple => {
-  const calques = { ...creerCalques(), ...(brut as Souple) }
+  const defaut = creerCalques()
+  const lu = (brut ?? {}) as Souple
+  const calques = { ...defaut, ...lu, fond: { ...defaut.fond, ...(lu.fond as Souple | undefined) } }
   return Object.fromEntries(Object.entries(calques).filter(([nom]) => nom === 'fond' || (CALQUES_ELEMENTS as readonly string[]).includes(nom)))
 }
 
@@ -348,12 +403,17 @@ export function migrerChantier(brut: Chantier): { chantier: Chantier; avis: stri
     catalogue: c.catalogue ?? creerCatalogue(),
     etatsVoie: c.etatsVoie ?? creerEtatsVoie(),
     typesFleches: c.typesFleches ?? creerTypesFleches(),
+    etatsExploitation: c.etatsExploitation ?? creerEtatsExploitation(),
     plans: c.plans.map((p) => ({ ...p, projet: migrerPlan(p.projet, avis) })),
     synoptiques: c.synoptiques.map((s) => ({
       echelle: null,
       calqueEngins: { ...CALQUE_ENGINS_PAR_DEFAUT },
       calqueFleches: { ...CALQUE_FLECHES_PAR_DEFAUT },
+      calqueExploitation: { ...CALQUE_EXPLOITATION_PAR_DEFAUT },
+      calqueCommentaires: { ...CALQUE_COMMENTAIRES_PAR_DEFAUT },
       afficherLegende: true,
+      zonesMasquees: [],
+      numerosEngins: true,
       bandeau: '',
       ...s,
       cartouche: lireCartouche(s.cartouche),
@@ -366,6 +426,9 @@ export function migrerChantier(brut: Chantier): { chantier: Chantier; avis: stri
         contenu: {
           etatsZones: {},
           fleches: [],
+          exploitation: {},
+          commentaires: [],
+          coupes: {},
           ...im.contenu,
           engins: (im.contenu.engins ?? []).map((e) => ({ description: '', ...e })),
           rames: (im.contenu.rames ?? []).map((r) => ({ description: '', ...r })),

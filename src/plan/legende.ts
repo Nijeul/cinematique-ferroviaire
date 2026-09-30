@@ -1,10 +1,14 @@
 import type { DimensionsEngin, TypeEngin } from './catalogue.ts'
+import { pasPresents, texteCoupes } from './coupes.ts'
 import { formaterMetres } from './echelle.ts'
 import { groupesDeVehicules, longueurRame, texteComposition, type Engin, type Rame } from './engins.ts'
 import type { EtatVoie } from './etatsVoie.ts'
 import { etatDeZone } from './etatsZones.ts'
+import { etatsExploitationPresents, type EtatExploitation } from './exploitation.ts'
 import type { TypeFleche } from './fleches.ts'
 import type { Synoptique } from './synoptique.ts'
+import { enginsAffiches } from './numerosEngins.ts'
+import { zonesVisibles } from './zonesAffichees.ts'
 
 // La légende d'une image de synoptique, construite d'après ce que l'image
 // montre, et seulement cela — comme sur les planches du commanditaire, où
@@ -13,19 +17,37 @@ import type { Synoptique } from './synoptique.ts'
 // commanditaire voulait « mieux expliqués » :
 //
 // - chaque engin ou rame qui a un numéro : « 1 — Pelle RR », suivi de sa
-//   description facultative (« déblais ») ;
+//   description facultative (« déblais ») — si les numéros sont affichés sur
+//   l'image (case « Numéros des engins sur l'image » du synoptique) ; sinon,
+//   il est légendé comme un engin sans numéro ;
 // - les engins sans numéro, regroupés quand ils sont pareils : « Pelle RR ×2 » ;
 // - les rames : leur nom (« TTX 1 »), leur description, leur composition
 //   courte ou leur longueur ;
 // - les états de la voie présents, sauf le premier (Avant travaux : la
 //   couleur propre de chaque zone, qui n'explique rien) ;
+// - les coupes de tronçonnage (« Coupes rail tous les 6 m ») ;
+// - les états d'exploitation présents, avec leurs voies (« Interceptée
+//   (Voie 2, Voie 4) ») ;
 // - les types de flèches présents.
 //
 // Chaque ligne a une clé : on peut la masquer sur une image précise. La case
 // « Afficher la légende » du synoptique la masque sur toutes les images.
 
 // Les listes du chantier dont la légende a besoin.
-export type ListesChantier = { etatsVoie: EtatVoie[]; typesFleches: TypeFleche[]; catalogue: TypeEngin[] }
+export type ListesChantier = {
+  etatsVoie: EtatVoie[]
+  typesFleches: TypeFleche[]
+  catalogue: TypeEngin[]
+  etatsExploitation: EtatExploitation[]
+}
+
+// Les listes d'un chantier, telles que la légende et le dessin les utilisent.
+export const listesDe = (c: ListesChantier): ListesChantier => ({
+  etatsVoie: c.etatsVoie,
+  typesFleches: c.typesFleches,
+  catalogue: c.catalogue,
+  etatsExploitation: c.etatsExploitation,
+})
 
 type Base = {
   // Identifie la ligne dans l'image (pour la masquer).
@@ -41,6 +63,8 @@ export type EntreeLegende =
   | (Base & { genre: 'rame'; numero: string; couleurPastille: string; couleurs: string[] })
   | (Base & { genre: 'etat'; etat: EtatVoie })
   | (Base & { genre: 'fleche'; type: TypeFleche })
+  | (Base & { genre: 'coupes'; pas: number })
+  | (Base & { genre: 'exploitation'; etatExploitation: EtatExploitation })
 
 export const nomEnGras = (e: EntreeLegende): boolean => e.genre === 'engin' || e.genre === 'rame'
 
@@ -126,13 +150,18 @@ function entreesEngins(engins: Engin[], rames: Rame[], catalogue: TypeEngin[]): 
 }
 
 // Toutes les lignes que la légende de l'image aurait, masquées comprises,
-// dans l'ordre : rames, engins numérotés, autres engins, états, flèches. Ce
-// qui est sur un calque masqué n'est pas sur la planche : pas dans la légende.
+// dans l'ordre : rames, engins numérotés, autres engins, états, coupes,
+// exploitation, flèches. Ce qui est sur un calque masqué n'est pas sur la
+// planche : pas dans la légende. De même pour les zones masquées du
+// synoptique : ni leur état, ni leurs coupes n'y figurent.
 export function entreesLegende(s: Synoptique, index: number, listes: ListesChantier): EntreeLegende[] {
   const image = s.images[index]
   if (!image) return []
-  const contenu = image.contenu
-  const engins = s.calqueEngins.visible && s.echelle ? entreesEngins(contenu.engins, contenu.rames, listes.catalogue) : []
+  const contenu = { ...image.contenu, zones: zonesVisibles(s, image.contenu.zones) }
+  // Numéros masqués sur l'image : pas de numéro dans la légende non plus ;
+  // les engins pareils (même nom, couleur et description) sont regroupés.
+  const affiches = enginsAffiches(s, contenu)
+  const engins = s.calqueEngins.visible && s.echelle ? entreesEngins(affiches.engins, affiches.rames, listes.catalogue) : []
 
   const etats: EntreeLegende[] = []
   if (contenu.calques.zones.visible) {
@@ -148,6 +177,22 @@ export function entreesLegende(s: Synoptique, index: number, listes: ListesChant
     }
   }
 
+  const coupes: EntreeLegende[] =
+    contenu.calques.zones.visible && s.echelle
+      ? pasPresents(contenu).map((pas) => ({ genre: 'coupes', cle: `coupes:${pas}`, nom: texteCoupes(pas), complement: '', pas }))
+      : []
+
+  const exploitation: EntreeLegende[] =
+    s.calqueExploitation.visible && contenu.calques.voies.visible
+      ? etatsExploitationPresents(contenu, listes.etatsExploitation).map(({ etat, voies }) => ({
+          genre: 'exploitation',
+          cle: `exploitation:${etat.id}`,
+          nom: etat.nom,
+          complement: `(${voies.join(', ')})`,
+          etatExploitation: etat,
+        }))
+      : []
+
   const fleches: EntreeLegende[] = []
   if (s.calqueFleches.visible) {
     const presents = new Set(contenu.fleches.map((f) => f.typeId))
@@ -155,7 +200,7 @@ export function entreesLegende(s: Synoptique, index: number, listes: ListesChant
       if (presents.has(type.id)) fleches.push({ genre: 'fleche', cle: `fleche:${type.id}`, nom: type.nom, complement: '', type })
     }
   }
-  return [...engins, ...etats, ...fleches]
+  return [...engins, ...etats, ...coupes, ...exploitation, ...fleches]
 }
 
 // Ce que la légende de l'image montre : rien si la case « Afficher la

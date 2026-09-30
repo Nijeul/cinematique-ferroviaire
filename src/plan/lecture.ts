@@ -23,6 +23,9 @@ import type { Engin, EnginsEtRames, Rame, Vehicule } from './engins.ts'
 import type { EtatVoie, RenduEtat } from './etatsVoie.ts'
 import { EPAISSEUR_FLECHE_MAX, EPAISSEUR_FLECHE_MIN, POINTES, STYLES_TRAIT, type Fleche, type Pointes, type StyleTrait, type TypeFleche } from './fleches.ts'
 import { longueurPolyligne } from './trace.ts'
+import type { Commentaire } from './commentaires.ts'
+import { erreurPasCoupes, type Coupes } from './coupes.ts'
+import type { EtatExploitation, ExploitationVoies } from './exploitation.ts'
 
 // Lecture et vérification d'un projet enregistré. Les erreurs sont en
 // français, prêtes à afficher ; aucune exception ne sort d'ici.
@@ -356,6 +359,74 @@ export function lireFleches(brut: unknown, types: Set<string>, erreurs: string[]
       libelle: typeof f.libelle === 'string' ? f.libelle : '',
     }
   })
+}
+
+// La liste des états d'exploitation des voies d'un chantier.
+export function lireEtatsExploitation(brut: unknown, erreurs: string[]): EtatExploitation[] {
+  return lireListe(brut, "État d'exploitation", erreurs, (e, libelle): EtatExploitation | null => {
+    const debut = erreurs.length
+    if (typeof e.nom !== 'string' || e.nom.trim() === '') erreurs.push(`${libelle} : nom manquant.`)
+    verifierCouleur(e.couleur, libelle, erreurs)
+    if (erreurs.length > debut) return null
+    return { id: e.id as string, nom: e.nom as string, couleur: (e.couleur as string).toLowerCase() }
+  })
+}
+
+// L'état d'exploitation des voies d'une image : chaque voie doit exister dans
+// l'image, et son état dans la liste du chantier.
+export function lireExploitation(brut: unknown, voies: Voie[], etats: Set<string>, erreurs: string[]): ExploitationVoies {
+  if (brut === undefined) return {}
+  if (!estObjet(brut)) {
+    erreurs.push("L'état d'exploitation des voies est illisible.")
+    return {}
+  }
+  const resultat: ExploitationVoies = {}
+  for (const [voieId, etat] of Object.entries(brut)) {
+    const voie = voies.find((v) => v.id === voieId)
+    if (!voie) erreurs.push(`Exploitation : la voie « ${voieId} » n'existe pas dans l'image.`)
+    else if (typeof etat !== 'string' || !etats.has(etat)) erreurs.push(`Exploitation de la voie « ${voie.nom} » : état inconnu dans la liste du chantier.`)
+    else resultat[voieId] = etat
+  }
+  return resultat
+}
+
+// Les commentaires d'une image.
+export function lireCommentaires(brut: unknown, erreurs: string[]): Commentaire[] {
+  return lireListe(brut, 'Commentaire', erreurs, (c, libelle): Commentaire | null => {
+    const debut = erreurs.length
+    if (typeof c.texte !== 'string') erreurs.push(`${libelle} : texte manquant.`)
+    if (!estNombre(c.x) || !estNombre(c.y)) erreurs.push(`${libelle} : position (x, y) illisible.`)
+    if (!estNombre(c.taille) || c.taille < 0.3 || c.taille > 5) erreurs.push(`${libelle} : taille illisible.`)
+    verifierCouleur(c.couleur, libelle, erreurs)
+    if (erreurs.length > debut) return null
+    return {
+      id: c.id as string,
+      texte: c.texte as string,
+      x: c.x as number,
+      y: c.y as number,
+      taille: c.taille as number,
+      couleur: (c.couleur as string).toLowerCase(),
+      gras: c.gras !== false,
+      encadre: c.encadre !== false,
+    }
+  })
+}
+
+// Les coupes de tronçonnage d'une image : chaque zone doit exister dans l'image.
+export function lireCoupes(brut: unknown, zones: Zone[], erreurs: string[]): Coupes {
+  if (brut === undefined) return {}
+  if (!estObjet(brut)) {
+    erreurs.push('Les coupes de tronçonnage sont illisibles.')
+    return {}
+  }
+  const resultat: Coupes = {}
+  for (const [zoneId, pas] of Object.entries(brut)) {
+    const zone = zones.find((z) => z.id === zoneId)
+    if (!zone) erreurs.push(`Coupes : la zone « ${zoneId} » n'existe pas dans l'image.`)
+    else if (!estNombre(pas) || erreurPasCoupes(pas)) erreurs.push(`Coupes de la zone « ${zone.nom} » : écart illisible.`)
+    else resultat[zoneId] = pas
+  }
+  return resultat
 }
 
 const libelleEngin = (e: Brut, libelle: string): string =>
