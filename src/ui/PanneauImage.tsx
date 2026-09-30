@@ -13,6 +13,7 @@ import {
   supprimerEtape,
 } from '../plan/planche.ts'
 import { modifierOpaciteFond, pourcentOpaciteFond } from '../plan/fondSynoptique.ts'
+import { modifierNumerosEngins } from '../plan/numerosEngins.ts'
 import type { HeuresCreneau, Synoptique } from '../plan/synoptique.ts'
 import { afficherToutesLesZones, afficherZone, texteZonesAffichees, zonesDuSynoptique } from '../plan/zonesAffichees.ts'
 import { COULEURS } from './couleurs.ts'
@@ -527,6 +528,33 @@ export function PanneauFondSynoptique(props: { synoptique: Synoptique; index: nu
         {sansFond
           ? "Ce synoptique n'a pas de fond de plan."
           : `Pour toutes les images de ce synoptique et ses exports. Le plan « ${s.origine.nomPlan} » ne change pas.`}
+      </p>
+    </Section>
+  )
+}
+
+// ——— Numéros des engins ———
+
+// Bulles numérotées des engins et des rames, pour toutes les images du
+// synoptique. Décochée : plus de bulles, ni de numéros dans la légende ; les
+// numéros restent enregistrés et reviennent quand on la recoche.
+export function PanneauNumerosEngins(props: { synoptique: Synoptique; modifier: Modifier }) {
+  const { synoptique: s, modifier } = props
+  return (
+    <Section titre="Numéros des engins" testid="panneau-numeros-engins">
+      <label style={{ ...styles.ligne, fontWeight: 600 }}>
+        <input
+          type="checkbox"
+          checked={s.numerosEngins}
+          aria-label="Numéros des engins sur l'image"
+          onChange={(e) => modifier(modifierNumerosEngins(s, e.target.checked))}
+        />
+        Numéros des engins sur l'image
+      </label>
+      <p style={styles.discret}>
+        {s.numerosEngins
+          ? 'Les bulles numérotées des engins et des rames s’affichent sur toutes les images, les numéros aussi dans la légende.'
+          : 'Aucune bulle numérotée sur les images ni dans les exports ; la légende garde les descriptions, sans numéro. Les numéros restent enregistrés sur chaque engin.'}
       </p>
     </Section>
   )

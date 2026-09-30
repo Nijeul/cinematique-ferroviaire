@@ -70,9 +70,10 @@ src/
               par défaut) et flèches des images : pointes, double trait, contrainte Maj,
               sélection (fleches.ts), états d'exploitation d'un chantier (liste par défaut) et
               des voies de chaque image, hachures (exploitation.ts), commentaires des images
-              (commentaires.ts), coupes de tronçonnage des zones (coupes.ts), zones
+              (commentaires.ts, dont leur édition sur l'image : touches, validation), coupes de tronçonnage des zones (coupes.ts), zones
               affichées ou masquées de chaque synoptique (zonesAffichees.ts), opacité du
-              fond de plan d'un synoptique, écrite dans toutes ses images (fondSynoptique.ts), légende de
+              fond de plan d'un synoptique, écrite dans toutes ses images (fondSynoptique.ts),
+              numéros des engins affichés ou non sur les images (numerosEngins.ts), légende de
               chaque image construite d'après ce qu'elle montre (legende.ts), mise en page d'une image en planche : bandeau de titre,
               créneau horaire, encart PHASAGE et ses étapes, cadre LÉGENDE en colonnes
               (planche.ts), cartouche de la page de garde (cartouche.ts), exports : choix
@@ -92,13 +93,13 @@ src/
               (TypesFleches) et son catalogue, assistant « Nouveau plan », plan, synoptique),
               calage de l'échelle (plan et synoptique), dessin SVG du plan, des engins, des
               zones selon leur état (DessinEtats), des flèches (DessinFleches), des hachures
-              d'exploitation et des coupes (DessinExploitation), des commentaires
-              (DessinCommentaires) et de la
+              d'exploitation et des coupes (DessinExploitation), des commentaires et de leur
+              édition sur l'image au double-clic (DessinCommentaires) et de la
               planche entière avec sa légende (Planche), panneau Calques du plan, édition de
               l'image courante d'un synoptique (useEditeurImage, ImageDeTravail,
               PanneauEngins, PanneauFleches, PanneauCommentaires, PanneauExploitation,
               PanneauImage : zone choisie et ses coupes, créneau, phasage, légende, zones
-              affichées, opacité du fond), fenêtres « Exporter… » et cartouche (FenetreExport), rendu d'une
+              affichées, opacité du fond, numéros des engins), fenêtres « Exporter… » et cartouche (FenetreExport), rendu d'une
               planche en image pour les exports, avec le même dessin que l'écran
               (rendrePlanche), export image après image (exporter), connexion, nouveau mot de
               passe et compte non membre (EcranConnexion), page Équipe (EcranEquipe), mémoire

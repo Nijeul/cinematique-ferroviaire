@@ -108,6 +108,27 @@ export function modifierCommentaire(liste: Commentaire[], id: string, champs: Ch
   return remplacer(liste, id, (c) => ({ ...c, ...champs }))
 }
 
+// ——— Édition sur l'image ———
+
+// Un double-clic sur un commentaire ouvre son texte à sa place, sur l'image.
+// Entrée valide, Maj+Entrée va à la ligne, Échap annule ; cliquer ailleurs
+// valide aussi.
+export type ActionToucheEdition = 'valider' | 'aLaLigne' | 'annuler' | null
+
+export function actionToucheEdition(touche: string, maj: boolean): ActionToucheEdition {
+  if (touche === 'Escape') return 'annuler'
+  if (touche === 'Enter') return maj ? 'aLaLigne' : 'valider'
+  return null
+}
+
+// Le texte tapé sur l'image, validé : la même liste s'il n'a pas changé (rien
+// à annuler), sinon une seule modification (un seul Ctrl+Z).
+export function validerTexteCommentaire(liste: Commentaire[], id: string, texte: string): Commentaire[] {
+  const c = liste.find((x) => x.id === id)
+  if (!c || c.texte === texte) return liste
+  return modifierCommentaire(liste, id, { texte })
+}
+
 export const deplacerCommentaire = (liste: Commentaire[], id: string, decalage: Point): Commentaire[] =>
   remplacer(liste, id, (c) => ({ ...c, x: c.x + decalage.x, y: c.y + decalage.y }))
 

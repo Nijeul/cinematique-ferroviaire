@@ -7,6 +7,7 @@ import { etatDeZone } from './etatsZones.ts'
 import { etatsExploitationPresents, type EtatExploitation } from './exploitation.ts'
 import type { TypeFleche } from './fleches.ts'
 import type { Synoptique } from './synoptique.ts'
+import { enginsAffiches } from './numerosEngins.ts'
 import { zonesVisibles } from './zonesAffichees.ts'
 
 // La légende d'une image de synoptique, construite d'après ce que l'image
@@ -16,7 +17,9 @@ import { zonesVisibles } from './zonesAffichees.ts'
 // commanditaire voulait « mieux expliqués » :
 //
 // - chaque engin ou rame qui a un numéro : « 1 — Pelle RR », suivi de sa
-//   description facultative (« déblais ») ;
+//   description facultative (« déblais ») — si les numéros sont affichés sur
+//   l'image (case « Numéros des engins sur l'image » du synoptique) ; sinon,
+//   il est légendé comme un engin sans numéro ;
 // - les engins sans numéro, regroupés quand ils sont pareils : « Pelle RR ×2 » ;
 // - les rames : leur nom (« TTX 1 »), leur description, leur composition
 //   courte ou leur longueur ;
@@ -155,7 +158,10 @@ export function entreesLegende(s: Synoptique, index: number, listes: ListesChant
   const image = s.images[index]
   if (!image) return []
   const contenu = { ...image.contenu, zones: zonesVisibles(s, image.contenu.zones) }
-  const engins = s.calqueEngins.visible && s.echelle ? entreesEngins(contenu.engins, contenu.rames, listes.catalogue) : []
+  // Numéros masqués sur l'image : pas de numéro dans la légende non plus ;
+  // les engins pareils (même nom, couleur et description) sont regroupés.
+  const affiches = enginsAffiches(s, contenu)
+  const engins = s.calqueEngins.visible && s.echelle ? entreesEngins(affiches.engins, affiches.rames, listes.catalogue) : []
 
   const etats: EntreeLegende[] = []
   if (contenu.calques.zones.visible) {

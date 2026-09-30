@@ -96,6 +96,9 @@ export type Synoptique = {
   // Zones masquées dans toutes les images (voir zonesAffichees.ts) ; vide :
   // toutes affichées. Leurs états et coupes restent dans les images.
   zonesMasquees: ZonesMasquees
+  // Bulles numérotées des engins et des rames sur les images (voir
+  // numerosEngins.ts) ; les numéros restent enregistrés sur les engins.
+  numerosEngins: boolean
   // Bandeau de titre, en haut de chaque image (une ou plusieurs lignes) ;
   // vide : pas de bandeau.
   bandeau: string
@@ -239,6 +242,7 @@ export function creerSynoptique(
     calqueCommentaires: { ...CALQUE_COMMENTAIRES_PAR_DEFAUT },
     afficherLegende: true,
     zonesMasquees: [],
+    numerosEngins: true,
     bandeau: '',
     cartouche: creerCartouche(),
     images: [nouvelleImageVide('image-1', 0, demande.fin, contenuDe(projet))],

@@ -73,7 +73,7 @@ export function PanneauCommentaire({ editeur }: { editeur: EditeurImage }) {
             Encadré
           </label>
         </div>
-        <p style={styles.discret}>Glissez le commentaire sur l'image pour le placer. Il sort en zone de texte modifiable dans l'export PowerPoint.</p>
+        <p style={styles.discret}>Glissez le commentaire sur l'image pour le placer ; double-cliquez dessus pour modifier son texte sur place. Il sort en zone de texte modifiable dans l'export PowerPoint.</p>
         <button
           style={{ ...styles.petitBouton, color: COULEURS.erreur, marginTop: 4 }}
           onClick={() => editeur.supprimerCommentaire(commentaire.id)}

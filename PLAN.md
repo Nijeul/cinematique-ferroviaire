@@ -500,6 +500,23 @@ coupes » ; « les wagons ne doivent jamais disparaître s'ils sont là ».
   du plan) ; le curseur l'écrit dans toutes les images. Fichier toujours en **version 6** ; un
   calque « Fond » incomplet d'un chantier gardé dans le navigateur reçoit l'opacité pleine.
   Curseur grisé si le synoptique n'a pas de fond.
+- **Numéros des engins sur l'image** (retour du commanditaire : « Il ne faut pas afficher les
+  numéros des pelles dans les bulles sur les images, c'est pas lisible. ») : case « Numéros
+  des engins sur l'image » (panneau « Numéros des engins », sous « Fond de plan »), pour tout
+  le synoptique. Décochée : aucune bulle numérotée (engins et rames) sur l'image de travail,
+  la planche, les vignettes et les exports ; la légende ne cite plus les numéros mais garde les
+  descriptions (« Pelle RR déballastage ») ; deux engins pareils de même description sont
+  regroupés (« Pelle RR ×2 déballastage »), deux descriptions différentes font deux lignes.
+  Les numéros restent enregistrés sur chaque engin : recochée, tout revient. Par défaut
+  (nouveaux et anciens synoptiques) : cochée. Champ facultatif `numerosEngins`, version 6.
+- **Modifier un commentaire en cliquant dessus** (« c'est bien de pouvoir modifier en cliquant
+  directement dessus ») : avec l'outil Sélection ou Texte, un **double-clic** sur un
+  commentaire ouvre son texte à sa place, sur l'image (même taille, police et couleur ; le
+  champ grandit avec le texte). **Entrée** valide, **Maj+Entrée** va à la ligne, **Échap**
+  annule ; un clic ailleurs valide. Une modification de texte s'annule d'un seul Ctrl+Z.
+  Pendant la frappe, aucun raccourci de l'écran (T, Suppr, flèches, Ctrl+Z…) ne se déclenche.
+  Un clic simple et un glissé choisissent et déplacent toujours le commentaire (avec l'outil
+  Texte aussi, au lieu d'en poser un nouveau par-dessus). L'édition dans le panneau reste.
 
 Questions ouvertes de l'étape 10 (choix provisoires en place) :
 

@@ -32,6 +32,7 @@ import {
   type ImageSynoptique,
   type Synoptique,
 } from './synoptique.ts'
+import { NUMEROS_ENGINS_PAR_DEFAUT } from './numerosEngins.ts'
 import { lireInstant } from './temps.ts'
 
 // Fichier d'un chantier entier — plans, synoptiques, fonds et catalogue
@@ -64,7 +65,8 @@ import { lireInstant } from './temps.ts'
 // (« version plus récente ») : elle ne peut donc pas l'abîmer.
 // Complément de l'étape 10, toujours en version 6 : zones masquées de chaque
 // synoptique (`zonesMasquees`), facultatives ; absentes, toutes les zones
-// sont affichées.
+// sont affichées. Case « Numéros des engins sur l'image » (`numerosEngins`),
+// facultative ; absente, les numéros sont affichés.
 
 export const FORMAT_CHANTIER = 'cinematique-ferroviaire/chantier'
 export const VERSION_CHANTIER = 6
@@ -316,6 +318,7 @@ function lireSynoptique(
     calqueCommentaires: lireCalque(brut.calqueCommentaires, CALQUE_COMMENTAIRES_PAR_DEFAUT),
     afficherLegende: typeof brut.afficherLegende === 'boolean' ? brut.afficherLegende : true,
     zonesMasquees,
+    numerosEngins: typeof brut.numerosEngins === 'boolean' ? brut.numerosEngins : NUMEROS_ENGINS_PAR_DEFAUT,
     bandeau: typeof brut.bandeau === 'string' ? brut.bandeau : '',
     cartouche: lireCartouche(brut.cartouche),
     images,

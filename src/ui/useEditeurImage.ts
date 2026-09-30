@@ -302,7 +302,7 @@ export function useEditeurImage(args: {
     enregistrer(calqueCommentaires.visible ? avec : modifierCalqueCommentaires(avec, { visible: true }))
     choisirCommentaire(r.id)
     setOutil('selection')
-    setMessage({ genre: 'info', texte: 'Commentaire posé : tapez son texte dans le panneau de droite (« Commentaire choisi »), glissez-le sur l’image pour le placer.' })
+    setMessage({ genre: 'info', texte: 'Commentaire posé : double-cliquez dessus pour taper son texte sur l’image (ou tapez-le dans le panneau de droite, « Commentaire choisi ») ; glissez-le pour le placer.' })
   }
 
   const supprimerLeCommentaire = (id: string) => {

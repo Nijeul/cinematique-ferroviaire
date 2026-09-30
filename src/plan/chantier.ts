@@ -369,7 +369,7 @@ export function chantierRecupere(id: string, projet: Projet, maintenant: string)
 // ni coupes : il reçoit la liste d'états d'exploitation par défaut, et ses
 // images n'ont ni hachures, ni commentaires, ni coupes. Avant le complément
 // de l'étape 10, ses synoptiques n'ont pas de zones masquées : toutes leurs
-// zones sont affichées.
+// zones sont affichées, et les numéros de leurs engins aussi.
 type Souple = Record<string, unknown>
 
 // Calques d'un plan ou d'une image : ceux d'aujourd'hui, sans le calque
@@ -413,6 +413,7 @@ export function migrerChantier(brut: Chantier): { chantier: Chantier; avis: stri
       calqueCommentaires: { ...CALQUE_COMMENTAIRES_PAR_DEFAUT },
       afficherLegende: true,
       zonesMasquees: [],
+      numerosEngins: true,
       bandeau: '',
       ...s,
       cartouche: lireCartouche(s.cartouche),

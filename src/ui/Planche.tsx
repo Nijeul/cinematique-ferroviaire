@@ -3,6 +3,7 @@ import { couleurTexteSur, type ReferenceEngin } from '../plan/engins.ts'
 import { uniteFleche } from '../plan/fleches.ts'
 import type { ListesChantier } from '../plan/legende.ts'
 import { BORDS_PLANCHE, COULEURS_PLANCHE, miseEnPage, type EntreePlacee, type LigneMixte, type LigneTexte } from '../plan/planche.ts'
+import { enginsAffiches } from '../plan/numerosEngins.ts'
 import { projetDeImage, type Synoptique } from '../plan/synoptique.ts'
 import { COULEURS } from './couleurs.ts'
 import { BarreEchelle, DessinEnginsImage } from './DessinEngins.tsx'
@@ -155,6 +156,8 @@ export function DessinPlanche(props: {
   zoneChoisie?: string | null
   flecheChoisie?: string | null
   commentaireChoisi?: string | null
+  // Commentaire en cours d'édition sur l'image : pas dessiné (son champ le remplace).
+  commentaireEnEdition?: string | null
   // Dessiné sur le plan, dans le cadrage (aperçu de pose, point d'accroche).
   surLaCarte?: ReactNode
   // Export PowerPoint « Textes modifiables » : le bandeau, le créneau,
@@ -193,7 +196,7 @@ export function DessinPlanche(props: {
           engins={
             <>
               <CoupesZones planche={planche} zoom={zoom} />
-              <DessinEnginsImage projet={planche} visible={s.calqueEngins.visible} zoom={zoom} estChoisi={props.estChoisi} />
+              <DessinEnginsImage projet={enginsAffiches(s, planche)} visible={s.calqueEngins.visible} zoom={zoom} estChoisi={props.estChoisi} />
               <DessinFlechesImage
                 planche={planche}
                 types={props.listes.typesFleches}
@@ -211,6 +214,7 @@ export function DessinPlanche(props: {
             visible={s.calqueCommentaires.visible}
             zoom={zoom}
             choisi={props.commentaireChoisi}
+            masque={props.commentaireEnEdition}
           />
         )}
         {/* Échelle graphique de la planche, en bas à droite du plan. */}
