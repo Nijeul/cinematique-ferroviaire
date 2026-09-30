@@ -267,6 +267,9 @@ export function DessinPlan(props: {
   estChoisi?: (genre: Genre, id: string) => boolean
   engins?: ReactNode
   sousLesVoies?: ReactNode
+  // Dans une planche, la feuille n'a pas de bord : un cadrage agrandi au-delà
+  // du plan ne montre pas de trait gris à la limite du fond.
+  sansBordFeuille?: boolean
   etats?: { liste: EtatVoie[]; parZone: EtatsZones }
 }) {
   const { projet } = props
@@ -291,7 +294,7 @@ export function DessinPlan(props: {
         width={projet.largeur}
         height={projet.hauteur}
         fill="#ffffff"
-        stroke={COULEURS.bordFeuille}
+        stroke={props.sansBordFeuille ? 'none' : COULEURS.bordFeuille}
         strokeWidth={1 / vue.zoom}
       />
       {fond && calques.fond.visible && fond.image && (

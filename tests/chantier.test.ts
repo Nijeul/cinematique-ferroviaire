@@ -187,10 +187,14 @@ describe('export et import d’un chantier', () => {
     expect(erreurs).toContain('heure de début illisible')
     const brut2 = JSON.parse(texteFixture)
     brut2.synoptiques[0].images[2].fin += 60
-    brut2.synoptiques[0].cadrage = { x: 1500, y: 0, largeur: 400, hauteur: 100 }
+    brut2.synoptiques[0].cadrage = { x: 1700, y: 0, largeur: 400, hauteur: 100 }
     const erreurs2 = erreursDe(brut2)
     expect(erreurs2).toContain('image 3 : horaires en dehors du synoptique')
-    expect(erreurs2).toContain('le cadrage sort du plan')
+    expect(erreurs2).toContain('le cadrage ne montre rien du plan')
+    // Un cadrage qui déborde du plan (rame garée au-delà du bout d'une voie) mais en montre une partie est accepté.
+    const brut4 = JSON.parse(texteFixture)
+    brut4.synoptiques[0].cadrage = { x: 1500, y: 600, largeur: 400, hauteur: 500 }
+    expect(lireChantier(JSON.stringify(brut4)).ok).toBe(true)
     const brut3 = JSON.parse(texteFixture)
     brut3.synoptiques[0].images = []
     expect(erreursDe(brut3)).toContain('au moins une image')

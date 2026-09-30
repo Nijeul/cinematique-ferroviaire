@@ -328,7 +328,7 @@ describe('changer un engin de voie', () => {
 describe('rame et cadrage : les wagons restent visibles', () => {
   const s = { cadrage: { x: 300, y: 100, largeur: 400, hauteur: 200 }, largeur: 1600, hauteur: 900 }
 
-  it('une rame qui sort du cadrage est repérée ; le cadrage s’agrandit juste assez, dans le plan', () => {
+  it('une rame qui sort du cadrage est repérée ; le cadrage s’agrandit juste assez', () => {
     const vehicules = Array.from({ length: 8 }, () => ({ typeId: type('R39').id, type: { ...type('R39') } }))
     const r = ajouterRame(plan(), vehicules, 'voie-1', 500)
     const emprise = empriseRame(r.planche, r.planche.rames[0])!
@@ -339,6 +339,11 @@ describe('rame et cadrage : les wagons restent visibles', () => {
     expect(horsCadrage({ ...s, cadrage }, emprise)).toBe(false)
     expect(cadrage.x).toBeCloseTo(emprise.x - 10, 6)
     expect(cadrage.y).toBe(100)
+    // Une rame garée au-delà du bout de la voie, hors du plan : le cadrage déborde du plan pour la montrer entière.
+    const loin = { x: 1500, y: 800, largeur: 400, hauteur: 300 }
+    const deborde = cadrageIncluant(s, loin, 10)!
+    expect(horsCadrage({ ...s, cadrage: deborde }, loin)).toBe(false)
+    expect(deborde.x + deborde.largeur).toBeGreaterThan(s.largeur)
     // Déjà dedans : même cadrage.
     expect(cadrageIncluant({ ...s, cadrage }, emprise, 10)).toBe(cadrage)
   })

@@ -168,17 +168,16 @@ export const rectangleAffiche = (s: Pick<Synoptique, 'cadrage' | 'largeur' | 'ha
   s.cadrage ?? { x: 0, y: 0, largeur: s.largeur, hauteur: s.hauteur }
 
 // Le cadrage agrandi juste ce qu'il faut pour contenir `r` (une rame…), avec
-// une marge, dans les limites du plan. Le même cadrage s'il le contient déjà.
+// une marge. Il peut sortir du plan : une rame garée au-delà du bout d'une
+// voie, hors du fond de plan, se voit alors en entier sur du papier blanc
+// (les wagons ne disparaissent jamais). Le même cadrage s'il le contient déjà.
 export function cadrageIncluant(s: Pick<Synoptique, 'cadrage' | 'largeur' | 'hauteur'>, r: Rectangle, marge: number): Rectangle | null {
   const actuel = rectangleAffiche(s)
-  const contient =
-    r.x >= actuel.x && r.y >= actuel.y && r.x + r.largeur <= actuel.x + actuel.largeur && r.y + r.hauteur <= actuel.y + actuel.hauteur
-  if (contient) return s.cadrage
-  const x1 = Math.max(0, Math.min(actuel.x, r.x - marge))
-  const y1 = Math.max(0, Math.min(actuel.y, r.y - marge))
-  const x2 = Math.min(s.largeur, Math.max(actuel.x + actuel.largeur, r.x + r.largeur + marge))
-  const y2 = Math.min(s.hauteur, Math.max(actuel.y + actuel.hauteur, r.y + r.hauteur + marge))
-  if (x1 <= 0 && y1 <= 0 && x2 >= s.largeur && y2 >= s.hauteur) return null
+  if (!horsCadrage(s, r)) return s.cadrage
+  const x1 = Math.min(actuel.x, r.x - marge)
+  const y1 = Math.min(actuel.y, r.y - marge)
+  const x2 = Math.max(actuel.x + actuel.largeur, r.x + r.largeur + marge)
+  const y2 = Math.max(actuel.y + actuel.hauteur, r.y + r.hauteur + marge)
   return { x: x1, y: y1, largeur: x2 - x1, hauteur: y2 - y1 }
 }
 

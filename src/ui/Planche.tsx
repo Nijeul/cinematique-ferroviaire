@@ -186,6 +186,7 @@ export function DessinPlanche(props: {
           projet={planche}
           zoom={zoom}
           affiche={carte}
+          sansBordFeuille
           etats={{ liste: props.listes.etatsVoie, parZone: image.contenu.etatsZones }}
           estChoisi={(genre, id) => genre === 'zone' && id === props.zoneChoisie}
           sousLesVoies={<HachuresExploitation planche={planche} etats={props.listes.etatsExploitation} visible={s.calqueExploitation.visible} />}

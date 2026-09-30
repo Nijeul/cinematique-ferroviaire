@@ -132,7 +132,9 @@ function lireCadrage(brut: unknown, largeur: number, hauteur: number): Rectangle
   if (brut === null) return null
   if (!estObjet(brut) || !estNombre(brut.x) || !estNombre(brut.y) || !estNombre(brut.largeur) || !estNombre(brut.hauteur)) return undefined
   const { x, y, largeur: l, hauteur: h } = brut
-  if (l <= 0 || h <= 0 || x < 0 || y < 0 || x + l > largeur + 1e-6 || y + h > hauteur + 1e-6) return undefined
+  // Il peut déborder du plan (« Agrandir le cadrage » pour une rame garée
+  // au-delà du bout d'une voie), mais doit en montrer une partie.
+  if (l <= 0 || h <= 0 || x >= largeur || y >= hauteur || x + l <= 0 || y + h <= 0) return undefined
   return { x, y, largeur: l, hauteur: h }
 }
 
@@ -226,7 +228,7 @@ function lireSynoptique(
 
   const { largeur, hauteur, fond, echelle } = plan.projet
   const cadrage = lireCadrage(brut.cadrage ?? null, largeur, hauteur)
-  if (cadrage === undefined) erreurs.push(`${libelle} : le cadrage sort du plan ou est illisible.`)
+  if (cadrage === undefined) erreurs.push(`${libelle} : le cadrage ne montre rien du plan ou est illisible.`)
 
   const fin = brut.fin as number
   const brutes = Array.isArray(brut.images) ? brut.images : []

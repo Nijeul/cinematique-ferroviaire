@@ -471,9 +471,10 @@ coupes » ; « les wagons ne doivent jamais disparaître s'ils sont là ».
   aussi changer de voie (même composition, tête du même côté).
 - **Rame hors du cadrage** : une rame dont un véhicule sort du cadrage est signalée dans sa
   ligne (« une partie de la rame sort du cadrage ») avec **« Agrandir le cadrage »**, qui
-  élargit le cadrage du synoptique juste assez (toutes les images, Annuler possible). Une rame
-  qui dépasse le bout de sa voie reste dessinée en entier (prolongée dans l'axe), jamais
-  tronquée, et signalée comme avant.
+  élargit le cadrage du synoptique juste assez (toutes les images, Annuler possible), au besoin
+  au-delà du fond de plan, sur papier blanc. Une rame qui dépasse le bout de sa voie (voie
+  qui s'arrête au bord du plan) reste dessinée en entier, prolongée dans l'axe de la voie,
+  jamais tronquée, et signalée comme avant.
 - Fichier de chantier **version 6** ; les versions 1 à 5 s'ouvrent toujours (liste d'états
   d'exploitation par défaut, images sans hachures, commentaires ni coupes). Une version plus
   ancienne de l'application **refuse** d'ouvrir un chantier en version 6 (« version plus
