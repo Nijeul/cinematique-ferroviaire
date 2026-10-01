@@ -4,7 +4,7 @@ import { uniteFleche } from '../plan/fleches.ts'
 import type { ListesChantier } from '../plan/legende.ts'
 import { BORDS_PLANCHE, COULEURS_PLANCHE, miseEnPage, type EntreePlacee, type LigneMixte, type LigneTexte } from '../plan/planche.ts'
 import { enginsAffiches } from '../plan/numerosEngins.ts'
-import { projetDeImage, type Synoptique } from '../plan/synoptique.ts'
+import { projetDeImage, type ContenuImage, type Synoptique } from '../plan/synoptique.ts'
 import { COULEURS } from './couleurs.ts'
 import { BarreEchelle, DessinEnginsImage } from './DessinEngins.tsx'
 import { MotifBallast } from './DessinEtats.tsx'
@@ -167,49 +167,80 @@ export function DessinPlanche(props: {
   // Police de tous les textes de la planche (les exports prennent celle des
   // zones de texte PowerPoint).
   police?: string
+  // PowerPoint animé : ce qui est dessiné sur le plan (une image
+  // intermédiaire entre deux images) à la place du contenu de l'image ; la
+  // mise en page et la légende restent celles de l'image `index`.
+  contenuCarte?: ContenuImage
+  // PowerPoint animé : la planche en deux couches, entre lesquelles se
+  // glissent les engins et les rames. « dessous » : le plan (fond, voies,
+  // zones selon leur état, hachures, coupes, appareils, textes du plan) ;
+  // « dessus » (transparent sur le plan) : le cadre de la planche percé à la
+  // place du plan, les flèches, les commentaires, l'échelle, le bandeau, le
+  // créneau, le PHASAGE et la légende. « tout » (par défaut) : l'écran, le
+  // PDF et le PowerPoint sans animation.
+  couche?: 'tout' | 'dessous' | 'dessus'
 }) {
   const { synoptique: s, index, zoom } = props
-  const dessinerTextes = !props.textesAPart
+  const couche = props.couche ?? 'tout'
+  const dessous = couche !== 'dessus'
+  const dessus = couche !== 'dessous'
+  const dessinerTextes = !props.textesAPart && dessus
   const idClip = useId()
-  const image = s.images[index]
+  const image = props.contenuCarte ? { ...s.images[index], contenu: props.contenuCarte } : s.images[index]
   const motif = `${idClip}-ballast-legende`
   const planche = projetDeImage(s, image)
   const page = miseEnPage(s, index, props.listes)
   const { carte } = page
   const trait = Math.max(1 / zoom, page.trait)
+  const fleches = (
+    <DessinFlechesImage planche={planche} types={props.listes.typesFleches} visible={s.calqueFleches.visible} zoom={zoom} choisie={props.flecheChoisie} />
+  )
+  const p = page.planche
   return (
     <g data-testid="planche" fontFamily={props.police ?? POLICE_PLANCHE}>
-      <rect x={page.planche.x} y={page.planche.y} width={page.planche.largeur} height={page.planche.hauteur} fill="#ffffff" />
+      {dessous ? (
+        <rect x={p.x} y={p.y} width={p.largeur} height={p.hauteur} fill="#ffffff" />
+      ) : (
+        // Le cadre blanc de la planche, percé à la place du plan.
+        <path
+          d={`M${p.x} ${p.y}h${p.largeur}v${p.hauteur}h${-p.largeur}Z M${carte.x} ${carte.y}v${carte.hauteur}h${carte.largeur}v${-carte.hauteur}Z`}
+          fill="#ffffff"
+          fillRule="evenodd"
+        />
+      )}
       <clipPath id={idClip}>
         <rect x={carte.x} y={carte.y} width={carte.largeur} height={carte.hauteur} />
       </clipPath>
       <g clipPath={`url(#${idClip})`}>
-        <rect x={carte.x} y={carte.y} width={carte.largeur} height={carte.hauteur} fill="#ffffff" />
-        <DessinPlan
-          projet={planche}
-          zoom={zoom}
-          affiche={carte}
-          sansBordFeuille
-          etats={{ liste: props.listes.etatsVoie, parZone: image.contenu.etatsZones }}
-          estChoisi={(genre, id) => genre === 'zone' && id === props.zoneChoisie}
-          sousLesVoies={<HachuresExploitation planche={planche} etats={props.listes.etatsExploitation} visible={s.calqueExploitation.visible} />}
-          engins={
-            <>
-              <CoupesZones planche={planche} zoom={zoom} />
-              <DessinEnginsImage projet={enginsAffiches(s, planche)} visible={s.calqueEngins.visible} zoom={zoom} estChoisi={props.estChoisi} />
-              <DessinFlechesImage
-                planche={planche}
-                types={props.listes.typesFleches}
-                visible={s.calqueFleches.visible}
-                zoom={zoom}
-                choisie={props.flecheChoisie}
-              />
-            </>
-          }
-        />
+        {dessous && (
+          <>
+            <rect x={carte.x} y={carte.y} width={carte.largeur} height={carte.hauteur} fill="#ffffff" />
+            <DessinPlan
+              projet={planche}
+              zoom={zoom}
+              affiche={carte}
+              sansBordFeuille
+              etats={{ liste: props.listes.etatsVoie, parZone: planche.etatsZones }}
+              estChoisi={(genre, id) => genre === 'zone' && id === props.zoneChoisie}
+              sousLesVoies={<HachuresExploitation planche={planche} etats={props.listes.etatsExploitation} visible={s.calqueExploitation.visible} />}
+              engins={
+                <>
+                  <CoupesZones planche={planche} zoom={zoom} />
+                  {couche === 'tout' && (
+                    <>
+                      <DessinEnginsImage projet={enginsAffiches(s, planche)} visible={s.calqueEngins.visible} zoom={zoom} estChoisi={props.estChoisi} />
+                      {fleches}
+                    </>
+                  )}
+                </>
+              }
+            />
+          </>
+        )}
+        {couche === 'dessus' && fleches}
         {dessinerTextes && (
           <DessinCommentaires
-            commentaires={image.contenu.commentaires}
+            commentaires={planche.commentaires}
             plan={s}
             visible={s.calqueCommentaires.visible}
             zoom={zoom}
@@ -218,7 +249,7 @@ export function DessinPlanche(props: {
           />
         )}
         {/* Échelle graphique de la planche, en bas à droite du plan. */}
-        {s.echelle && (
+        {dessus && s.echelle && (
           <BarreEchelle
             x={carte.x + carte.largeur - carte.largeur * 0.015}
             y={carte.y + carte.hauteur - carte.largeur * 0.015}
@@ -230,7 +261,9 @@ export function DessinPlanche(props: {
         )}
         {props.surLaCarte}
       </g>
-      <rect x={carte.x} y={carte.y} width={carte.largeur} height={carte.hauteur} fill="none" stroke={COULEURS.bordFeuille} strokeWidth={1 / zoom} />
+      {dessus && (
+        <rect x={carte.x} y={carte.y} width={carte.largeur} height={carte.hauteur} fill="none" stroke={COULEURS.bordFeuille} strokeWidth={1 / zoom} />
+      )}
 
       {dessinerTextes && page.bandeau && (
         <g data-testid="bandeau-titre">
@@ -283,7 +316,7 @@ export function DessinPlanche(props: {
         </g>
       )}
 
-      {page.legende && (
+      {dessus && page.legende && (
         <g data-testid="legende">
           {page.legende.entrees.some((p) => p.entree.genre === 'etat' && p.entree.etat.rendu === 'ballast') && (
             <defs>
@@ -316,15 +349,17 @@ export function DessinPlanche(props: {
         </g>
       )}
 
-      <rect
-        x={page.planche.x}
-        y={page.planche.y}
-        width={page.planche.largeur}
-        height={page.planche.hauteur}
-        fill="none"
-        stroke={COULEURS.bordFeuille}
-        strokeWidth={1 / zoom}
-      />
+      {dessus && (
+        <rect
+          x={page.planche.x}
+          y={page.planche.y}
+          width={page.planche.largeur}
+          height={page.planche.hauteur}
+          fill="none"
+          stroke={COULEURS.bordFeuille}
+          strokeWidth={1 / zoom}
+        />
+      )}
     </g>
   )
 }

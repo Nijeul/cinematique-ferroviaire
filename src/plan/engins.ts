@@ -3,7 +3,7 @@ import { dansPolygone, type Poignee } from './detection.ts'
 import { formaterMetres, metresVersPlan, planVersMetres } from './echelle.ts'
 import { nomParDefaut, nouvelIdentifiant } from './edition.ts'
 import { normaleHaut, tailleNom } from './geometrie.ts'
-import { epaisseurParDefaut, type Point, type Projet, type Voie } from './projet.ts'
+import { epaisseurParDefaut, type Echelle, type Point, type Projet, type Voie } from './projet.ts'
 import { bornerAbscisse, longueurPolyligne, pointAAbscisse, projeterSurPolyligne } from './trace.ts'
 
 // Engins et rames à l'échelle, posés dans une image de synoptique (jamais sur
@@ -171,12 +171,14 @@ export function silhouetteEngin(projet: PlanEngins, engin: Engin): Silhouette | 
   if (!voie) return null
   const s = position.abscisse
   const dehors = horsVoie(s - longueur / 2, s + longueur / 2, longueurPolyligne(voie.points))
-  return silhouette(
-    poseSurVoie(voie.points, s, longueur),
-    longueur,
-    largeurVisible(largeur, voie.epaisseur),
-    dehors > MARGE ? planVersMetres(echelle, dehors) : 0,
-  )
+  return silhouetteSurTrace(voie.points, s, longueur, largeurVisible(largeur, voie.epaisseur), dehors > MARGE ? planVersMetres(echelle, dehors) : 0)
+}
+
+// Silhouette d'un objet de longueur donnée posé sur n'importe quel tracé (une
+// voie, ou l'itinéraire d'un engin qui passe d'une voie à l'autre par un
+// appareil), son milieu à l'abscisse `s` du tracé.
+export function silhouetteSurTrace(points: Point[], s: number, longueur: number, largeur: number, depassement = 0): Silhouette {
+  return silhouette(poseSurVoie(points, s, longueur), longueur, largeur, depassement)
 }
 
 // Longueur totale d'une rame, en mètres (somme des longueurs des véhicules).
@@ -210,27 +212,37 @@ export function silhouetteRame(projet: PlanEngins, rame: Rame): SilhouetteRame |
   const voie = projet.voies.find((v) => v.id === rame.voieId)
   if (!echelle || !voie || rame.vehicules.length === 0) return null
   const longueurVoie = longueurPolyligne(voie.points)
-  const abscisses = abscissesVehicules(rame, echelle.pixelsParMetre)
-  const vehicules = rame.vehicules.map((v, i) => {
-    const l = metresVersPlan(echelle, v.type.longueur)
-    const s = abscisses[i]
-    const dehors = horsVoie(s - l / 2, s + l / 2, longueurVoie)
-    return silhouette(
-      poseSurVoie(voie.points, s, l),
-      l,
-      largeurVisible(metresVersPlan(echelle, v.type.largeur), voie.epaisseur),
-      dehors > MARGE ? planVersMetres(echelle, dehors) : 0,
-    )
-  })
   const longueur = longueurRame(rame.vehicules)
   const total = metresVersPlan(echelle, longueur)
   const dehors = horsVoie(rame.abscisse - total / 2, rame.abscisse + total / 2, longueurVoie)
   return {
-    vehicules,
-    longueur,
+    ...silhouetteRameSurTrace(voie.points, rame, echelle, voie.epaisseur, (s, l) => {
+      const d = horsVoie(s - l / 2, s + l / 2, longueurVoie)
+      return d > MARGE ? planVersMetres(echelle, d) : 0
+    }),
     depassement: dehors > MARGE ? planVersMetres(echelle, dehors) : 0,
     milieu: poseSurVoie(voie.points, rame.abscisse, Math.min(total, longueurVoie)),
   }
+}
+
+// Les véhicules d'une rame posés sur n'importe quel tracé (voie ou
+// itinéraire), le milieu de la rame à l'abscisse `rame.abscisse` du tracé,
+// la tête du côté `rame.sens`. `depassement` : mètres hors voie d'un
+// véhicule (milieu, longueur), 0 par défaut.
+export function silhouetteRameSurTrace(
+  points: Point[],
+  rame: Pick<Rame, 'abscisse' | 'sens' | 'vehicules'>,
+  echelle: Echelle,
+  epaisseurVoie: number,
+  depassement: (s: number, longueur: number) => number = () => 0,
+): SilhouetteRame {
+  const abscisses = abscissesVehicules(rame, echelle.pixelsParMetre)
+  const vehicules = rame.vehicules.map((v, i) => {
+    const l = metresVersPlan(echelle, v.type.longueur)
+    return silhouetteSurTrace(points, abscisses[i], l, largeurVisible(metresVersPlan(echelle, v.type.largeur), epaisseurVoie), depassement(abscisses[i], l))
+  })
+  const longueur = longueurRame(rame.vehicules)
+  return { vehicules, longueur, depassement: 0, milieu: poseSurVoie(points, rame.abscisse, metresVersPlan(echelle, longueur)) }
 }
 
 // ——— Textes ———
@@ -318,8 +330,16 @@ export function changerNombre(groupes: Groupe[], i: number, nombre: number): Gro
 
 const pointsDe = (projet: PlanEngins, voieId: string): Point[] => projet.voies.find((v) => v.id === voieId)?.points ?? []
 
-export function ajouterEngin<P extends Planche>(projet: P, type: TypeEngin, position: PositionEngin): { planche: P; id: string } {
-  const id = nouvelIdentifiant(projet.engins, 'engin')
+// `dejaPris` : les engins et rames des autres images du synoptique. Un nouvel
+// engin ne reprend jamais l'identifiant d'un autre engin du synoptique :
+// l'animation d'une image à la suivante reconnaît un engin à son identifiant.
+export function ajouterEngin<P extends Planche>(
+  projet: P,
+  type: TypeEngin,
+  position: PositionEngin,
+  dejaPris: { id: string }[] = [],
+): { planche: P; id: string } {
+  const id = nouvelIdentifiant([...projet.engins, ...dejaPris], 'engin')
   const placee: PositionEngin =
     position.genre === 'voie'
       ? { ...position, abscisse: bornerAbscisse(pointsDe(projet, position.voieId), position.abscisse) }
@@ -435,8 +455,14 @@ export function angleVers(centre: Point, p: Point, pas = 0): number {
 
 // Nouvelle rame, centrée sur l'abscisse cliquée ; la tête du côté gauche du
 // plan (Nord par défaut).
-export function ajouterRame<P extends Planche>(projet: P, vehicules: Vehicule[], voieId: string, abscisse: number): { planche: P; id: string } {
-  const id = nouvelIdentifiant(projet.rames, 'rame')
+export function ajouterRame<P extends Planche>(
+  projet: P,
+  vehicules: Vehicule[],
+  voieId: string,
+  abscisse: number,
+  dejaPris: { id: string }[] = [],
+): { planche: P; id: string } {
+  const id = nouvelIdentifiant([...projet.rames, ...dejaPris], 'rame')
   const points = pointsDe(projet, voieId)
   const s = bornerAbscisse(points, abscisse)
   const rame: Rame = {

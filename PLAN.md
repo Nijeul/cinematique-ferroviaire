@@ -40,11 +40,15 @@ Jamais deux étapes d'avance. Chaque étape est une PR courte qui dit quoi regar
 | 8 | Exports PowerPoint et PDF des images d'un synoptique : une diapositive ou une page par image, textes du bandeau, du créneau et du PHASAGE modifiables dans PowerPoint, page de garde avec cartouche (détail ci-dessous) | un jeu de planches équivalent à l'actuel | **validé** |
 | 9 | Mémoire en ligne (Supabase) : un compte par personne, sur invitation ; chantiers et fonds enregistrés en ligne et partagés par l'équipe ; copie de secours dans le navigateur ; conflits signalés ; page « Équipe » (détail ci-dessous) | on retrouve ses chantiers sur un autre ordinateur, un collègue invité les voit | **fusionnée** |
 | 10 | Outils du synoptique demandés pour le RVB du tunnel : état d'exploitation des voies (hachures, légende, calque), commentaires propres à chaque image, coupes de tronçonnage, changement de voie d'un engin (détail ci-dessous) | le synoptique « RVB tunnel V2 » se construit sans détour : voies interceptées / annoncées / en simultanée, RCT et platelage écrits, coupes visibles, pelles qui passent sur V1 | **en cours** |
+| 11a | PowerPoint animé : engins et trains qui roulent d'une image à la suivante le long des voies et passent par les appareils (BS, communications) pour changer de voie, en rebroussant si besoin ; zones qui avancent comme un front ; au clic ou en automatique (détail ci-dessous) | en diaporama, les engins roulent sur les voies, prennent les appareils, et les textes de l'image suivante arrivent à la fin du mouvement | **en cours** |
+| 11b | Aperçu « Lecture » de l'animation dans l'application, avec la même logique que 11a | après validation de 11a | à faire |
 
 L'étape 8 devait être la dernière ; l'étape 9 a été demandée par le commanditaire une fois
 l'étape 8 validée (« Fais en sorte qu'il y ait une mémoire »). L'étape 10 est née de la
 construction de son premier synoptique réel (RVB du tunnel, voie 2) : il a demandé d'ajouter
-d'un coup les outils qui manquaient. Les autres besoins (vidéo,
+d'un coup les outils qui manquaient. L'étape 11 (animation) a été demandée ensuite : « rendre
+les cinématiques vivantes, comme dans PowerPoint » ; elle est découpée en 11a (le PowerPoint
+animé) et 11b (l'aperçu dans l'application). Les autres besoins (vidéo,
 orthophoto calée, import DXF, 3D en option…) restent à rediscuter.
 
 ### Étape 3 — éléments du plan au calque
@@ -527,6 +531,46 @@ Questions ouvertes de l'étape 10 (choix provisoires en place) :
 - **Couleurs des états d'exploitation** : choisies pour se distinguer des zones (rouge, bleu,
   jaune) ; modifiables dans la page du chantier. Vos habitudes ?
 - **Coupes** : comptées depuis le bout côté Paris / Nord. Faut-il pouvoir partir de l'autre bout ?
+
+### Étape 11a — PowerPoint animé
+
+Choix du commanditaire : l'animation se joue **dans le PowerPoint exporté** ; les engins et
+les trains **suivent les voies** et changent de voie **en passant par les appareils**, en
+rebroussant si l'appareil est pris par le talon ; **fondu** seulement sans itinéraire possible,
+ou pour un enraillement ou un déraillement ; **« Au clic »** par défaut, ou automatique ; le
+créneau, le PHASAGE, la légende, les flèches et les commentaires de l'image suivante
+apparaissent **à la fin du mouvement** ; une zone qui change d'état **avance comme un front**.
+
+- **Fenêtre « Exporter… »** (PowerPoint) : section « Animation » : Aucune / Au clic /
+  Automatique, durée du mouvement (2 s par défaut, de 0,5 à 20 s), pause sur chaque image en
+  automatique (5 s par défaut). Décompte : « 3 images → 22 diapositives (dont 18 de
+  transition) ». Note : « Morphose : PowerPoint 2019, 2021 ou Microsoft 365 ; ailleurs, simple
+  fondu ». Sans effet pour une seule image ; le PDF ne change pas.
+- **Diapositives** : une principale par image (au clic, ou seule après la pause), et entre deux
+  images des intermédiaires qui s'enchaînent seules (note « Diapositive de transition générée —
+  ne pas modifier »), toutes reliées par la transition **Morphose**. La Morphose déplace en
+  ligne droite : les intermédiaires découpent les courbes, les passages sur les appareils et
+  les rebroussements, et l'avancée d'un front de zone (de 2 à 6 étapes) ; aucune si tout va en
+  ligne droite. Au plus 6 intermédiaires, 12 quand un itinéraire passe par un appareil.
+- **Ce qui bouge** : un engin se reconnaît d'une image à l'autre à son identifiant et à son
+  type (une rame : à la suite de ses véhicules) ; sinon il disparaît et l'autre apparaît en
+  fondu. Sur la même voie, il roule le long de la voie ; hors voie, il glisse et tourne au plus
+  court ; d'une voie à l'autre, il prend le plus court itinéraire à travers les appareils. Une
+  rame dont la tête n'arriverait pas du bon côté passe en fondu. Une zone qui passe d'un état à
+  un autre avance depuis le côté d'un avancement saisi, sinon depuis la gauche (Nord / Paris) ;
+  avec trois états différents, elle bascule à mi-chemin (fondu).
+- **Diapositive en couches**, comme l'écran : le plan (fond, voies, zones, hachures, coupes,
+  appareils, textes du plan), les engins et les rames en images séparées, le cadre de la
+  planche (percé à la place du plan) avec flèches, commentaires, échelle et légende, puis les
+  zones de texte modifiables ; les marges de la diapositive sont blanches.
+- Un nouvel engin ne reprend jamais l'identifiant d'un engin posé dans une autre image du
+  synoptique (l'animation le confondrait).
+
+Limites connues : la Morphose demande PowerPoint 2019, 2021 ou Microsoft 365 (ailleurs, un
+fondu par étapes) ; pour revenir en arrière en diaporama, taper le numéro de la diapositive ;
+les intermédiaires sont à regénérer (nouvel export) après une retouche ; le fichier est plus
+lourd quand des zones avancent ; l'itinéraire est choisi automatiquement (le plus court) ;
+l'animation ne contrôle pas les croisements d'engins.
 
 ## Décisions du commanditaire
 

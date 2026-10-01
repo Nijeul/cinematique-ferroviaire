@@ -2,6 +2,15 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { CHAMPS_CARTOUCHE, resumeCartouche, type Cartouche } from '../plan/cartouche.ts'
 import type { Chantier } from '../plan/chantier.ts'
 import { imagesChoisies, PAGES_PDF, type ChoixImages, type FormatPdf, type OptionsExport } from '../plan/export.ts'
+import {
+  animationActive,
+  DUREE_ANIMATION,
+  PAUSE_ANIMATION,
+  suiteDiapositives,
+  verifierAnimation,
+  type ModeAnimation,
+  type OptionsAnimation,
+} from '../plan/exportAnime.ts'
 import type { Synoptique } from '../plan/synoptique.ts'
 import { BoutonsFenetre, Fenetre } from './commun.tsx'
 import { COULEURS } from './couleurs.ts'
@@ -10,7 +19,9 @@ import { styleBouton, styleBoutonPrincipal, styleChamp, styleDiscret, styleTitre
 
 // La fenêtre « Exporter… » d'un synoptique : format (PowerPoint ou PDF),
 // images (toutes, la courante, ou de n à m), page de garde et son cartouche,
-// textes modifiables ou tout en image (PowerPoint), taille de page (PDF).
+// textes modifiables ou tout en image (PowerPoint), animation d'une image à
+// la suivante (PowerPoint : aucune, au clic, automatique), taille de page
+// (PDF).
 // Puis l'export, image après image, avec l'avancement et Annuler, et un
 // message de fin ou d'erreur. Exporter ne modifie pas le chantier.
 // Et la fenêtre du cartouche, qui se remplit dans les propriétés du
@@ -75,10 +86,18 @@ export function FenetreExport(props: {
   const images = (c: ChoixImages) => changer({ images: c })
   const plage = options.images.genre === 'plage' ? options.images : { genre: 'plage' as const, de: 1, a: n }
   const nombre = (texte: string) => (texte.trim() === '' ? Number.NaN : Number(texte))
-  const pages = choix.ok ? choix.valeur.length + (options.pageDeGarde ? 1 : 0) : 0
+  const animation = options.animation
+  const animer = (a: Partial<OptionsAnimation>) => changer({ animation: { ...animation, ...a } })
+  const anime = options.format === 'pptx' && choix.ok && animationActive(animation, choix.valeur.length)
+  const erreursAnimation = options.format === 'pptx' ? verifierAnimation(animation) : []
+  // Décompte des diapositives d'un PowerPoint animé (trajets calculés ici,
+  // sans rendu) : les principales et les intermédiaires.
+  const diapositives =
+    anime && choix.ok && erreursAnimation.length === 0 ? suiteDiapositives(s, choix.valeur, props.chantier.etatsVoie, animation).length : null
+  const pages = choix.ok ? (diapositives ?? choix.valeur.length) + (options.pageDeGarde ? 1 : 0) : 0
 
   const exporter = async () => {
-    if (!choix.ok) return
+    if (!choix.ok || erreursAnimation.length > 0) return
     const c = new AbortController()
     controleur.current = c
     setPhase({ genre: 'en-cours', avancement: { fait: 0, total: 1, texte: 'Préparation…' } })
@@ -250,6 +269,70 @@ export function FenetreExport(props: {
             </Choix>
             <p style={styleExplication}>Copie fidèle de la planche entière, non modifiable.</p>
           </Groupe>
+        ) : null}
+        {options.format === 'pptx' ? (
+          <Groupe titre="Animation">
+            <div data-testid="reglages-animation">
+              {(
+                [
+                  ['aucune', 'Aucune', 'une diapositive par image, sans mouvement'],
+                  ['clic', 'Au clic', 'à chaque clic, les engins roulent jusqu’à l’image suivante'],
+                  ['auto', 'Automatique', 'les images s’enchaînent seules, avec une pause sur chacune'],
+                ] as [ModeAnimation, string, string][]
+              ).map(([mode, titre, texte]) => (
+                <Choix key={mode} nom="animation" coche={animation.mode === mode} choisir={() => animer({ mode })}>
+                  <strong>{titre}</strong> : {texte}
+                </Choix>
+              ))}
+              {animation.mode !== 'aucune' && (
+                <label style={{ ...styleLigne, marginLeft: 24 }}>
+                  Durée du mouvement
+                  <input
+                    type="number"
+                    min={DUREE_ANIMATION.min}
+                    max={DUREE_ANIMATION.max}
+                    step={0.5}
+                    value={Number.isNaN(animation.duree) ? '' : animation.duree}
+                    aria-label="Durée du mouvement (secondes)"
+                    style={{ ...styleChamp, width: 64 }}
+                    onChange={(e) => animer({ duree: nombre(e.target.value) })}
+                  />
+                  secondes
+                </label>
+              )}
+              {animation.mode === 'auto' && (
+                <label style={{ ...styleLigne, marginLeft: 24 }}>
+                  Pause sur chaque image
+                  <input
+                    type="number"
+                    min={PAUSE_ANIMATION.min}
+                    max={PAUSE_ANIMATION.max}
+                    step={1}
+                    value={Number.isNaN(animation.pause) ? '' : animation.pause}
+                    aria-label="Pause sur chaque image (secondes)"
+                    style={{ ...styleChamp, width: 64 }}
+                    onChange={(e) => animer({ pause: nombre(e.target.value) })}
+                  />
+                  secondes
+                </label>
+              )}
+              {erreursAnimation.map((e) => (
+                <p key={e} role="alert" style={{ margin: '4px 0 0 24px', fontSize: 12, color: COULEURS.erreur }}>
+                  {e}
+                </p>
+              ))}
+              {animation.mode !== 'aucune' && (
+                <>
+                  <p style={styleExplication}>
+                    Les engins et les trains suivent les voies et passent par les appareils (BS, communications) pour changer de voie ;
+                    les zones qui changent d'état avancent comme un front. Les textes, les flèches, le PHASAGE et la légende de l'image
+                    suivante apparaissent à la fin du mouvement.
+                  </p>
+                  <p style={styleExplication}>Morphose : PowerPoint 2019, 2021 ou Microsoft 365 ; ailleurs, simple fondu.</p>
+                </>
+              )}
+            </div>
+          </Groupe>
         ) : (
           <Groupe titre="Taille de page">
             {(Object.keys(PAGES_PDF) as FormatPdf[]).map((f) => (
@@ -263,13 +346,17 @@ export function FenetreExport(props: {
         )}
       </div>
       <p style={{ ...styleDiscret, margin: '4px 0 0' }} data-testid="resume-export">
-        {choix.ok ? `${texteImages(choix.valeur.length)} → ${textePages(options.format, pages)}.` : ' '}
+        {choix.ok
+          ? `${texteImages(choix.valeur.length)} → ${textePages(options.format, pages)}${
+              diapositives !== null && diapositives > choix.valeur.length ? ` (dont ${diapositives - choix.valeur.length} de transition)` : ''
+            }.`
+          : ' '}
       </p>
       <BoutonsFenetre>
         <button style={styleBouton()} onClick={props.fermer}>
           Fermer
         </button>
-        <button style={styleBoutonPrincipal} onClick={() => void exporter()} disabled={!choix.ok}>
+        <button style={styleBoutonPrincipal} onClick={() => void exporter()} disabled={!choix.ok || erreursAnimation.length > 0}>
           Exporter
         </button>
       </BoutonsFenetre>

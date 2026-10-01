@@ -74,7 +74,13 @@ src/
               affichées ou masquées de chaque synoptique (zonesAffichees.ts), opacité du
               fond de plan d'un synoptique, écrite dans toutes ses images (fondSynoptique.ts),
               numéros des engins affichés ou non sur les images (numerosEngins.ts), légende de
-              chaque image construite d'après ce qu'elle montre (legende.ts), mise en page d'une image en planche : bandeau de titre,
+              chaque image construite d'après ce qu'elle montre (legende.ts), itinéraire d'un engin
+              d'une voie à l'autre à travers les appareils, rebroussements compris (itineraire.ts),
+              animation d'une image à la suivante : engins appariés, qui roulent le long des voies
+              ou passent par les appareils, zones qui avancent comme un front, instants des
+              diapositives intermédiaires (animation.ts), PowerPoint animé : réglages, suite des
+              diapositives et leurs transitions, engins en objets séparés nommés « !! »
+              (exportAnime.ts), mise en page d'une image en planche : bandeau de titre,
               créneau horaire, encart PHASAGE et ses étapes, cadre LÉGENDE en colonnes
               (planche.ts), cartouche de la page de garde (cartouche.ts), exports : choix
               des images, planche ajustée dans la page, zones de texte PowerPoint à leur
@@ -87,8 +93,10 @@ src/
               (depot.ts), variables et refus d'une clé secrète (configuration.ts, testé),
               comptes, tables et stockage « fonds » (supabase.ts, chargé à la demande)
   export/     écriture des fichiers exportés, sans navigateur (testée sous Node) :
-              PowerPoint avec pptxgenjs (ecrirePptx.ts), PDF avec jsPDF (ecrirePdf.ts) ;
-              chargés à la demande, au premier export
+              PowerPoint avec pptxgenjs (ecrirePptx.ts, dont les diapositives animées en
+              couches), transitions Morphose, médias en double retirés et compression avec JSZip
+              (transitions.ts), PDF avec jsPDF (ecrirePdf.ts) ; chargés à la demande, au premier
+              export
   ui/         écrans React (accueil, chantier avec ses états de la voie, ses types de flèches
               (TypesFleches) et son catalogue, assistant « Nouveau plan », plan, synoptique),
               calage de l'échelle (plan et synoptique), dessin SVG du plan, des engins, des
@@ -99,9 +107,11 @@ src/
               l'image courante d'un synoptique (useEditeurImage, ImageDeTravail,
               PanneauEngins, PanneauFleches, PanneauCommentaires, PanneauExploitation,
               PanneauImage : zone choisie et ses coupes, créneau, phasage, légende, zones
-              affichées, opacité du fond, numéros des engins), fenêtres « Exporter… » et cartouche (FenetreExport), rendu d'une
-              planche en image pour les exports, avec le même dessin que l'écran
-              (rendrePlanche), export image après image (exporter), connexion, nouveau mot de
+              affichées, opacité du fond, numéros des engins), fenêtres « Exporter… » (et sa
+              section Animation) et cartouche (FenetreExport), rendu d'une planche en image pour
+              les exports, avec le même dessin que l'écran, entière ou en couches (dessous,
+              dessus) avec les engins en petites images pour le PowerPoint animé (rendrePlanche),
+              export image après image ou diapositive après diapositive (exporter), connexion, nouveau mot de
               passe et compte non membre (EcranConnexion), page Équipe (EcranEquipe), mémoire
               des chantiers en ligne ou dans ce navigateur (memoire.ts), enregistrement et
               conflits du chantier ouvert (useChantier), et accès au navigateur (IndexedDB :
@@ -114,7 +124,10 @@ fixtures/     jeux de données d'exemple, anonymisés (dont un plan des étapes 
               un synoptique de 2 images avec des flèches de chaque type, des engins numérotés
               avec description, une rame « TTX 1 » et un cartouche aux valeurs fictives, et
               un synoptique de 2 images avec voies interceptée / annoncée / simultanée,
-              commentaires et coupes de tronçonnage)
+              commentaires et coupes de tronçonnage, et un synoptique de 3 images pour
+              l'animation : pelle qui passe un coude, pelles qui changent de voie par la
+              communication et par le BS (rebroussement), pelle qui s'enraille, TTX qui entre
+              sur V1 par le BS, zone qui avance)
 sources/      synoptiques réels fournis par le commanditaire (facultatif, jamais versionnés :
               données réelles ; il importe ses propres plans dans l'application)
 supabase/     migrations SQL du projet Supabase (tables membres et chantiers, règles

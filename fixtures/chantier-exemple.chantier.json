@@ -4244,6 +4244,1189 @@
         "visible": true,
         "verrouille": false
       }
+    },
+    {
+      "id": "synoptique-5",
+      "nom": "Nuit 5 — animation (engins qui roulent)",
+      "origine": {
+        "planId": "plan-1",
+        "nomPlan": "Phase définitive",
+        "copieLe": "2026-09-29T15:00:00.000Z"
+      },
+      "t0": "2026-10-30T22:30",
+      "fin": 180,
+      "cadrage": {
+        "x": 160,
+        "y": 200,
+        "largeur": 1300,
+        "hauteur": 470
+      },
+      "largeur": 1600,
+      "hauteur": 900,
+      "fond": null,
+      "echelle": {
+        "pixelsParMetre": 4
+      },
+      "calqueEngins": {
+        "visible": true,
+        "verrouille": false
+      },
+      "calqueFleches": {
+        "visible": true,
+        "verrouille": false
+      },
+      "afficherLegende": true,
+      "bandeau": "Exemple d’animation — OCP fictive",
+      "cartouche": {
+        "emetteur": "Entreprise fictive",
+        "typeDocument": "Synoptique",
+        "indice": "B",
+        "date": "23/10/2026",
+        "etabliPar": "A. Exemple",
+        "validePar": "B. Modèle",
+        "approuvePar": "C. Fictif",
+        "modification": "Synoptique d’exemple pour l’animation (données fictives)"
+      },
+      "calqueExploitation": {
+        "visible": true,
+        "verrouille": false
+      },
+      "calqueCommentaires": {
+        "visible": true,
+        "verrouille": false
+      },
+      "images": [
+        {
+          "id": "image-1",
+          "debut": 0,
+          "fin": 60,
+          "titre": "Avant les mouvements",
+          "heures": "plage",
+          "phasage": [
+            {
+              "numero": 1,
+              "libelle": "Dépose du RVB 50 m terminée"
+            }
+          ],
+          "legendeMasquee": [],
+          "contenu": {
+            "extremites": {
+              "gauche": "Nord",
+              "droite": "Sud"
+            },
+            "calques": {
+              "fond": {
+                "visible": true,
+                "opacite": 1,
+                "verrouille": false
+              },
+              "cadres": {
+                "visible": true,
+                "verrouille": false
+              },
+              "voies": {
+                "visible": true,
+                "verrouille": false
+              },
+              "zones": {
+                "visible": true,
+                "verrouille": false
+              },
+              "appareils": {
+                "visible": true,
+                "verrouille": false
+              },
+              "textes": {
+                "visible": true,
+                "verrouille": false
+              }
+            },
+            "cadres": [
+              {
+                "id": "cadre-1",
+                "nom": "Stockage vieilles TBA",
+                "couleur": "#7a8a63",
+                "x": 300,
+                "y": 610,
+                "largeur": 360,
+                "hauteur": 60,
+                "pointille": true,
+                "rempli": true
+              }
+            ],
+            "voies": [
+              {
+                "id": "voie-1",
+                "nom": "V tiroir Nord",
+                "couleur": "#454f59",
+                "epaisseur": 9,
+                "points": [
+                  {
+                    "x": 180,
+                    "y": 240
+                  },
+                  {
+                    "x": 700,
+                    "y": 240
+                  },
+                  {
+                    "x": 760,
+                    "y": 300
+                  }
+                ]
+              },
+              {
+                "id": "voie-2",
+                "nom": "VC",
+                "couleur": "#454f59",
+                "epaisseur": 9,
+                "points": [
+                  {
+                    "x": 180,
+                    "y": 360
+                  },
+                  {
+                    "x": 1440,
+                    "y": 360
+                  }
+                ]
+              },
+              {
+                "id": "voie-3",
+                "nom": "V1",
+                "couleur": "#2f6fb0",
+                "epaisseur": 9,
+                "points": [
+                  {
+                    "x": 180,
+                    "y": 460
+                  },
+                  {
+                    "x": 1440,
+                    "y": 460
+                  }
+                ]
+              },
+              {
+                "id": "voie-4",
+                "nom": "V2",
+                "couleur": "#b8322a",
+                "epaisseur": 12,
+                "points": [
+                  {
+                    "x": 180,
+                    "y": 560
+                  },
+                  {
+                    "x": 1100,
+                    "y": 560
+                  },
+                  {
+                    "x": 1440,
+                    "y": 620
+                  }
+                ]
+              }
+            ],
+            "zones": [
+              {
+                "id": "zone-1",
+                "nom": "RVB 50 m",
+                "couleur": "#33506b",
+                "voieId": "voie-3",
+                "debut": 240,
+                "fin": 390
+              },
+              {
+                "id": "zone-2",
+                "nom": "RR 14 m",
+                "couleur": "#d98b1e",
+                "voieId": "voie-3",
+                "debut": 390,
+                "fin": 450
+              },
+              {
+                "id": "zone-3",
+                "nom": "RVB 63 m",
+                "couleur": "#33506b",
+                "voieId": "voie-2",
+                "debut": 900,
+                "fin": 1080
+              },
+              {
+                "id": "zone-4",
+                "nom": "RVB 41 m",
+                "couleur": "#33506b",
+                "voieId": "voie-4",
+                "debut": 850,
+                "fin": 1050
+              }
+            ],
+            "appareils": [
+              {
+                "id": "bs-1",
+                "nom": "BS 1",
+                "pointe": {
+                  "voieId": "voie-2",
+                  "abscisse": 520
+                },
+                "talon": {
+                  "voieId": "voie-3",
+                  "abscisse": 590
+                },
+                "communication": null
+              },
+              {
+                "id": "bs-2",
+                "nom": "BS 2a",
+                "pointe": {
+                  "voieId": "voie-3",
+                  "abscisse": 700
+                },
+                "talon": {
+                  "voieId": "voie-4",
+                  "abscisse": 770
+                },
+                "communication": "com-1"
+              },
+              {
+                "id": "bs-3",
+                "nom": "BS 2b",
+                "pointe": {
+                  "voieId": "voie-4",
+                  "abscisse": 770
+                },
+                "talon": {
+                  "voieId": "voie-3",
+                  "abscisse": 700
+                },
+                "communication": "com-1"
+              }
+            ],
+            "textes": [
+              {
+                "id": "texte-1",
+                "texte": "Accès base arrière",
+                "x": 1200,
+                "y": 780,
+                "taille": 16,
+                "couleur": "#1c2430",
+                "gras": false
+              }
+            ],
+            "engins": [
+              {
+                "id": "engin-1",
+                "typeId": "type-13",
+                "type": {
+                  "categorie": "Pelle RR",
+                  "modele": "CAT 323",
+                  "longueur": 9.5,
+                  "largeur": 3.2,
+                  "couleur": "#e8a33d"
+                },
+                "couleur": "#e8a33d",
+                "numero": "1",
+                "description": "",
+                "position": {
+                  "genre": "voie",
+                  "voieId": "voie-4",
+                  "abscisse": 650
+                }
+              },
+              {
+                "id": "engin-2",
+                "typeId": "type-13",
+                "type": {
+                  "categorie": "Pelle RR",
+                  "modele": "CAT 323",
+                  "longueur": 9.5,
+                  "largeur": 3.2,
+                  "couleur": "#e8a33d"
+                },
+                "couleur": "#e8a33d",
+                "numero": "2",
+                "description": "",
+                "position": {
+                  "genre": "voie",
+                  "voieId": "voie-3",
+                  "abscisse": 350
+                }
+              },
+              {
+                "id": "engin-3",
+                "typeId": "type-13",
+                "type": {
+                  "categorie": "Pelle RR",
+                  "modele": "CAT 323",
+                  "longueur": 9.5,
+                  "largeur": 3.2,
+                  "couleur": "#e8a33d"
+                },
+                "couleur": "#e8a33d",
+                "numero": "3",
+                "description": "",
+                "position": {
+                  "genre": "voie",
+                  "voieId": "voie-2",
+                  "abscisse": 1000
+                }
+              },
+              {
+                "id": "engin-4",
+                "typeId": "type-13",
+                "type": {
+                  "categorie": "Pelle RR",
+                  "modele": "CAT 323",
+                  "longueur": 9.5,
+                  "largeur": 3.2,
+                  "couleur": "#e8a33d"
+                },
+                "couleur": "#e8a33d",
+                "numero": "4",
+                "description": "en base arrière",
+                "position": {
+                  "genre": "libre",
+                  "x": 420,
+                  "y": 645,
+                  "angle": 0
+                }
+              }
+            ],
+            "rames": [
+              {
+                "id": "rame-1",
+                "nom": "TTX 1",
+                "numero": "T1",
+                "description": "déblais",
+                "couleur": "#66ff99",
+                "voieId": "voie-2",
+                "abscisse": 250,
+                "sens": -1,
+                "vehicules": [
+                  {
+                    "typeId": "type-1",
+                    "type": {
+                      "categorie": "Loco",
+                      "modele": "BB 61000",
+                      "longueur": 14.5,
+                      "largeur": 3,
+                      "couleur": "#66ff99"
+                    }
+                  },
+                  {
+                    "typeId": "type-12",
+                    "type": {
+                      "categorie": "Wagon",
+                      "modele": "R39",
+                      "longueur": 19.9,
+                      "largeur": 3,
+                      "couleur": "#ff9933"
+                    }
+                  },
+                  {
+                    "typeId": "type-12",
+                    "type": {
+                      "categorie": "Wagon",
+                      "modele": "R39",
+                      "longueur": 19.9,
+                      "largeur": 3,
+                      "couleur": "#ff9933"
+                    }
+                  },
+                  {
+                    "typeId": "type-12",
+                    "type": {
+                      "categorie": "Wagon",
+                      "modele": "R39",
+                      "longueur": 19.9,
+                      "largeur": 3,
+                      "couleur": "#ff9933"
+                    }
+                  },
+                  {
+                    "typeId": "type-12",
+                    "type": {
+                      "categorie": "Wagon",
+                      "modele": "R39",
+                      "longueur": 19.9,
+                      "largeur": 3,
+                      "couleur": "#ff9933"
+                    }
+                  }
+                ]
+              }
+            ],
+            "etatsZones": {
+              "zone-1": {
+                "etat": "etat-2",
+                "avancement": null
+              }
+            },
+            "fleches": [],
+            "exploitation": {},
+            "commentaires": [],
+            "coupes": {}
+          }
+        },
+        {
+          "id": "image-2",
+          "debut": 60,
+          "fin": 120,
+          "titre": "",
+          "heures": "plage",
+          "phasage": [
+            {
+              "numero": 2,
+              "libelle": "Déballastage du RVB 50 m depuis le Nord"
+            },
+            {
+              "numero": 3,
+              "libelle": "La pelle 2 passe sur V2 par la communication, la pelle 3 entre sur V1 par le BS 1"
+            }
+          ],
+          "legendeMasquee": [],
+          "contenu": {
+            "extremites": {
+              "gauche": "Nord",
+              "droite": "Sud"
+            },
+            "calques": {
+              "fond": {
+                "visible": true,
+                "opacite": 1,
+                "verrouille": false
+              },
+              "cadres": {
+                "visible": true,
+                "verrouille": false
+              },
+              "voies": {
+                "visible": true,
+                "verrouille": false
+              },
+              "zones": {
+                "visible": true,
+                "verrouille": false
+              },
+              "appareils": {
+                "visible": true,
+                "verrouille": false
+              },
+              "textes": {
+                "visible": true,
+                "verrouille": false
+              }
+            },
+            "cadres": [
+              {
+                "id": "cadre-1",
+                "nom": "Stockage vieilles TBA",
+                "couleur": "#7a8a63",
+                "x": 300,
+                "y": 610,
+                "largeur": 360,
+                "hauteur": 60,
+                "pointille": true,
+                "rempli": true
+              }
+            ],
+            "voies": [
+              {
+                "id": "voie-1",
+                "nom": "V tiroir Nord",
+                "couleur": "#454f59",
+                "epaisseur": 9,
+                "points": [
+                  {
+                    "x": 180,
+                    "y": 240
+                  },
+                  {
+                    "x": 700,
+                    "y": 240
+                  },
+                  {
+                    "x": 760,
+                    "y": 300
+                  }
+                ]
+              },
+              {
+                "id": "voie-2",
+                "nom": "VC",
+                "couleur": "#454f59",
+                "epaisseur": 9,
+                "points": [
+                  {
+                    "x": 180,
+                    "y": 360
+                  },
+                  {
+                    "x": 1440,
+                    "y": 360
+                  }
+                ]
+              },
+              {
+                "id": "voie-3",
+                "nom": "V1",
+                "couleur": "#2f6fb0",
+                "epaisseur": 9,
+                "points": [
+                  {
+                    "x": 180,
+                    "y": 460
+                  },
+                  {
+                    "x": 1440,
+                    "y": 460
+                  }
+                ]
+              },
+              {
+                "id": "voie-4",
+                "nom": "V2",
+                "couleur": "#b8322a",
+                "epaisseur": 12,
+                "points": [
+                  {
+                    "x": 180,
+                    "y": 560
+                  },
+                  {
+                    "x": 1100,
+                    "y": 560
+                  },
+                  {
+                    "x": 1440,
+                    "y": 620
+                  }
+                ]
+              }
+            ],
+            "zones": [
+              {
+                "id": "zone-1",
+                "nom": "RVB 50 m",
+                "couleur": "#33506b",
+                "voieId": "voie-3",
+                "debut": 240,
+                "fin": 390
+              },
+              {
+                "id": "zone-2",
+                "nom": "RR 14 m",
+                "couleur": "#d98b1e",
+                "voieId": "voie-3",
+                "debut": 390,
+                "fin": 450
+              },
+              {
+                "id": "zone-3",
+                "nom": "RVB 63 m",
+                "couleur": "#33506b",
+                "voieId": "voie-2",
+                "debut": 900,
+                "fin": 1080
+              },
+              {
+                "id": "zone-4",
+                "nom": "RVB 41 m",
+                "couleur": "#33506b",
+                "voieId": "voie-4",
+                "debut": 850,
+                "fin": 1050
+              }
+            ],
+            "appareils": [
+              {
+                "id": "bs-1",
+                "nom": "BS 1",
+                "pointe": {
+                  "voieId": "voie-2",
+                  "abscisse": 520
+                },
+                "talon": {
+                  "voieId": "voie-3",
+                  "abscisse": 590
+                },
+                "communication": null
+              },
+              {
+                "id": "bs-2",
+                "nom": "BS 2a",
+                "pointe": {
+                  "voieId": "voie-3",
+                  "abscisse": 700
+                },
+                "talon": {
+                  "voieId": "voie-4",
+                  "abscisse": 770
+                },
+                "communication": "com-1"
+              },
+              {
+                "id": "bs-3",
+                "nom": "BS 2b",
+                "pointe": {
+                  "voieId": "voie-4",
+                  "abscisse": 770
+                },
+                "talon": {
+                  "voieId": "voie-3",
+                  "abscisse": 700
+                },
+                "communication": "com-1"
+              }
+            ],
+            "textes": [
+              {
+                "id": "texte-1",
+                "texte": "Accès base arrière",
+                "x": 1200,
+                "y": 780,
+                "taille": 16,
+                "couleur": "#1c2430",
+                "gras": false
+              }
+            ],
+            "engins": [
+              {
+                "id": "engin-1",
+                "typeId": "type-13",
+                "type": {
+                  "categorie": "Pelle RR",
+                  "modele": "CAT 323",
+                  "longueur": 9.5,
+                  "largeur": 3.2,
+                  "couleur": "#e8a33d"
+                },
+                "couleur": "#e8a33d",
+                "numero": "1",
+                "description": "",
+                "position": {
+                  "genre": "voie",
+                  "voieId": "voie-4",
+                  "abscisse": 1080
+                }
+              },
+              {
+                "id": "engin-2",
+                "typeId": "type-13",
+                "type": {
+                  "categorie": "Pelle RR",
+                  "modele": "CAT 323",
+                  "longueur": 9.5,
+                  "largeur": 3.2,
+                  "couleur": "#e8a33d"
+                },
+                "couleur": "#e8a33d",
+                "numero": "2",
+                "description": "",
+                "position": {
+                  "genre": "voie",
+                  "voieId": "voie-4",
+                  "abscisse": 880
+                }
+              },
+              {
+                "id": "engin-3",
+                "typeId": "type-13",
+                "type": {
+                  "categorie": "Pelle RR",
+                  "modele": "CAT 323",
+                  "longueur": 9.5,
+                  "largeur": 3.2,
+                  "couleur": "#e8a33d"
+                },
+                "couleur": "#e8a33d",
+                "numero": "3",
+                "description": "",
+                "position": {
+                  "genre": "voie",
+                  "voieId": "voie-3",
+                  "abscisse": 760
+                }
+              },
+              {
+                "id": "engin-4",
+                "typeId": "type-13",
+                "type": {
+                  "categorie": "Pelle RR",
+                  "modele": "CAT 323",
+                  "longueur": 9.5,
+                  "largeur": 3.2,
+                  "couleur": "#e8a33d"
+                },
+                "couleur": "#e8a33d",
+                "numero": "4",
+                "description": "enraillée",
+                "position": {
+                  "genre": "voie",
+                  "voieId": "voie-4",
+                  "abscisse": 200
+                }
+              }
+            ],
+            "rames": [
+              {
+                "id": "rame-1",
+                "nom": "TTX 1",
+                "numero": "T1",
+                "description": "déblais",
+                "couleur": "#66ff99",
+                "voieId": "voie-2",
+                "abscisse": 330,
+                "sens": -1,
+                "vehicules": [
+                  {
+                    "typeId": "type-1",
+                    "type": {
+                      "categorie": "Loco",
+                      "modele": "BB 61000",
+                      "longueur": 14.5,
+                      "largeur": 3,
+                      "couleur": "#66ff99"
+                    }
+                  },
+                  {
+                    "typeId": "type-12",
+                    "type": {
+                      "categorie": "Wagon",
+                      "modele": "R39",
+                      "longueur": 19.9,
+                      "largeur": 3,
+                      "couleur": "#ff9933"
+                    }
+                  },
+                  {
+                    "typeId": "type-12",
+                    "type": {
+                      "categorie": "Wagon",
+                      "modele": "R39",
+                      "longueur": 19.9,
+                      "largeur": 3,
+                      "couleur": "#ff9933"
+                    }
+                  },
+                  {
+                    "typeId": "type-12",
+                    "type": {
+                      "categorie": "Wagon",
+                      "modele": "R39",
+                      "longueur": 19.9,
+                      "largeur": 3,
+                      "couleur": "#ff9933"
+                    }
+                  },
+                  {
+                    "typeId": "type-12",
+                    "type": {
+                      "categorie": "Wagon",
+                      "modele": "R39",
+                      "longueur": 19.9,
+                      "largeur": 3,
+                      "couleur": "#ff9933"
+                    }
+                  }
+                ]
+              }
+            ],
+            "etatsZones": {
+              "zone-1": {
+                "etat": "etat-3",
+                "avancement": {
+                  "pourcentage": 60,
+                  "depuis": "gauche",
+                  "reste": "etat-2"
+                }
+              }
+            },
+            "fleches": [],
+            "exploitation": {},
+            "commentaires": [],
+            "coupes": {}
+          }
+        },
+        {
+          "id": "image-3",
+          "debut": 120,
+          "fin": 180,
+          "titre": "",
+          "heures": "plage",
+          "phasage": [
+            {
+              "numero": 4,
+              "libelle": "Le TTX 1 entre sur V1 par le BS 1"
+            },
+            {
+              "numero": 5,
+              "libelle": "Fin du déballastage ; la pelle 4 repart en base arrière"
+            }
+          ],
+          "legendeMasquee": [],
+          "contenu": {
+            "extremites": {
+              "gauche": "Nord",
+              "droite": "Sud"
+            },
+            "calques": {
+              "fond": {
+                "visible": true,
+                "opacite": 1,
+                "verrouille": false
+              },
+              "cadres": {
+                "visible": true,
+                "verrouille": false
+              },
+              "voies": {
+                "visible": true,
+                "verrouille": false
+              },
+              "zones": {
+                "visible": true,
+                "verrouille": false
+              },
+              "appareils": {
+                "visible": true,
+                "verrouille": false
+              },
+              "textes": {
+                "visible": true,
+                "verrouille": false
+              }
+            },
+            "cadres": [
+              {
+                "id": "cadre-1",
+                "nom": "Stockage vieilles TBA",
+                "couleur": "#7a8a63",
+                "x": 300,
+                "y": 610,
+                "largeur": 360,
+                "hauteur": 60,
+                "pointille": true,
+                "rempli": true
+              }
+            ],
+            "voies": [
+              {
+                "id": "voie-1",
+                "nom": "V tiroir Nord",
+                "couleur": "#454f59",
+                "epaisseur": 9,
+                "points": [
+                  {
+                    "x": 180,
+                    "y": 240
+                  },
+                  {
+                    "x": 700,
+                    "y": 240
+                  },
+                  {
+                    "x": 760,
+                    "y": 300
+                  }
+                ]
+              },
+              {
+                "id": "voie-2",
+                "nom": "VC",
+                "couleur": "#454f59",
+                "epaisseur": 9,
+                "points": [
+                  {
+                    "x": 180,
+                    "y": 360
+                  },
+                  {
+                    "x": 1440,
+                    "y": 360
+                  }
+                ]
+              },
+              {
+                "id": "voie-3",
+                "nom": "V1",
+                "couleur": "#2f6fb0",
+                "epaisseur": 9,
+                "points": [
+                  {
+                    "x": 180,
+                    "y": 460
+                  },
+                  {
+                    "x": 1440,
+                    "y": 460
+                  }
+                ]
+              },
+              {
+                "id": "voie-4",
+                "nom": "V2",
+                "couleur": "#b8322a",
+                "epaisseur": 12,
+                "points": [
+                  {
+                    "x": 180,
+                    "y": 560
+                  },
+                  {
+                    "x": 1100,
+                    "y": 560
+                  },
+                  {
+                    "x": 1440,
+                    "y": 620
+                  }
+                ]
+              }
+            ],
+            "zones": [
+              {
+                "id": "zone-1",
+                "nom": "RVB 50 m",
+                "couleur": "#33506b",
+                "voieId": "voie-3",
+                "debut": 240,
+                "fin": 390
+              },
+              {
+                "id": "zone-2",
+                "nom": "RR 14 m",
+                "couleur": "#d98b1e",
+                "voieId": "voie-3",
+                "debut": 390,
+                "fin": 450
+              },
+              {
+                "id": "zone-3",
+                "nom": "RVB 63 m",
+                "couleur": "#33506b",
+                "voieId": "voie-2",
+                "debut": 900,
+                "fin": 1080
+              },
+              {
+                "id": "zone-4",
+                "nom": "RVB 41 m",
+                "couleur": "#33506b",
+                "voieId": "voie-4",
+                "debut": 850,
+                "fin": 1050
+              }
+            ],
+            "appareils": [
+              {
+                "id": "bs-1",
+                "nom": "BS 1",
+                "pointe": {
+                  "voieId": "voie-2",
+                  "abscisse": 520
+                },
+                "talon": {
+                  "voieId": "voie-3",
+                  "abscisse": 590
+                },
+                "communication": null
+              },
+              {
+                "id": "bs-2",
+                "nom": "BS 2a",
+                "pointe": {
+                  "voieId": "voie-3",
+                  "abscisse": 700
+                },
+                "talon": {
+                  "voieId": "voie-4",
+                  "abscisse": 770
+                },
+                "communication": "com-1"
+              },
+              {
+                "id": "bs-3",
+                "nom": "BS 2b",
+                "pointe": {
+                  "voieId": "voie-4",
+                  "abscisse": 770
+                },
+                "talon": {
+                  "voieId": "voie-3",
+                  "abscisse": 700
+                },
+                "communication": "com-1"
+              }
+            ],
+            "textes": [
+              {
+                "id": "texte-1",
+                "texte": "Accès base arrière",
+                "x": 1200,
+                "y": 780,
+                "taille": 16,
+                "couleur": "#1c2430",
+                "gras": false
+              }
+            ],
+            "engins": [
+              {
+                "id": "engin-1",
+                "typeId": "type-13",
+                "type": {
+                  "categorie": "Pelle RR",
+                  "modele": "CAT 323",
+                  "longueur": 9.5,
+                  "largeur": 3.2,
+                  "couleur": "#e8a33d"
+                },
+                "couleur": "#e8a33d",
+                "numero": "1",
+                "description": "",
+                "position": {
+                  "genre": "voie",
+                  "voieId": "voie-4",
+                  "abscisse": 1080
+                }
+              },
+              {
+                "id": "engin-2",
+                "typeId": "type-13",
+                "type": {
+                  "categorie": "Pelle RR",
+                  "modele": "CAT 323",
+                  "longueur": 9.5,
+                  "largeur": 3.2,
+                  "couleur": "#e8a33d"
+                },
+                "couleur": "#e8a33d",
+                "numero": "2",
+                "description": "",
+                "position": {
+                  "genre": "voie",
+                  "voieId": "voie-4",
+                  "abscisse": 880
+                }
+              },
+              {
+                "id": "engin-3",
+                "typeId": "type-13",
+                "type": {
+                  "categorie": "Pelle RR",
+                  "modele": "CAT 323",
+                  "longueur": 9.5,
+                  "largeur": 3.2,
+                  "couleur": "#e8a33d"
+                },
+                "couleur": "#e8a33d",
+                "numero": "3",
+                "description": "",
+                "position": {
+                  "genre": "voie",
+                  "voieId": "voie-3",
+                  "abscisse": 760
+                }
+              },
+              {
+                "id": "engin-4",
+                "typeId": "type-13",
+                "type": {
+                  "categorie": "Pelle RR",
+                  "modele": "CAT 323",
+                  "longueur": 9.5,
+                  "largeur": 3.2,
+                  "couleur": "#e8a33d"
+                },
+                "couleur": "#e8a33d",
+                "numero": "4",
+                "description": "en base arrière",
+                "position": {
+                  "genre": "libre",
+                  "x": 420,
+                  "y": 645,
+                  "angle": 0
+                }
+              }
+            ],
+            "rames": [
+              {
+                "id": "rame-1",
+                "nom": "TTX 1",
+                "numero": "T1",
+                "description": "déblais",
+                "couleur": "#66ff99",
+                "voieId": "voie-3",
+                "abscisse": 1000,
+                "sens": -1,
+                "vehicules": [
+                  {
+                    "typeId": "type-1",
+                    "type": {
+                      "categorie": "Loco",
+                      "modele": "BB 61000",
+                      "longueur": 14.5,
+                      "largeur": 3,
+                      "couleur": "#66ff99"
+                    }
+                  },
+                  {
+                    "typeId": "type-12",
+                    "type": {
+                      "categorie": "Wagon",
+                      "modele": "R39",
+                      "longueur": 19.9,
+                      "largeur": 3,
+                      "couleur": "#ff9933"
+                    }
+                  },
+                  {
+                    "typeId": "type-12",
+                    "type": {
+                      "categorie": "Wagon",
+                      "modele": "R39",
+                      "longueur": 19.9,
+                      "largeur": 3,
+                      "couleur": "#ff9933"
+                    }
+                  },
+                  {
+                    "typeId": "type-12",
+                    "type": {
+                      "categorie": "Wagon",
+                      "modele": "R39",
+                      "longueur": 19.9,
+                      "largeur": 3,
+                      "couleur": "#ff9933"
+                    }
+                  },
+                  {
+                    "typeId": "type-12",
+                    "type": {
+                      "categorie": "Wagon",
+                      "modele": "R39",
+                      "longueur": 19.9,
+                      "largeur": 3,
+                      "couleur": "#ff9933"
+                    }
+                  }
+                ]
+              }
+            ],
+            "etatsZones": {
+              "zone-1": {
+                "etat": "etat-3",
+                "avancement": null
+              }
+            },
+            "fleches": [],
+            "exploitation": {},
+            "commentaires": [],
+            "coupes": {}
+          }
+        }
+      ]
     }
   ],
   "catalogue": [
