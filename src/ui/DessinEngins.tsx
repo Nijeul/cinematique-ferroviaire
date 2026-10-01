@@ -26,8 +26,9 @@ import { COULEURS } from './couleurs.ts'
 
 const halo = { stroke: '#ffffff', paintOrder: 'stroke', strokeLinejoin: 'round', style: { userSelect: 'none' } } as const
 
-// Un véhicule ou un engin : le rectangle, et le modèle écrit dedans.
-function Caisse({ s, couleur, modele, id }: { s: Silhouette; couleur: string; modele: string; id: string }) {
+// Un véhicule ou un engin : le rectangle, et le modèle écrit dedans. (Aussi
+// rendu seul, en image, pour le PowerPoint animé : rendrePlanche.tsx.)
+export function Caisse({ s, couleur, modele, id }: { s: Silhouette; couleur: string; modele: string; id: string }) {
   const taille = tailleLibelle(modele, s.longueur, s.largeur)
   const dehors = s.depassement > 0
   return (
@@ -60,7 +61,7 @@ function Caisse({ s, couleur, modele, id }: { s: Silhouette; couleur: string; mo
   )
 }
 
-function Pastille({ centre, rayon, couleur, texte }: { centre: Point; rayon: number; couleur: string; texte: string }) {
+export function Pastille({ centre, rayon, couleur, texte }: { centre: Point; rayon: number; couleur: string; texte: string }) {
   const taille = rayon * (texte.length > 2 ? 0.85 : 1.15)
   return (
     <g data-testid="pastille">
@@ -110,6 +111,27 @@ export function DessinEngin(props: { projet: Planche; engin: Engin; choisi: bool
   )
 }
 
+// Étiquette d'une rame (« Rame 1 — 213,5 m »), centrée sur sa ligne de
+// base ; en rouge si la rame dépasse le bout de sa voie. (Aussi rendue seule,
+// en image, pour le PowerPoint animé.)
+export function EtiquetteRame({ x, y, taille, alerte, texte }: { x: number; y: number; taille: number; alerte: boolean; texte: string }) {
+  return (
+    <text
+      x={x}
+      y={y}
+      fontSize={taille}
+      fontWeight={600}
+      textAnchor="middle"
+      fill={alerte ? COULEURS.erreur : COULEURS.texte}
+      strokeWidth={taille * 0.25}
+      data-testid="etiquette-rame"
+      {...halo}
+    >
+      {texte}
+    </text>
+  )
+}
+
 export function DessinRame(props: { projet: Planche; rame: Rame; choisie: boolean; zoom: number; apercu?: boolean }) {
   const { projet, rame, choisie, zoom } = props
   const s = silhouetteRame(projet, rame)
@@ -128,20 +150,7 @@ export function DessinRame(props: { projet: Planche; rame: Rame; choisie: boolea
         <Caisse key={i} s={v} couleur={rame.vehicules[i].type.couleur} modele={rame.vehicules[i].type.modele} id={`${rame.id}-${i + 1}`} />
       ))}
       {!props.apercu && (
-        <text
-          x={etiquette.x}
-          y={etiquette.y}
-          fontSize={taille}
-          fontWeight={600}
-          textAnchor="middle"
-          fill={s.depassement > 0 ? COULEURS.erreur : COULEURS.texte}
-          strokeWidth={taille * 0.25}
-          data-testid="etiquette-rame"
-          {...halo}
-        >
-          {texte}
-          {s.depassement > 0 ? ' ⚠' : ''}
-        </text>
+        <EtiquetteRame x={etiquette.x} y={etiquette.y} taille={taille} alerte={s.depassement > 0} texte={`${texte}${s.depassement > 0 ? ' ⚠' : ''}`} />
       )}
       {rame.numero.trim() !== '' && (
         <Pastille centre={positionPastille(s.vehicules[0], rayon)} rayon={rayon} couleur={rame.couleur} texte={rame.numero.trim()} />

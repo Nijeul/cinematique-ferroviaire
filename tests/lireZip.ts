@@ -27,3 +27,20 @@ export function lireZip(octets: ArrayBuffer): Map<string, Buffer> {
   }
   return fichiers
 }
+
+// Méthode de compression de chaque fichier de l'archive (0 : aucune,
+// 8 : DEFLATE), lue dans le répertoire central.
+export function methodesZip(octets: ArrayBuffer): Map<string, number> {
+  const b = Buffer.from(octets)
+  let fin = b.length - 22
+  while (fin >= 0 && b.readUInt32LE(fin) !== 0x06054b50) fin--
+  const nombre = b.readUInt16LE(fin + 10)
+  let p = b.readUInt32LE(fin + 16)
+  const methodes = new Map<string, number>()
+  for (let i = 0; i < nombre; i++) {
+    const longueurNom = b.readUInt16LE(p + 28)
+    methodes.set(b.toString('utf8', p + 46, p + 46 + longueurNom), b.readUInt16LE(p + 10))
+    p += 46 + longueurNom + b.readUInt16LE(p + 30) + b.readUInt16LE(p + 32)
+  }
+  return methodes
+}

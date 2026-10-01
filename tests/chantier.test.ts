@@ -51,8 +51,9 @@ describe('chantier d’exemple', () => {
     expect(c.plans.map((p) => p.projet.nom)).toEqual(['Phase définitive', 'Phase provisoire'])
     // Le deuxième synoptique (étape 6) raconte les états d'une zone : voir
     // etats.test.ts ; le troisième (étape 7) a des flèches et une légende :
-    // voir fleches.test.ts et legende.test.ts.
-    expect(c.synoptiques).toHaveLength(4)
+    // voir fleches.test.ts et legende.test.ts ; le cinquième (étape 11a)
+    // fait rouler les engins : voir animation.test.ts.
+    expect(c.synoptiques).toHaveLength(5)
     const s = c.synoptiques[0]
     expect(s.images).toHaveLength(3)
     expect(s.cadrage).not.toBeNull()
@@ -114,17 +115,23 @@ describe('modèle du chantier', () => {
     expect(c.plans[0].projet.nom).toBe('Définitive')
     c = supprimerPlan(c, 'plan-1')
     expect(c.plans.map((p) => p.id)).toEqual(['plan-2'])
-    expect(c.synoptiques).toHaveLength(4)
+    expect(c.synoptiques).toHaveLength(5)
     expect(c.synoptiques[0].origine.nomPlan).toBe('Phase définitive')
   })
 
   it('ajoute, renomme et supprime un synoptique', () => {
     let c = fixture()
     const r = ajouterSynoptique(c, c.plans[1], { nom: 'Nuit 2', t0: '2026-10-16T22:00', fin: 480, cadrage: null }, QUAND)
-    expect(r.id).toBe('synoptique-5')
-    c = renommerSynoptique(r.chantier, 'synoptique-5', 'Nuit 5 bis')
-    expect(c.synoptiques[4]).toMatchObject({ nom: 'Nuit 5 bis', origine: { planId: 'plan-2', nomPlan: 'Phase provisoire' } })
-    expect(supprimerSynoptique(c, 'synoptique-1').synoptiques.map((s) => s.id)).toEqual(['synoptique-2', 'synoptique-3', 'synoptique-4', 'synoptique-5'])
+    expect(r.id).toBe('synoptique-6')
+    c = renommerSynoptique(r.chantier, 'synoptique-6', 'Nuit 6 bis')
+    expect(c.synoptiques[5]).toMatchObject({ nom: 'Nuit 6 bis', origine: { planId: 'plan-2', nomPlan: 'Phase provisoire' } })
+    expect(supprimerSynoptique(c, 'synoptique-1').synoptiques.map((s) => s.id)).toEqual([
+      'synoptique-2',
+      'synoptique-3',
+      'synoptique-4',
+      'synoptique-5',
+      'synoptique-6',
+    ])
   })
 
   it('résume un plan en une ligne', () => {
@@ -137,7 +144,7 @@ describe('modèle du chantier', () => {
   })
 
   it('dit ce qui sera perdu en supprimant le chantier', () => {
-    expect(descriptionPerte(fixture())).toBe('2 plans et 4 synoptiques (11 images), fonds de plan compris.')
+    expect(descriptionPerte(fixture())).toBe('2 plans et 5 synoptiques (14 images), fonds de plan compris.')
     expect(descriptionPerte(ajouterPlan(creerChantier('c', 'C', QUAND), creerProjet()).chantier)).toBe('1 plan, fonds de plan compris.')
     expect(descriptionPerte(creerChantier('c', 'C', QUAND))).toBe('Ce chantier est vide.')
   })

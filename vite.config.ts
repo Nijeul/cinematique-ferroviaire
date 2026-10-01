@@ -7,4 +7,8 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   base: '/',
   plugins: [react()],
+  // L'application tient en un fichier d'environ 500 ko (150 ko compressé) ;
+  // les outils lourds (PowerPoint, PDF, pdf.js, Supabase) sont chargés à la
+  // demande. Pas d'avertissement en dessous de 600 ko.
+  build: { chunkSizeWarningLimit: 600 },
 })

@@ -1,5 +1,16 @@
 import PptxGenJS from 'pptxgenjs'
-import { ajusterDansPage, DIAPOSITIVE, POLICE_EXPORT, type InfosDocument, type PageDeGarde, type Redacteur, type ZoneTexte } from '../plan/export.ts'
+import {
+  ajusterDansPage,
+  DIAPOSITIVE,
+  POLICE_EXPORT,
+  type ImageNommee,
+  type InfosDocument,
+  type PageDeGarde,
+  type Redacteur,
+  type ZoneTexte,
+} from '../plan/export.ts'
+import type { TransitionDiapositive } from '../plan/exportAnime.ts'
+import { reecrirePptx } from './transitions.ts'
 
 // Écriture du fichier PowerPoint (.pptx) avec pptxgenjs, chargé à la demande
 // (import dynamique depuis l'interface) : il ne pèse pas sur l'ouverture de
@@ -8,6 +19,11 @@ import { ajusterDansPage, DIAPOSITIVE, POLICE_EXPORT, type InfosDocument, type P
 // bandeau, du créneau, de l'encart PHASAGE et des commentaires, à leur place. La page de garde
 // a son cartouche en tableau PowerPoint natif. Aucun accès au navigateur ici :
 // les images arrivent déjà rendues (data URL), ce qui permet de tester sous Node.
+//
+// PowerPoint animé : chaque diapositive empile le dessous de la planche, les
+// engins et les rames en images séparées (tournées, nommées « !!… »), le
+// dessus de la planche et les zones de texte natives ; les transitions
+// (Morphose) sont écrites à la fin, dans le XML (transitions.ts).
 
 const POLICE_PPTX = POLICE_EXPORT.powerpoint
 
@@ -23,9 +39,9 @@ function runs(zone: ZoneTexte): PptxGenJS.TextProps[] {
   return lignes.map((l, i) => ({ text: l.texte, options: { bold: l.gras, breakLine: i < lignes.length - 1 } }))
 }
 
-function ajouterZone(diapo: PptxGenJS.Slide, zone: ZoneTexte): void {
+function ajouterZone(diapo: PptxGenJS.Slide, zone: ZoneTexte, nom: string = zone.nom): void {
   diapo.addText(runs(zone), {
-    objectName: zone.nom,
+    objectName: nom,
     x: zone.x,
     y: zone.y,
     w: zone.largeur,
@@ -120,13 +136,53 @@ export function redacteurPptx(infos: InfosDocument): Redacteur {
   pptx.subject = infos.sujet
   pptx.company = ''
   pptx.author = 'Cinématique ferroviaire'
+  // Transition de chaque diapositive, dans l'ordre ; le fichier n'est
+  // réécrit que s'il y a des diapositives animées.
+  const transitions: (TransitionDiapositive | null)[] = []
+  let anime = false
   return {
-    garde: (g, vignette) => ajouterGarde(pptx, g, vignette),
+    garde: (g, vignette, transition) => {
+      ajouterGarde(pptx, g, vignette)
+      transitions.push(transition ?? null)
+    },
     planche: (p, image) => {
       const diapo = pptx.addSlide()
       diapo.addImage({ data: image.donnees, x: p.cible.x, y: p.cible.y, w: p.cible.largeur, h: p.cible.hauteur, altText: `Planche ${p.index + 1}` })
       for (const zone of p.zones) ajouterZone(diapo, zone)
+      transitions.push(null)
     },
-    terminer: async () => (await pptx.write({ outputType: 'arraybuffer', compression: true })) as ArrayBuffer,
+    diapositive: (d) => {
+      anime = true
+      const diapo = pptx.addSlide()
+      const couche = (image: ImageNommee, texte: string) =>
+        diapo.addImage({ data: image.donnees, x: d.cible.x, y: d.cible.y, w: d.cible.largeur, h: d.cible.hauteur, objectName: image.nom, altText: texte })
+      couche(d.dessous, 'Plan de la planche')
+      for (const o of d.objets) {
+        diapo.addImage({ data: o.donnees, x: o.x, y: o.y, w: o.w, h: o.h, rotate: o.rotation, objectName: o.nom, altText: '' })
+      }
+      // Les marges de la diapositive autour de la planche, en blanc : un
+      // engin qui dépasse du plan y est caché, comme à l'écran.
+      const { x, y, largeur, hauteur } = d.cible
+      const L = DIAPOSITIVE.largeur
+      const H = DIAPOSITIVE.hauteur
+      const marges: [string, number, number, number, number][] = [
+        ['haut', 0, 0, L, y],
+        ['bas', 0, y + hauteur, L, H - y - hauteur],
+        ['gauche', 0, y, x, hauteur],
+        ['droite', x + largeur, y, L - x - largeur, hauteur],
+      ]
+      for (const [nom, mx, my, mw, mh] of marges) {
+        if (mw > 1e-3 && mh > 1e-3)
+          diapo.addShape('rect', { x: mx, y: my, w: mw, h: mh, fill: { color: 'FFFFFF' }, line: { type: 'none' }, objectName: `!!marge-${nom}` })
+      }
+      couche(d.dessus, 'Cadre, flèches et légende de la planche')
+      for (const zone of d.zones) ajouterZone(diapo, zone, zone.objet)
+      if (d.note) diapo.addNotes(d.note)
+      transitions.push(d.transition)
+    },
+    terminer: async () => {
+      const octets = (await pptx.write({ outputType: 'arraybuffer', compression: !anime })) as ArrayBuffer
+      return anime ? reecrirePptx(octets, transitions) : octets
+    },
   }
 }

@@ -5,6 +5,7 @@ import type { Rectangle } from './elements.ts'
 import type { ListesChantier } from './legende.ts'
 import { BORDS_PLANCHE, COULEURS_PLANCHE, lignesCreneau, miseEnPage, texteEtape, type MiseEnPage } from './planche.ts'
 import type { Synoptique } from './synoptique.ts'
+import type { OptionsAnimation, TransitionDiapositive } from './exportAnime.ts'
 
 // Exports PowerPoint et PDF des images d'un synoptique : ce qui se calcule
 // sans navigateur. Quelles images exporter, où poser chaque planche dans la
@@ -49,14 +50,20 @@ export type OptionsExport = {
   pageDeGarde: boolean
   textes: TextesPowerPoint
   page: FormatPdf
+  // PowerPoint seulement : engins qui roulent et zones qui avancent d'une
+  // image à la suivante (voir exportAnime.ts).
+  animation: OptionsAnimation
 }
 
+// Animation « Au clic » par défaut (choix du commanditaire) : mouvement de
+// 2 s, pause de 5 s sur chaque image en mode automatique.
 export const OPTIONS_PAR_DEFAUT: OptionsExport = {
   format: 'pptx',
   images: { genre: 'toutes' },
   pageDeGarde: true,
   textes: 'modifiables',
   page: '16/9',
+  animation: { mode: 'clic', duree: 2, pause: 5 },
 }
 
 // ——— Choix des images ———
@@ -139,6 +146,10 @@ export type ParagrapheZone = { texte: string; gras: boolean }
 // marges intérieures et interligne en points ; couleurs en « #rrggbb ».
 export type ZoneTexte = {
   nom: NomZone
+  // Nom de l'objet dans PowerPoint, le même d'une diapositive à l'autre
+  // (« !!creneau », « !!commentaire-<id> ») : la Morphose passe ainsi du
+  // texte d'une image à celui de la suivante.
+  objet: string
   x: number
   y: number
   largeur: number
@@ -180,6 +191,7 @@ export function zonesTexte(s: Synoptique, index: number, page: MiseEnPage, cible
     const taille = pt(page.bandeau.lignes[0].taille)
     zones.push({
       nom: 'bandeau',
+      objet: '!!bandeau',
       ...place(page.bandeau.boite),
       fond: COULEURS_PLANCHE.fondBandeau,
       bord: { couleur: COULEURS_PLANCHE.bordBandeau, epaisseur: pt(page.trait * BORDS_PLANCHE.bandeau) },
@@ -203,6 +215,7 @@ export function zonesTexte(s: Synoptique, index: number, page: MiseEnPage, cible
   const tailleCreneau = pt(page.creneau.lignes[0].taille)
   zones.push({
     nom: 'creneau',
+    objet: '!!creneau',
     ...place(page.creneau.boite),
     fond: COULEURS_PLANCHE.fondCreneau,
     bord: { couleur: COULEURS_PLANCHE.bordCreneau, epaisseur: pt(page.trait * BORDS_PLANCHE.creneau) },
@@ -220,6 +233,7 @@ export function zonesTexte(s: Synoptique, index: number, page: MiseEnPage, cible
     const sansMarge = { gauche: 0, droite: 0, haut: 0, bas: 0 }
     zones.push({
       nom: 'phasage-titre',
+      objet: '!!phasage-titre',
       ...place(page.phasage.entete),
       fond: COULEURS_PLANCHE.entetePhasage,
       bord: null,
@@ -234,6 +248,7 @@ export function zonesTexte(s: Synoptique, index: number, page: MiseEnPage, cible
     const { boite, entete } = page.phasage
     zones.push({
       nom: 'phasage-etapes',
+      objet: '!!phasage-etapes',
       ...place({ x: boite.x, y: entete.y + entete.hauteur, largeur: boite.largeur, hauteur: boite.hauteur - entete.hauteur }),
       fond: COULEURS_PLANCHE.fondPhasage,
       bord: null,
@@ -257,6 +272,7 @@ export function zonesTexte(s: Synoptique, index: number, page: MiseEnPage, cible
       if (!visible) continue
       zones.push({
         nom: 'commentaire',
+        objet: `!!commentaire-${commentaire.id}`,
         ...place(b),
         fond: commentaire.encadre ? '#ffffff' : null,
         bord: commentaire.encadre ? { couleur: commentaire.couleur, epaisseur: pt(m.taille * 0.08) } : null,
@@ -351,9 +367,36 @@ export type InfosDocument = { titre: string; sujet: string }
 // Le fichier se construit page après page, au fil du rendu des images (qui
 // peuvent alors être libérées), puis s'écrit d'un coup.
 export type Redacteur = {
-  garde: (g: PageDeGarde, vignette: ImageRendue) => void
+  // `transition` : départ de la page de garde dans un PowerPoint animé.
+  garde: (g: PageDeGarde, vignette: ImageRendue, transition?: TransitionDiapositive) => void
   planche: (p: PlancheAExporter, image: ImageRendue) => void
+  // PowerPoint animé seulement (voir DiapositiveAnimee).
+  diapositive?: (d: DiapositiveAnimee) => void
   terminer: () => Promise<ArrayBuffer>
+}
+
+// ——— PowerPoint animé ———
+
+// Une image posée sur la diapositive, avec son nom d'objet PowerPoint.
+export type ImageNommee = ImageRendue & { nom: string }
+
+// Un objet séparé (caisse, pastille, étiquette) : son image, sa place et sa
+// rotation (pouces, degrés).
+export type ObjetPose = ImageNommee & { x: number; y: number; w: number; h: number; rotation: number }
+
+// Une diapositive du PowerPoint animé, empilée comme l'écran : le dessous
+// (plan, zones, appareils), les engins et les rames en objets séparés, le
+// dessus (cadre de la planche percé à la place du plan, flèches,
+// commentaires, échelle, légende), puis les zones de texte natives. Les
+// intermédiaires s'enchaînent seules et portent une note.
+export type DiapositiveAnimee = {
+  cible: Rectangle
+  dessous: ImageNommee
+  objets: ObjetPose[]
+  dessus: ImageNommee
+  zones: ZoneTexte[]
+  transition: TransitionDiapositive
+  note: string | null
 }
 
 // ——— Nom du fichier ———

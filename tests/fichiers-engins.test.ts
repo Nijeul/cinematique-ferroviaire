@@ -368,7 +368,7 @@ describe('catalogue du chantier et engins posés', () => {
   it('modifier un type ne change pas les engins déjà posés dans les synoptiques (copies figées)', () => {
     const c = fixture()
     const pelle = c.catalogue.find((t) => t.modele === 'CAT 323')!
-    expect(synoptiquesDuType(c, pelle.id)).toBe(2)
+    expect(synoptiquesDuType(c, pelle.id)).toBe(3)
     expect(synoptiquesDuType(c, type('V211').id)).toBe(0)
     const r = modifierTypeChantier(c, pelle.id, { longueur: 10 })
     if (!r.ok) throw new Error(r.erreur)

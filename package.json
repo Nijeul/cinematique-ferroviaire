@@ -13,6 +13,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.117.2",
     "jspdf": "^4.2.1",
+    "jszip": "^3.10.2",
     "pdfjs-dist": "^6.3.289",
     "pptxgenjs": "^4.0.1",
     "react": "^19.2.8",

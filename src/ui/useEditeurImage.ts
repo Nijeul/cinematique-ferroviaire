@@ -102,6 +102,10 @@ export function useEditeurImage(args: {
   const [espace, setEspace] = useState(false)
 
   const planche: PlanImage = projetDeImage(s, s.images[index])
+  // Engins et rames de tout le synoptique : un nouvel engin ne reprend
+  // l'identifiant d'aucun d'eux (l'animation reconnaît un engin à son
+  // identifiant, d'une image à la suivante).
+  const autresImages = (genre: 'engins' | 'rames'): { id: string }[] => s.images.flatMap((im): { id: string }[] => im.contenu[genre])
   const calque = s.calqueEngins
   // Un engin choisi sur une image reste choisi sur les autres images où il
   // est (même identifiant, copié par « Nouvelle image ») ; ailleurs, rien.
@@ -238,7 +242,7 @@ export function useEditeurImage(args: {
     const position: PositionEngin = accroche
       ? { genre: 'voie', voieId: accroche.voieId, abscisse: accroche.abscisse }
       : { genre: 'libre', x: p.x, y: p.y, angle: 0 }
-    const { planche: suivante, id } = ajouterEngin(planche, typeChoisi, position)
+    const { planche: suivante, id } = ajouterEngin(planche, typeChoisi, position, autresImages('engins'))
     poser(() => suivante)
     setSelection({ genre: 'engin', id })
     const engin = suivante.engins.find((e) => e.id === id)!
@@ -260,7 +264,7 @@ export function useEditeurImage(args: {
     if (vehicules.length === 0) return erreur("Composez d'abord la rame dans le panneau de droite (« Rame à poser »).")
     const accroche = planche.calques.voies.visible ? accrocherVoie(planche.voies, p, tolerance) : null
     if (!accroche) return erreur("Cliquez sur une voie : une rame se pose le long d'une voie.")
-    const { planche: suivante, id } = ajouterRame(planche, vehicules, accroche.voieId, accroche.abscisse)
+    const { planche: suivante, id } = ajouterRame(planche, vehicules, accroche.voieId, accroche.abscisse, autresImages('rames'))
     poser(() => suivante)
     setSelection({ genre: 'rame', id })
     const rame = suivante.rames.find((r) => r.id === id)!
