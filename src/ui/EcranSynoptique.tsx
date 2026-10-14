@@ -228,7 +228,7 @@ function consigne(editeur: EditeurImage): string {
         ? `Flèche « ${editeur.typeFleche.nom} » : un clic par point · double-clic ou Entrée pour finir · Maj : horizontal, vertical, 45° · Suppr : retirer le dernier point · Échap : annuler`
         : 'Liste des flèches vide : ajoutez des types dans la page du chantier'
     case 'texte':
-      return `Cliquez sur l'image pour y poser un commentaire (son coin haut gauche) · double-clic sur un commentaire : modifier son texte sur place (Entrée : valider, Maj+Entrée : à la ligne, Échap : annuler)${fleches}`
+      return `Cliquez sur l'image pour y poser un commentaire (son coin haut gauche) · double-clic sur un commentaire, le bandeau, le créneau ou une étape du PHASAGE : modifier son texte sur place (Entrée : valider, Maj+Entrée : à la ligne, Échap : annuler)${fleches}`
     case 'main':
       return `Glissez pour déplacer la vue · molette : zoom${fleches}`
     case 'selection':
@@ -236,11 +236,11 @@ function consigne(editeur: EditeurImage): string {
         return `Commentaire choisi : glissez-le pour le déplacer · double-clic : modifier son texte sur place (Entrée : valider, Maj+Entrée : à la ligne, Échap : annuler), ou dans le panneau · Suppr : le retirer de cette image · Échap : le libérer${fleches}`
       }
       if (editeur.fleche) {
-        return `Flèche choisie : glissez un point rond pour le déplacer (Maj : horizontal, vertical, 45°), ou le trait pour déplacer toute la flèche · Suppr : la retirer de cette image · Échap : la libérer${fleches}`
+        return `Flèche choisie : glissez un point rond pour le déplacer (Maj : horizontal, vertical, 45°), ou le trait pour déplacer toute la flèche · double-clic : modifier son libellé sur place · Suppr : la retirer de cette image · Échap : la libérer${fleches}`
       }
       return editeur.zone
         ? `Zone « ${editeur.zone.nom} » : choisissez son état dans le panneau, ou touches 1 à ${Math.min(9, editeur.etatsVoie.length)} · Échap : la libérer${fleches}`
-        : `Cliquez un engin, une rame, une flèche ou un commentaire pour le choisir, puis glissez-le · cliquez une zone pour changer son état ou ses coupes · Suppr : retirer de cette image · molette : zoom${fleches}`
+        : `Cliquez un engin, une rame, une flèche ou un commentaire pour le choisir, puis glissez-le · cliquez une zone pour changer son état ou ses coupes · double-clic sur un texte (bandeau, créneau, PHASAGE, libellé, commentaire) : le modifier sur place · Suppr : retirer de cette image · molette : zoom${fleches}`
   }
 }
 

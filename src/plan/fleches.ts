@@ -237,6 +237,20 @@ export function positionLibelle(points: Point[], largeurTotale: number, taille: 
   return { x: (a.x + b.x) / 2 + haut.x * ecart, y: (a.y + b.y) / 2 + haut.y * ecart, angle }
 }
 
+// Place du libellé d'une flèche (même s'il est vide : c'est là qu'on le
+// tape sur l'image) : écarté du trait et des pointes. null si la flèche n'a
+// pas deux points distincts.
+export function placeLibelleFleche(
+  fleche: Pick<Fleche, 'points'>,
+  type: Pick<TypeFleche, 'epaisseur' | 'trait' | 'pointes'>,
+  unite: number,
+  taille: number,
+): { x: number; y: number; angle: number } | null {
+  const g = geometrieFleche(fleche.points, type, unite)
+  if (!g) return null
+  return positionLibelle(fleche.points, Math.max(g.corps, g.pointes.length > 0 ? g.largeurPointe : 0), taille)
+}
+
 // ——— Choix sous le pointeur ———
 
 // Flèche sous le pointeur : la dernière posée (dessinée au-dessus) d'abord,

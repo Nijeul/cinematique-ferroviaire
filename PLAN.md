@@ -40,11 +40,14 @@ Jamais deux étapes d'avance. Chaque étape est une PR courte qui dit quoi regar
 | 8 | Exports PowerPoint et PDF des images d'un synoptique : une diapositive ou une page par image, textes du bandeau, du créneau et du PHASAGE modifiables dans PowerPoint, page de garde avec cartouche (détail ci-dessous) | un jeu de planches équivalent à l'actuel | **validé** |
 | 9 | Mémoire en ligne (Supabase) : un compte par personne, sur invitation ; chantiers et fonds enregistrés en ligne et partagés par l'équipe ; copie de secours dans le navigateur ; conflits signalés ; page « Équipe » (détail ci-dessous) | on retrouve ses chantiers sur un autre ordinateur, un collègue invité les voit | **fusionnée** |
 | 10 | Outils du synoptique demandés pour le RVB du tunnel : état d'exploitation des voies (hachures, légende, calque), commentaires propres à chaque image, coupes de tronçonnage, changement de voie d'un engin (détail ci-dessous) | le synoptique « RVB tunnel V2 » se construit sans détour : voies interceptées / annoncées / en simultanée, RCT et platelage écrits, coupes visibles, pelles qui passent sur V1 | **en cours** |
+| 12 | Modifier les textes de la planche en double-cliquant dessus : étapes du PHASAGE, titre et heures du créneau, bandeau, libellés des flèches, commentaires (détail ci-dessous) | chaque texte de la planche se corrige à sa place, sans passer par la colonne de droite | **en cours** |
 
 L'étape 8 devait être la dernière ; l'étape 9 a été demandée par le commanditaire une fois
 l'étape 8 validée (« Fais en sorte qu'il y ait une mémoire »). L'étape 10 est née de la
 construction de son premier synoptique réel (RVB du tunnel, voie 2) : il a demandé d'ajouter
-d'un coup les outils qui manquaient. Les autres besoins (vidéo,
+d'un coup les outils qui manquaient. L'étape 12 (« je veux pouvoir modifier les textes en
+cliquant, même dans le phasage ou dans le titre ») est indépendante de l'étape 11 (PowerPoint
+animé, proposée à part et pas encore validée). Les autres besoins (vidéo,
 orthophoto calée, import DXF, 3D en option…) restent à rediscuter.
 
 ### Étape 3 — éléments du plan au calque
@@ -527,6 +530,59 @@ Questions ouvertes de l'étape 10 (choix provisoires en place) :
 - **Couleurs des états d'exploitation** : choisies pour se distinguer des zones (rouge, bleu,
   jaune) ; modifiables dans la page du chantier. Vos habitudes ?
 - **Coupes** : comptées depuis le bout côté Paris / Nord. Faut-il pouvoir partir de l'autre bout ?
+
+### Étape 12 — modifier les textes de la planche en cliquant
+
+Demande du commanditaire : « Je veux pouvoir modifier les textes en cliquant, même dans le
+phasage ou dans le titre. » Quels textes ? « Tout. » Le double-clic qui modifiait déjà un
+commentaire (étape 10) vaut maintenant pour tous les textes de la planche, avec les mêmes règles.
+
+- **Double-clic** (outil Sélection) sur un texte de la planche : il s'ouvre à sa place, même
+  police, même taille, même couleur, sur le fond de son cadre (bleu clair du bandeau, gris du
+  créneau et du PHASAGE, blanc pour une flèche ou un commentaire) :
+  - une **étape du PHASAGE** : seul son texte se tape, son numéro (« 2 – ») reste affiché
+    devant, fixe ; le numéro se change toujours dans le panneau ;
+  - le **titre du créneau** : les heures restent affichées dessous ; on ajoute un titre à un
+    créneau qui n'en a pas dans le panneau (« Titre du créneau »), puis il se double-clique ;
+  - les **heures du créneau** (« Oui, on peut modifier les heures sur l'image, c'est bien
+    aussi ») : double-clic sur les heures, sous le titre (sans titre, tout le créneau). Elles
+    s'ouvrent sur une ligne (« Ve 22h30 – Ve/Sa 01h30 ») et changent le début et la fin de
+    l'image. Saisie souple : « 10h15 – 10h35 », « 10h15-10h35 », « 10:15 10:35 »,
+    « 22h30 à 01h15 », « 23h – 1h » ; passage de minuit compris (« 22h30 – 01h15 » finit le
+    lendemain) ; jours en abrégé ou en entier quand le synoptique dure plusieurs jours
+    (« Ve 22h30 – Sa 01h15 », « vendredi 22h30 à samedi 1h15 », « Ve/Sa 00h30 – 03h30 » :
+    la nuit de vendredi à samedi). Sans jour, le début est l'heure la plus proche du début
+    actuel de l'image, et la fin la première fois que son heure revient après le début. Un
+    créneau qui n'affiche que le début n'attend qu'une heure. Le temps reste en minutes
+    depuis T0. Une saisie illisible, une heure impossible (25h00), une fin avant le début ou
+    hors du synoptique est **refusée** : message en français (avec ce qui a été compris,
+    « Compris : Ve 20h00 → Ve 23h00 »), bord rouge, le champ reste ouvert (Entrée ou un
+    clic ailleurs ne valident pas) ; Échap annule ;
+  - le **bandeau** de titre, commun à toutes les images du synoptique ; vide, on double-clique
+    à sa place (au centre, en haut) pour le retaper ;
+  - le **libellé d'une flèche**, le long de la flèche ; double-clic sur le libellé ou sur le
+    trait ; une flèche sans libellé en reçoit un ; il tient sur une ligne ;
+  - un **commentaire**, comme avant.
+- **Entrée** valide, **Maj+Entrée** va à la ligne (sauf libellé de flèche et heures : il valide),
+  **Échap** annule, un clic ailleurs valide. Chaque modification s'annule d'un seul **Ctrl+Z**.
+  Pendant la frappe, aucun raccourci de l'écran (T, Suppr, flèches, Ctrl+Z…) ne se déclenche.
+  Le cadre grandit avec le texte pendant la frappe.
+- Un texte vidé fait comme dans le panneau : l'étape reste, avec son numéro seul ; le
+  bandeau, le titre du créneau et le libellé disparaissent.
+- Le **simple clic** ne change pas (choisir, glisser) ; seul ajout : avec l'outil Texte, un
+  clic sur le bandeau, le créneau ou le PHASAGE n'affiche plus « Cliquez dans le cadre de
+  l'image » (c'est le premier clic du double-clic). Avec l'outil Texte, le double-clic ouvre
+  les commentaires, le bandeau, le créneau (titre et heures) et le PHASAGE ; les flèches,
+  avec l'outil Sélection.
+- Les panneaux de droite gardent tous leurs champs. Les exports PowerPoint et PDF reprennent
+  les textes modifiés. Le fichier de chantier ne change pas (version 6).
+
+Limites : un créneau sans titre ne montre que ses heures, donc son double-clic ouvre les
+heures (le titre s'ajoute dans le panneau) ; sans jour, une heure se place au plus près de
+l'image (pour une autre nuit d'un synoptique de plusieurs jours, écrire le jour) ; le passage à la ligne pendant
+la frappe peut tomber un mot plus tôt ou plus tard que sur la planche validée ; les en-têtes
+« PHASAGE » et « LÉGENDE » et les lignes de la légende ne se modifient pas (la légende se
+construit d'après l'image).
 
 ## Décisions du commanditaire
 

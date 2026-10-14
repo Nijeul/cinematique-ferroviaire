@@ -59,7 +59,7 @@ src/
   plan/       modèle du plan (sans aucun engin), du chantier et du synoptique, lecture des
               fichiers (plan, chantier — version 6) et migrations (engins retirés des plans
               enregistrés avant la correction de l'étape 5 ; chantiers et synoptiques des
-              étapes 4 à 7 complétés), temps (minutes depuis T0 → « Ve/Sa 01h30 »), adresses
+              étapes 4 à 7 complétés), temps (minutes depuis T0 → « Ve/Sa 01h30 », et heures tapées « 22h30 – 01h15 » → minutes), adresses
               des écrans, vue et cadrage, géométrie du tracé et le long des voies (dont le
               tracé parallèle, trace.ts), zones / appareils / cadres / textes, échelle,
               catalogue d'engins (liste par défaut dans catalogue.ts), engins et rames à
@@ -70,7 +70,10 @@ src/
               par défaut) et flèches des images : pointes, double trait, contrainte Maj,
               sélection (fleches.ts), états d'exploitation d'un chantier (liste par défaut) et
               des voies de chaque image, hachures (exploitation.ts), commentaires des images
-              (commentaires.ts, dont leur édition sur l'image : touches, validation), coupes de tronçonnage des zones (coupes.ts), zones
+              (commentaires.ts), textes de la planche modifiés sur l'image au double-clic :
+              commentaire, libellé de flèche, bandeau, titre et heures du créneau, étape du
+              PHASAGE ; touches, texte appliqué ou refusé, place du champ, texte sous le
+              pointeur (textesPlanche.ts), coupes de tronçonnage des zones (coupes.ts), zones
               affichées ou masquées de chaque synoptique (zonesAffichees.ts), opacité du
               fond de plan d'un synoptique, écrite dans toutes ses images (fondSynoptique.ts),
               numéros des engins affichés ou non sur les images (numerosEngins.ts), légende de
@@ -93,8 +96,9 @@ src/
               (TypesFleches) et son catalogue, assistant « Nouveau plan », plan, synoptique),
               calage de l'échelle (plan et synoptique), dessin SVG du plan, des engins, des
               zones selon leur état (DessinEtats), des flèches (DessinFleches), des hachures
-              d'exploitation et des coupes (DessinExploitation), des commentaires et de leur
-              édition sur l'image au double-clic (DessinCommentaires) et de la
+              d'exploitation et des coupes (DessinExploitation), des commentaires
+              (DessinCommentaires), champ de saisie d'un texte de la planche ouvert à sa place
+              au double-clic (ChampSurPlanche) et de la
               planche entière avec sa légende (Planche), panneau Calques du plan, édition de
               l'image courante d'un synoptique (useEditeurImage, ImageDeTravail,
               PanneauEngins, PanneauFleches, PanneauCommentaires, PanneauExploitation,

@@ -6,6 +6,11 @@ import { COULEURS } from './couleurs.ts'
 
 export const POLICE = 'system-ui, -apple-system, "Segoe UI", sans-serif'
 
+// Police de la planche à l'écran : celle du système, comme le reste de
+// l'application. Tous les textes de la planche la prennent (plan compris),
+// et les champs où on les tape sur l'image.
+export const POLICE_PLANCHE = 'system-ui, -apple-system, "Segoe UI", Verdana, sans-serif'
+
 export const styleBouton = (actif = false): CSSProperties => ({
   font: 'inherit',
   fontSize: 13,

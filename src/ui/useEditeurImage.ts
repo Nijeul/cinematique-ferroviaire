@@ -430,6 +430,10 @@ export function useEditeurImage(args: {
       setFlecheBrute(null)
       setCommentaireBrut(null)
     },
+    // Textes de la planche modifiés sur l'image : une seule étape d'annulation.
+    enregistrerTexte: (suivant: Synoptique) => {
+      if (suivant !== s) enregistrer(suivant)
+    },
     // Commentaires.
     commentaire,
     choisirCommentaire,
