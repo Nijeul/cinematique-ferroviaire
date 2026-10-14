@@ -29,7 +29,7 @@ import { enPoints } from '../plan/dessin.ts'
 import type { Point } from '../plan/projet.ts'
 import { miseEnPage } from '../plan/planche.ts'
 import type { PlanImage } from '../plan/synoptique.ts'
-import { appliquerTexte, champEdition, syntheseEdition, texteDe, texteSousPointeur, type TexteEditable } from '../plan/textesPlanche.ts'
+import { champEdition, syntheseEdition, texteDe, texteSousPointeur, verifierTexte, type TexteEditable } from '../plan/textesPlanche.ts'
 import { projeterSurPolyligne } from '../plan/trace.ts'
 import { ajusterSurRectangle, deplacer, facteurMolette, versPlan, zoomerAutour, type Vue } from '../plan/vue.ts'
 import { COULEURS } from './couleurs.ts'
@@ -47,7 +47,7 @@ import type { EditeurImage } from './useEditeurImage.ts'
 // on glisse les points ou toute la flèche. Molette : zoom ; Main, Espace ou
 // clic molette : déplacer la vue. Un double-clic sur un texte de la planche
 // (outil Sélection : commentaire, libellé ou trait d'une flèche, bandeau,
-// titre du créneau, étape du PHASAGE ; outil Texte : les mêmes, sauf les
+// titre ou heures du créneau, étape du PHASAGE ; outil Texte : les mêmes, sauf les
 // flèches) ouvre ce texte à sa place, sur l'image.
 // Tolérances en pixels d'écran, donc identiques à tout zoom.
 const TOLERANCE_ELEMENT = 6
@@ -70,13 +70,15 @@ let compteurEdition = 0
 
 // Texte de la planche qu'on tape sur l'image : sur quelle image, lequel, et
 // le texte en cours (validé d'un coup, en une seule étape d'annulation).
-type Edition = { index: number; cible: TexteEditable; texte: string; ouverture: number }
+// `erreur` : pourquoi le texte tapé a été refusé (heures illisibles…).
+type Edition = { index: number; cible: TexteEditable; texte: string; ouverture: number; erreur: string | null }
 
 const LIBELLES_EDITION: Record<TexteEditable['genre'], string> = {
   commentaire: 'Texte du commentaire, sur l’image',
   fleche: 'Libellé de la flèche, sur l’image',
   bandeau: 'Bandeau de titre, sur l’image',
   creneau: 'Titre du créneau, sur l’image',
+  heures: 'Heures du créneau, sur l’image',
   etape: 'Texte de l’étape du PHASAGE, sur l’image',
 }
 
@@ -169,14 +171,27 @@ export function ImageDeTravail({ editeur }: { editeur: EditeurImage }) {
     editeur.setMessage(null)
     const ouverture = ++compteurEdition
     editionOuverte.current = ouverture
-    setEdition({ index: editeur.index, cible, texte, ouverture })
+    setEdition({ index: editeur.index, cible, texte, ouverture, erreur: null })
   }
-  // Valide (une seule étape d'annulation) ou abandonne le texte tapé.
-  const terminerEdition = (garder: boolean) => {
-    if (!edition || editionOuverte.current !== edition.ouverture) return
+  // Valide (une seule étape d'annulation) ou abandonne le texte tapé. Un texte
+  // refusé (heures illisibles ou hors du synoptique) n'est pas validé : le
+  // message dit pourquoi, le champ reste ouvert (Échap annule). Renvoie
+  // false dans ce cas.
+  const terminerEdition = (garder: boolean): boolean => {
+    if (!edition || editionOuverte.current !== edition.ouverture) return true
+    if (garder) {
+      const r = verifierTexte(s, edition.index, edition.cible, edition.texte)
+      if (!r.ok) {
+        editeur.setMessage({ genre: 'erreur', texte: r.erreur })
+        setEdition({ ...edition, erreur: r.erreur })
+        return false
+      }
+      editeur.enregistrerTexte(r.valeur)
+    }
     editionOuverte.current = null
-    if (garder) editeur.enregistrerTexte(appliquerTexte(s, edition.index, edition.cible, edition.texte))
+    if (edition.erreur) editeur.setMessage(null)
     setEdition(null)
+    return true
   }
 
   const surAppui = (e: EvenementPointeur<SVGSVGElement>) => {
@@ -458,6 +473,7 @@ export function ImageDeTravail({ editeur }: { editeur: EditeurImage }) {
               texte={edition.texte}
               zoom={vue.zoom}
               libelle={LIBELLES_EDITION[edition.cible.genre]}
+              erreur={edition.erreur}
               changer={(texte) => setEdition({ ...edition, texte })}
               valider={() => terminerEdition(true)}
               annuler={() => terminerEdition(false)}

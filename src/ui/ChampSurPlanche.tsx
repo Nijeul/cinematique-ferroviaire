@@ -5,7 +5,7 @@ import { POLICE_PLANCHE } from './styles.ts'
 
 // Le champ de saisie d'un texte de la planche, ouvert à sa place sur l'image
 // (double-clic) : commentaire, libellé de flèche, bandeau de titre, titre du
-// créneau ou étape du PHASAGE. Même taille, police et couleur que le texte
+// créneau (titre ou heures) ou étape du PHASAGE. Même taille, police et couleur que le texte
 // dessiné, sur le fond de son cadre ; le champ suit le texte en cours (la
 // planche est mise en page avec lui). Entrée valide, Maj+Entrée va à la ligne
 // (sauf sur une seule ligne), Échap annule, cliquer ailleurs valide. Les
@@ -16,8 +16,11 @@ export function ChampSurPlanche(props: {
   texte: string
   zoom: number
   libelle: string
+  // Pourquoi le texte tapé a été refusé (heures illisibles…) : bord rouge.
+  erreur?: string | null
   changer: (texte: string) => void
-  valider: () => void
+  // Faux si le texte est refusé : le champ reste ouvert, et garde le focus.
+  valider: () => boolean
   annuler: () => void
 }) {
   const { champ: c, zoom } = props
@@ -68,6 +71,8 @@ export function ChampSurPlanche(props: {
           ref={zone}
           value={props.texte}
           aria-label={props.libelle}
+          aria-invalid={props.erreur ? true : undefined}
+          title={props.erreur ?? undefined}
           spellCheck={false}
           style={{
             ...police,
@@ -78,7 +83,7 @@ export function ChampSurPlanche(props: {
             padding: `${c.retrait.y}px ${c.retrait.x}px`,
             textAlign: c.centre ? 'center' : 'left',
             background: c.fond,
-            border: `${bord}px solid ${COULEURS.selection}`,
+            border: `${bord}px solid ${props.erreur ? COULEURS.erreur : COULEURS.selection}`,
             borderRadius: 0,
             outline: 'none',
             resize: 'none',
@@ -96,8 +101,11 @@ export function ChampSurPlanche(props: {
             }
           }}
           // Validé ou annulé une seule fois : l'image y veille (la perte du
-          // focus qui suit Entrée ou Échap ne compte pas).
-          onBlur={() => props.valider()}
+          // focus qui suit Entrée ou Échap ne compte pas). Refusé, le champ
+          // reprend le focus pour qu'on corrige.
+          onBlur={() => {
+            if (!props.valider()) setTimeout(() => zone.current?.focus(), 0)
+          }}
         />
         {c.prefixe && (
           // Le numéro de l'étape, fixe, devant le texte qu'on tape.

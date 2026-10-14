@@ -59,7 +59,7 @@ src/
   plan/       modèle du plan (sans aucun engin), du chantier et du synoptique, lecture des
               fichiers (plan, chantier — version 6) et migrations (engins retirés des plans
               enregistrés avant la correction de l'étape 5 ; chantiers et synoptiques des
-              étapes 4 à 7 complétés), temps (minutes depuis T0 → « Ve/Sa 01h30 »), adresses
+              étapes 4 à 7 complétés), temps (minutes depuis T0 → « Ve/Sa 01h30 », et heures tapées « 22h30 – 01h15 » → minutes), adresses
               des écrans, vue et cadrage, géométrie du tracé et le long des voies (dont le
               tracé parallèle, trace.ts), zones / appareils / cadres / textes, échelle,
               catalogue d'engins (liste par défaut dans catalogue.ts), engins et rames à
@@ -71,8 +71,9 @@ src/
               sélection (fleches.ts), états d'exploitation d'un chantier (liste par défaut) et
               des voies de chaque image, hachures (exploitation.ts), commentaires des images
               (commentaires.ts), textes de la planche modifiés sur l'image au double-clic :
-              commentaire, libellé de flèche, bandeau, titre du créneau, étape du PHASAGE ;
-              touches, texte appliqué, place du champ, texte sous le pointeur (textesPlanche.ts), coupes de tronçonnage des zones (coupes.ts), zones
+              commentaire, libellé de flèche, bandeau, titre et heures du créneau, étape du
+              PHASAGE ; touches, texte appliqué ou refusé, place du champ, texte sous le
+              pointeur (textesPlanche.ts), coupes de tronçonnage des zones (coupes.ts), zones
               affichées ou masquées de chaque synoptique (zonesAffichees.ts), opacité du
               fond de plan d'un synoptique, écrite dans toutes ses images (fondSynoptique.ts),
               numéros des engins affichés ou non sur les images (numerosEngins.ts), légende de

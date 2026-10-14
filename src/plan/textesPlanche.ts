@@ -11,9 +11,11 @@ import {
   uniteFleche,
 } from './fleches.ts'
 import type { ListesChantier } from './legende.ts'
-import { COULEURS_PLANCHE, INTERLIGNE_PLANCHE, miseEnPage, modifierCreneau, modifierEtape } from './planche.ts'
+import type { Resultat } from './echelle.ts'
+import { COULEURS_PLANCHE, INTERLIGNE_PLANCHE, lignesCreneau, miseEnPage, modifierCreneau, modifierEtape } from './planche.ts'
 import type { Point } from './projet.ts'
-import { projetDeImage, rectangleAffiche, type Synoptique } from './synoptique.ts'
+import { modifierHorairesImage, projetDeImage, rectangleAffiche, type Synoptique } from './synoptique.ts'
+import { formaterPlage, lirePlageTapee } from './temps.ts'
 
 // Les textes d'une planche qu'on modifie en double-cliquant dessus, à leur
 // place sur l'image : les commentaires, les libellés des flèches, le bandeau
@@ -22,14 +24,17 @@ import { projetDeImage, rectangleAffiche, type Synoptique } from './synoptique.t
 // champ de la même taille, police et couleur ; Entrée valide (Maj+Entrée va à
 // la ligne, sauf pour un libellé de flèche, qui tient sur une ligne), Échap
 // annule, un clic ailleurs valide ; la modification s'annule d'un seul Ctrl+Z.
-// Les heures du créneau ne se tapent pas ici (début et fin de l'image) ; le
-// numéro d'une étape non plus : il reste affiché devant le champ.
+// Les heures du créneau se tapent aussi (« 22h30 – 01h15 ») : elles changent
+// le début et la fin de l'image, toujours en minutes depuis T0 ; une saisie
+// illisible ou hors du synoptique est refusée avec un message, le champ reste
+// ouvert. Le numéro d'une étape ne se tape pas : il reste affiché devant.
 
 export type TexteEditable =
   | { genre: 'commentaire'; id: string }
   | { genre: 'fleche'; id: string }
   | { genre: 'bandeau' }
   | { genre: 'creneau' }
+  | { genre: 'heures' }
   | { genre: 'etape'; position: number }
 
 // ——— Touches ———
@@ -42,8 +47,8 @@ export function actionToucheEdition(touche: string, maj: boolean, multiligne = t
   return null
 }
 
-// Un libellé de flèche tient sur une ligne ; les autres textes en ont plusieurs.
-export const texteMultiligne = (cible: TexteEditable): boolean => cible.genre !== 'fleche'
+// Un libellé de flèche et les heures tiennent sur une ligne ; les autres textes en ont plusieurs.
+export const texteMultiligne = (cible: TexteEditable): boolean => cible.genre !== 'fleche' && cible.genre !== 'heures'
 
 // ——— Le texte et sa modification ———
 
@@ -61,6 +66,11 @@ export function texteDe(s: Synoptique, index: number, cible: TexteEditable): str
       return s.bandeau
     case 'creneau':
       return image.titre
+    case 'heures': {
+      // Les heures telles qu'affichées, sur une ligne ; null si le créneau ne les montre pas.
+      const { heures } = lignesCreneau(s.t0, image)
+      return heures.length > 0 ? heures.join(' ') : null
+    }
     case 'etape':
       return image.phasage[cible.position]?.libelle ?? null
   }
@@ -71,11 +81,37 @@ export function texteDe(s: Synoptique, index: number, cible: TexteEditable): str
 // les panneaux de droite : une étape vidée reste dans l'encart (« 3 – ») ;
 // un bandeau, un titre de créneau ou un libellé vides ne s'affichent plus.
 export function appliquerTexte(s: Synoptique, index: number, cible: TexteEditable, texte: string): Synoptique {
+  const r = verifierTexte(s, index, cible, texte)
+  return r.ok ? r.valeur : s
+}
+
+// Les heures du créneau tapées sur la planche : nouveau début et nouvelle fin
+// de l'image (une seule heure si le créneau n'affiche que le début), dans les
+// bornes du synoptique ; sinon, ce qui ne va pas, et ce qui a été compris.
+export function appliquerHeures(s: Synoptique, index: number, texte: string): Resultat<Synoptique> {
+  const image = s.images[index]
+  if (!image) return { ok: true, valeur: s }
+  const lu = lirePlageTapee(s.t0, texte, image, image.heures === 'debut')
+  if (!lu.ok) return lu
+  const { debut, fin } = lu.valeur
+  if (debut === image.debut && fin === image.fin) return { ok: true, valeur: s }
+  const r = modifierHorairesImage(s, index, { debut, fin })
+  return r.ok ? r : { ok: false, erreur: `${r.erreur} Compris : ${formaterPlage(s.t0, debut, fin)}.` }
+}
+
+// Comme appliquerTexte, mais dit pourquoi un texte est refusé (seules les
+// heures peuvent l'être) : le champ reste alors ouvert.
+export function verifierTexte(s: Synoptique, index: number, cible: TexteEditable, texte: string): Resultat<Synoptique> {
   const actuel = texteDe(s, index, cible)
-  if (actuel === null) return s
+  if (actuel === null) return { ok: true, valeur: s }
   // Un libellé de flèche tient sur une ligne : un retour collé devient une espace.
   const nouveau = texteMultiligne(cible) ? texte : texte.replace(/\s*[\r\n]+\s*/g, ' ')
-  if (nouveau === actuel) return s
+  if (nouveau === actuel) return { ok: true, valeur: s }
+  if (cible.genre === 'heures') return appliquerHeures(s, index, nouveau)
+  return { ok: true, valeur: remplacerTexte(s, index, cible, nouveau) }
+}
+
+function remplacerTexte(s: Synoptique, index: number, cible: Exclude<TexteEditable, { genre: 'heures' }>, nouveau: string): Synoptique {
   switch (cible.genre) {
     case 'commentaire':
       return modifierCommentairesImage(s, index, (l) => validerTexteCommentaire(l, cible.id, nouveau))
@@ -123,8 +159,9 @@ const temoin = (texte: string): string => (texte.trim() === '' ? TEXTE_TEMOIN : 
 // La planche dessinée pendant la frappe : avec le texte en cours (le cadre
 // grandit avec lui), ou un témoin d'une lettre s'il est vide, pour que le
 // champ garde sa place. Le texte édité n'est pas dessiné : le champ le remplace.
+// Les heures, elles, ne se dessinent avec le texte en cours que s'il est valable.
 export const syntheseEdition = (s: Synoptique, index: number, cible: TexteEditable, texte: string): Synoptique =>
-  appliquerTexte(s, index, cible, temoin(texte))
+  appliquerTexte(s, index, cible, cible.genre === 'heures' ? texte : temoin(texte))
 
 // Place, taille et style du champ de saisie, d'après la planche mise en page
 // avec le texte en cours. null si la cible n'existe pas ou ne se voit pas.
@@ -200,6 +237,23 @@ export function champEdition(s: Synoptique, index: number, listes: ListesChantie
       centre: true,
     }
   }
+  if (cible.genre === 'heures') {
+    const { boite, lignes, titre } = page.creneau
+    const taille = lignes[0].taille
+    const interligne = taille * INTERLIGNE_PLANCHE
+    // Le champ couvre les lignes des heures (deux au moins, pour la saisie sur une ligne qui passe à la ligne).
+    return {
+      ...base,
+      boite: { x: boite.x, y: boite.y + page.retrait * 0.8 + titre * interligne, largeur: boite.largeur, hauteur: Math.max(2, lignes.length - titre) * interligne },
+      retrait: { x: page.retrait * 0.5, y: 0 },
+      taille,
+      interligne,
+      gras: lignes[titre]?.gras ?? true,
+      couleur: COULEURS_PLANCHE.texte,
+      fond: COULEURS_PLANCHE.fondCreneau,
+      centre: true,
+    }
+  }
   const p = page.phasage
   const etape = p?.etapes[cible.position]
   if (!p || !etape) return null
@@ -229,7 +283,7 @@ const dans = (r: Rectangle, p: Point, marge = 0): boolean =>
 // Ce qui se double-clique, du dessus vers le dessous : dans le cadre de
 // l'image, un commentaire, puis le libellé ou le trait d'une flèche (calques
 // visibles et non verrouillés) ; autour, le bandeau (même vide : à sa place),
-// le créneau, une étape du PHASAGE. `tolerance` en unités du plan.
+// le titre ou les heures du créneau, une étape du PHASAGE. `tolerance` en unités du plan.
 export function texteSousPointeur(
   s: Synoptique,
   index: number,
@@ -267,7 +321,12 @@ export function texteSousPointeur(
   const page = miseEnPage(s, index, listes)
   const bandeau = page.bandeau?.boite ?? miseEnPage({ ...s, bandeau: TEXTE_TEMOIN }, index, listes).bandeau?.boite
   if (bandeau && dans(bandeau, p)) return { genre: 'bandeau' }
-  if (dans(page.creneau.boite, p)) return { genre: 'creneau' }
+  const cr = page.creneau
+  if (dans(cr.boite, p)) {
+    // Les heures, sous le titre (sans titre, tout le créneau : ce sont les heures).
+    const hautHeures = cr.boite.y + page.retrait * 0.8 + cr.titre * cr.lignes[0].taille * INTERLIGNE_PLANCHE
+    return cr.lignes.length > cr.titre && (cr.titre === 0 || p.y >= hautHeures) ? { genre: 'heures' } : { genre: 'creneau' }
+  }
   const ph = page.phasage
   if (ph && dans(ph.boite, p) && p.y > ph.entete.y + ph.entete.hauteur) {
     const lh = ph.titre.taille * INTERLIGNE_PLANCHE

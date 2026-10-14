@@ -155,7 +155,7 @@ export function DessinPlanche(props: {
   flecheChoisie?: string | null
   commentaireChoisi?: string | null
   // Texte en cours d'édition sur l'image (commentaire, libellé de flèche,
-  // bandeau, titre du créneau, étape) : pas dessiné, son champ le remplace.
+  // bandeau, titre ou heures du créneau, étape) : pas dessiné, son champ le remplace.
   texteEnEdition?: TexteEditable | null
   // Dessiné sur le plan, dans le cadrage (aperçu de pose, point d'accroche).
   surLaCarte?: ReactNode
@@ -181,7 +181,12 @@ export function DessinPlanche(props: {
   // Lignes de l'encart PHASAGE et du créneau, sans celles du texte en cours d'édition.
   const etapeEditee = edite?.genre === 'etape' ? page.phasage?.etapes[edite.position] : undefined
   const lignesPhasage = page.phasage?.lignes.filter((_, i) => !etapeEditee || i < etapeEditee.debut || i >= etapeEditee.fin) ?? []
-  const lignesCreneau = edite?.genre === 'creneau' ? page.creneau.lignes.slice(page.creneau.titre) : page.creneau.lignes
+  const lignesCreneau =
+    edite?.genre === 'creneau'
+      ? page.creneau.lignes.slice(page.creneau.titre)
+      : edite?.genre === 'heures'
+        ? page.creneau.lignes.slice(0, page.creneau.titre)
+        : page.creneau.lignes
   return (
     <g data-testid="planche" fontFamily={props.police ?? POLICE_PLANCHE}>
       <rect x={page.planche.x} y={page.planche.y} width={page.planche.largeur} height={page.planche.hauteur} fill="#ffffff" />

@@ -193,7 +193,13 @@ describe('le texte sous le pointeur (double-clic)', () => {
   const page = miseEnPage(s3, 0, listes)
   it('bandeau, créneau, chaque étape du PHASAGE', () => {
     expect(texteSousPointeur(s3, 0, listes, centre(page.bandeau!.boite), 0, tous)).toEqual({ genre: 'bandeau' })
-    expect(texteSousPointeur(s3, 0, listes, centre(page.creneau.boite), 0, tous)).toEqual({ genre: 'creneau' })
+    // Sans titre, le créneau ne montre que les heures.
+    expect(texteSousPointeur(s3, 0, listes, centre(page.creneau.boite), 0, tous)).toEqual({ genre: 'heures' })
+    // Avec un titre : le titre en haut, les heures dessous.
+    const avecTitre = appliquerTexte(s3, 0, { genre: 'creneau' }, 'Phase 1')
+    const cr = miseEnPage(avecTitre, 0, listes).creneau
+    expect(texteSousPointeur(avecTitre, 0, listes, { x: cr.lignes[0].x, y: cr.lignes[0].y - 2 }, 0, tous)).toEqual({ genre: 'creneau' })
+    expect(texteSousPointeur(avecTitre, 0, listes, { x: cr.lignes[1].x, y: cr.lignes[1].y - 2 }, 0, tous)).toEqual({ genre: 'heures' })
     const ph = page.phasage!
     for (const [position, e] of ph.etapes.entries()) {
       const l = ph.lignes[e.debut]
