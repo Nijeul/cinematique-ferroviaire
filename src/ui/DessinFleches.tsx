@@ -2,7 +2,7 @@ import { enPoints } from '../plan/dessin.ts'
 import {
   dimensionsFleche,
   geometrieFleche,
-  positionLibelle,
+  placeLibelleFleche,
   tailleLibelleFleche,
   typeFlecheParId,
   uniteFleche,
@@ -66,13 +66,15 @@ export function DessinFleche(props: {
   tailleLibelle: number
   choisie: boolean
   zoom: number
+  // Libellé en cours d'édition sur l'image : pas dessiné (son champ le remplace).
+  libelleMasque?: boolean
 }) {
   const { fleche, type, unite, tailleLibelle, choisie, zoom } = props
   const g = geometrieFleche(fleche.points, type, unite)
   if (!g) return null
-  const libelle = fleche.libelle.trim()
+  const libelle = props.libelleMasque ? '' : fleche.libelle.trim()
   const largeur = Math.max(g.corps, g.pointes.length > 0 ? g.largeurPointe : 0)
-  const position = libelle ? positionLibelle(fleche.points, largeur, tailleLibelle) : null
+  const position = libelle ? placeLibelleFleche(fleche, type, unite, tailleLibelle) : null
   return (
     <g
       data-testid="fleche"
@@ -114,7 +116,14 @@ export function DessinFleche(props: {
 }
 
 // Toutes les flèches d'une image ; rien quand le calque « Flèches » est masqué.
-export function DessinFlechesImage(props: { planche: PlanImage; types: TypeFleche[]; visible: boolean; zoom: number; choisie?: string | null }) {
+export function DessinFlechesImage(props: {
+  planche: PlanImage
+  types: TypeFleche[]
+  visible: boolean
+  zoom: number
+  choisie?: string | null
+  libelleMasque?: string | null
+}) {
   const { planche, types, zoom } = props
   if (!props.visible) return null
   const unite = uniteFleche(planche)
@@ -124,7 +133,16 @@ export function DessinFlechesImage(props: { planche: PlanImage; types: TypeFlech
       {planche.fleches.map((f) => {
         const type = typeFlecheParId(types, f.typeId)
         return type ? (
-          <DessinFleche key={f.id} fleche={f} type={type} unite={unite} tailleLibelle={taille} choisie={props.choisie === f.id} zoom={zoom} />
+          <DessinFleche
+            key={f.id}
+            fleche={f}
+            type={type}
+            unite={unite}
+            tailleLibelle={taille}
+            choisie={props.choisie === f.id}
+            zoom={zoom}
+            libelleMasque={props.libelleMasque === f.id}
+          />
         ) : null
       })}
     </g>

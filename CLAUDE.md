@@ -70,7 +70,9 @@ src/
               par défaut) et flèches des images : pointes, double trait, contrainte Maj,
               sélection (fleches.ts), états d'exploitation d'un chantier (liste par défaut) et
               des voies de chaque image, hachures (exploitation.ts), commentaires des images
-              (commentaires.ts, dont leur édition sur l'image : touches, validation), coupes de tronçonnage des zones (coupes.ts), zones
+              (commentaires.ts), textes de la planche modifiés sur l'image au double-clic :
+              commentaire, libellé de flèche, bandeau, titre du créneau, étape du PHASAGE ;
+              touches, texte appliqué, place du champ, texte sous le pointeur (textesPlanche.ts), coupes de tronçonnage des zones (coupes.ts), zones
               affichées ou masquées de chaque synoptique (zonesAffichees.ts), opacité du
               fond de plan d'un synoptique, écrite dans toutes ses images (fondSynoptique.ts),
               numéros des engins affichés ou non sur les images (numerosEngins.ts), légende de
@@ -93,8 +95,9 @@ src/
               (TypesFleches) et son catalogue, assistant « Nouveau plan », plan, synoptique),
               calage de l'échelle (plan et synoptique), dessin SVG du plan, des engins, des
               zones selon leur état (DessinEtats), des flèches (DessinFleches), des hachures
-              d'exploitation et des coupes (DessinExploitation), des commentaires et de leur
-              édition sur l'image au double-clic (DessinCommentaires) et de la
+              d'exploitation et des coupes (DessinExploitation), des commentaires
+              (DessinCommentaires), champ de saisie d'un texte de la planche ouvert à sa place
+              au double-clic (ChampSurPlanche) et de la
               planche entière avec sa légende (Planche), panneau Calques du plan, édition de
               l'image courante d'un synoptique (useEditeurImage, ImageDeTravail,
               PanneauEngins, PanneauFleches, PanneauCommentaires, PanneauExploitation,

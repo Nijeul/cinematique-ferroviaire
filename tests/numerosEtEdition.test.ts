@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { migrerChantier, type Chantier } from '../src/plan/chantier.ts'
-import { actionToucheEdition, modifierCommentairesImage, validerTexteCommentaire } from '../src/plan/commentaires.ts'
+import { modifierCommentairesImage, validerTexteCommentaire } from '../src/plan/commentaires.ts'
 import { lireChantier, serialiserChantier, VERSION_CHANTIER } from '../src/plan/fichierChantier.ts'
 import { annuler, creerHistorique, enregistrer } from '../src/plan/historique.ts'
 import { entreesLegende, listesDe, texteEntree } from '../src/plan/legende.ts'
@@ -9,6 +9,7 @@ import { miseEnPage } from '../src/plan/planche.ts'
 import { enginsAffiches, modifierNumerosEngins } from '../src/plan/numerosEngins.ts'
 import { creerProjet } from '../src/plan/projet.ts'
 import { creerSynoptique, nouvelleImage, type Synoptique } from '../src/plan/synoptique.ts'
+import { actionToucheEdition } from '../src/plan/textesPlanche.ts'
 
 // Compléments de l'étape 10 : numéros des engins sur l'image (« il ne faut
 // pas afficher les numéros des pelles dans les bulles, c'est pas lisible ») et

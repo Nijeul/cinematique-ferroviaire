@@ -5,6 +5,7 @@ import type { ListesChantier } from '../plan/legende.ts'
 import { BORDS_PLANCHE, COULEURS_PLANCHE, miseEnPage, type EntreePlacee, type LigneMixte, type LigneTexte } from '../plan/planche.ts'
 import { enginsAffiches } from '../plan/numerosEngins.ts'
 import { projetDeImage, type Synoptique } from '../plan/synoptique.ts'
+import type { TexteEditable } from '../plan/textesPlanche.ts'
 import { COULEURS } from './couleurs.ts'
 import { BarreEchelle, DessinEnginsImage } from './DessinEngins.tsx'
 import { MotifBallast } from './DessinEtats.tsx'
@@ -12,6 +13,7 @@ import { DessinCommentaires } from './DessinCommentaires.tsx'
 import { CoupesZones, EchantillonCoupes, EchantillonExploitation, HachuresExploitation } from './DessinExploitation.tsx'
 import { DessinFlechesImage, EchantillonFleche } from './DessinFleches.tsx'
 import { DessinPlan } from './DessinPlan.tsx'
+import { POLICE_PLANCHE } from './styles.ts'
 
 // Une image de synoptique dessinée comme une planche du commanditaire : le
 // plan figé limité au cadrage, avec ses zones selon leur état et ses engins ;
@@ -22,10 +24,6 @@ import { DessinPlan } from './DessinPlan.tsx'
 // Sert à l'image qu'on modifie, aux vignettes et aux exports (sans repère de
 // sélection). Coordonnées en pixels du plan ; `zoom` garde constants à
 // l'écran les repères de sélection.
-
-// Police de la planche à l'écran : celle du système, comme le reste de
-// l'application. Tous les textes de la planche la prennent (plan compris).
-const POLICE_PLANCHE = 'system-ui, -apple-system, "Segoe UI", Verdana, sans-serif'
 
 function Lignes({ lignes, ancre, couleur }: { lignes: LigneTexte[]; ancre: 'start' | 'middle'; couleur: string }) {
   return (
@@ -156,8 +154,9 @@ export function DessinPlanche(props: {
   zoneChoisie?: string | null
   flecheChoisie?: string | null
   commentaireChoisi?: string | null
-  // Commentaire en cours d'édition sur l'image : pas dessiné (son champ le remplace).
-  commentaireEnEdition?: string | null
+  // Texte en cours d'édition sur l'image (commentaire, libellé de flèche,
+  // bandeau, titre du créneau, étape) : pas dessiné, son champ le remplace.
+  texteEnEdition?: TexteEditable | null
   // Dessiné sur le plan, dans le cadrage (aperçu de pose, point d'accroche).
   surLaCarte?: ReactNode
   // Export PowerPoint « Textes modifiables » : le bandeau, le créneau,
@@ -177,6 +176,12 @@ export function DessinPlanche(props: {
   const page = miseEnPage(s, index, props.listes)
   const { carte } = page
   const trait = Math.max(1 / zoom, page.trait)
+  const edite = props.texteEnEdition ?? null
+  const idEdite = (genre: 'commentaire' | 'fleche') => (edite?.genre === genre ? edite.id : null)
+  // Lignes de l'encart PHASAGE et du créneau, sans celles du texte en cours d'édition.
+  const etapeEditee = edite?.genre === 'etape' ? page.phasage?.etapes[edite.position] : undefined
+  const lignesPhasage = page.phasage?.lignes.filter((_, i) => !etapeEditee || i < etapeEditee.debut || i >= etapeEditee.fin) ?? []
+  const lignesCreneau = edite?.genre === 'creneau' ? page.creneau.lignes.slice(page.creneau.titre) : page.creneau.lignes
   return (
     <g data-testid="planche" fontFamily={props.police ?? POLICE_PLANCHE}>
       <rect x={page.planche.x} y={page.planche.y} width={page.planche.largeur} height={page.planche.hauteur} fill="#ffffff" />
@@ -203,6 +208,7 @@ export function DessinPlanche(props: {
                 visible={s.calqueFleches.visible}
                 zoom={zoom}
                 choisie={props.flecheChoisie}
+                libelleMasque={idEdite('fleche')}
               />
             </>
           }
@@ -214,7 +220,7 @@ export function DessinPlanche(props: {
             visible={s.calqueCommentaires.visible}
             zoom={zoom}
             choisi={props.commentaireChoisi}
-            masque={props.commentaireEnEdition}
+            masque={idEdite('commentaire')}
           />
         )}
         {/* Échelle graphique de la planche, en bas à droite du plan. */}
@@ -243,7 +249,7 @@ export function DessinPlanche(props: {
             stroke={COULEURS_PLANCHE.bordBandeau}
             strokeWidth={trait * BORDS_PLANCHE.bandeau}
           />
-          <Lignes lignes={page.bandeau.lignes} ancre="middle" couleur={COULEURS_PLANCHE.texte} />
+          {edite?.genre !== 'bandeau' && <Lignes lignes={page.bandeau.lignes} ancre="middle" couleur={COULEURS_PLANCHE.texte} />}
         </g>
       )}
 
@@ -258,7 +264,7 @@ export function DessinPlanche(props: {
             stroke={COULEURS_PLANCHE.bordCreneau}
             strokeWidth={trait * BORDS_PLANCHE.creneau}
           />
-          <Lignes lignes={page.creneau.lignes} ancre="middle" couleur={COULEURS_PLANCHE.texte} />
+          <Lignes lignes={lignesCreneau} ancre="middle" couleur={COULEURS_PLANCHE.texte} />
         </g>
       )}
 
@@ -279,7 +285,7 @@ export function DessinPlanche(props: {
             fill={COULEURS_PLANCHE.entetePhasage}
           />
           <Lignes lignes={[page.phasage.titre]} ancre="middle" couleur="#ffffff" />
-          <Lignes lignes={page.phasage.lignes} ancre="start" couleur={COULEURS_PLANCHE.textePhasage} />
+          <Lignes lignes={lignesPhasage} ancre="start" couleur={COULEURS_PLANCHE.textePhasage} />
         </g>
       )}
 

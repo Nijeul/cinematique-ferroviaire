@@ -162,9 +162,11 @@ export type MiseEnPage = {
   trait: number
   retrait: number
   bandeau: { boite: Rectangle; lignes: LigneTexte[] } | null
-  creneau: { boite: Rectangle; lignes: LigneTexte[] }
-  // Encart PHASAGE de l'image : null s'il est vide.
-  phasage: { boite: Rectangle; entete: Rectangle; titre: LigneTexte; lignes: LigneTexte[] } | null
+  // `titre` : nombre de lignes du titre, en tête des lignes (les heures suivent).
+  creneau: { boite: Rectangle; lignes: LigneTexte[]; titre: number }
+  // Encart PHASAGE de l'image : null s'il est vide. `etapes` : pour chaque
+  // étape (dans l'ordre), ses lignes dans `lignes`, de `debut` à `fin` exclue.
+  phasage: { boite: Rectangle; entete: Rectangle; titre: LigneTexte; lignes: LigneTexte[]; etapes: { debut: number; fin: number }[] } | null
   // Légende de l'image : null si elle est vide ou masquée.
   legende: { boite: Rectangle; entete: Rectangle; titre: LigneTexte; entrees: EntreePlacee[] } | null
 }
@@ -185,6 +187,9 @@ const PROPORTIONS = {
   largeurPhasageAvecLegende: 46,
   interligne: 1.3,
 } as const
+
+// Interligne des textes de la planche, en tailles de texte.
+export const INTERLIGNE_PLANCHE = PROPORTIONS.interligne
 
 // Une unité = un centième de la largeur du plan montré (un cadrage très haut
 // et étroit compte comme s'il était au format d'une diapositive).
@@ -343,14 +348,15 @@ function contenuCreneau(t0: string, image: ImageSynoptique, m: Mesures) {
   ]
   const plusLongue = Math.max(...lignes.map((l) => largeurTexteEstimee(l.texte, m.creneau, l.gras)))
   const largeur = Math.min(PROPORTIONS.largeurCreneauMax * m.u, Math.max(PROPORTIONS.largeurCreneauMin * m.u, plusLongue + 2 * m.retrait))
-  return { lignes, largeur, hauteur: lignes.length * PROPORTIONS.interligne * m.creneau + 2 * m.retrait * 0.8 }
+  return { lignes, titre: lignes.length - heures.length, largeur, hauteur: lignes.length * PROPORTIONS.interligne * m.creneau + 2 * m.retrait * 0.8 }
 }
 
 // Lignes de l'encart PHASAGE : chaque étape commence par son numéro ; les
 // suites de ligne repartent au bord, comme sur les planches.
-function lignesPhasage(phasage: EtapePhasage[], m: Mesures): string[] {
-  return phasage.flatMap((e) => couperLignes(texteEtape(e), m.largeurPhasage - 2 * m.retrait, m.phasage))
+function lignesEtapes(phasage: EtapePhasage[], m: Mesures): string[][] {
+  return phasage.map((e) => couperLignes(texteEtape(e), m.largeurPhasage - 2 * m.retrait, m.phasage))
 }
+const lignesPhasage = (phasage: EtapePhasage[], m: Mesures): string[] => lignesEtapes(phasage, m).flat()
 
 const hauteurEntetePhasage = (m: Mesures) => m.phasage * 1.9
 const hauteurCorpsPhasage = (lignes: number, m: Mesures) => lignes * PROPORTIONS.interligne * m.phasage + 2 * m.retrait
@@ -418,7 +424,11 @@ export function miseEnPage(s: Synoptique, index: number, listes: ListesChantier)
 
   const c = creneaux[index]
   const boiteCreneau = { x: carte.x + carte.largeur - ECART_CRENEAU * m.u - c.largeur, y: centreVertical(c.hauteur), largeur: c.largeur, hauteur: c.hauteur }
-  const creneau = { boite: boiteCreneau, lignes: aligner(c.lignes, boiteCreneau.x + c.largeur / 2, boiteCreneau.y + m.retrait * 0.8, m.creneau) }
+  const creneau = {
+    boite: boiteCreneau,
+    lignes: aligner(c.lignes, boiteCreneau.x + c.largeur / 2, boiteCreneau.y + m.retrait * 0.8, m.creneau),
+    titre: c.titre,
+  }
 
   let phasage: MiseEnPage['phasage'] = null
   if (image && image.phasage.length > 0) {
@@ -426,13 +436,19 @@ export function miseEnPage(s: Synoptique, index: number, listes: ListesChantier)
     const boite = { x: carte.x, y, largeur: m.largeurPhasage, hauteur: hauteurBas }
     const entete = { x: carte.x, y, largeur: m.largeurPhasage, hauteur: hauteurEntetePhasage(m) }
     const titre: LigneTexte = { texte: 'PHASAGE', x: carte.x + m.largeurPhasage / 2, y: y + entete.hauteur * 0.5 + m.phasage * 0.36, taille: m.phasage, gras: true }
+    const parEtape = lignesEtapes(image.phasage, m)
     const lignes = aligner(
-      lignesPhasage(image.phasage, m).map((texte) => ({ texte, gras: false })),
+      parEtape.flat().map((texte) => ({ texte, gras: false })),
       carte.x + m.retrait,
       y + entete.hauteur + m.retrait,
       m.phasage,
     )
-    phasage = { boite, entete, titre, lignes }
+    let debut = 0
+    const etapes = parEtape.map((l) => {
+      debut += l.length
+      return { debut: debut - l.length, fin: debut }
+    })
+    phasage = { boite, entete, titre, lignes, etapes }
   }
 
   let legende: MiseEnPage['legende'] = null

@@ -110,17 +110,8 @@ export function modifierCommentaire(liste: Commentaire[], id: string, champs: Ch
 
 // ——— Édition sur l'image ———
 
-// Un double-clic sur un commentaire ouvre son texte à sa place, sur l'image.
-// Entrée valide, Maj+Entrée va à la ligne, Échap annule ; cliquer ailleurs
-// valide aussi.
-export type ActionToucheEdition = 'valider' | 'aLaLigne' | 'annuler' | null
-
-export function actionToucheEdition(touche: string, maj: boolean): ActionToucheEdition {
-  if (touche === 'Escape') return 'annuler'
-  if (touche === 'Enter') return maj ? 'aLaLigne' : 'valider'
-  return null
-}
-
+// Un double-clic sur un commentaire ouvre son texte à sa place, sur l'image
+// (voir textesPlanche.ts, commun à tous les textes de la planche).
 // Le texte tapé sur l'image, validé : la même liste s'il n'a pas changé (rien
 // à annuler), sinon une seule modification (un seul Ctrl+Z).
 export function validerTexteCommentaire(liste: Commentaire[], id: string, texte: string): Commentaire[] {

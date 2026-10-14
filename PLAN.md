@@ -40,11 +40,14 @@ Jamais deux étapes d'avance. Chaque étape est une PR courte qui dit quoi regar
 | 8 | Exports PowerPoint et PDF des images d'un synoptique : une diapositive ou une page par image, textes du bandeau, du créneau et du PHASAGE modifiables dans PowerPoint, page de garde avec cartouche (détail ci-dessous) | un jeu de planches équivalent à l'actuel | **validé** |
 | 9 | Mémoire en ligne (Supabase) : un compte par personne, sur invitation ; chantiers et fonds enregistrés en ligne et partagés par l'équipe ; copie de secours dans le navigateur ; conflits signalés ; page « Équipe » (détail ci-dessous) | on retrouve ses chantiers sur un autre ordinateur, un collègue invité les voit | **fusionnée** |
 | 10 | Outils du synoptique demandés pour le RVB du tunnel : état d'exploitation des voies (hachures, légende, calque), commentaires propres à chaque image, coupes de tronçonnage, changement de voie d'un engin (détail ci-dessous) | le synoptique « RVB tunnel V2 » se construit sans détour : voies interceptées / annoncées / en simultanée, RCT et platelage écrits, coupes visibles, pelles qui passent sur V1 | **en cours** |
+| 12 | Modifier les textes de la planche en double-cliquant dessus : étapes du PHASAGE, titre du créneau, bandeau, libellés des flèches, commentaires (détail ci-dessous) | chaque texte de la planche se corrige à sa place, sans passer par la colonne de droite | **en cours** |
 
 L'étape 8 devait être la dernière ; l'étape 9 a été demandée par le commanditaire une fois
 l'étape 8 validée (« Fais en sorte qu'il y ait une mémoire »). L'étape 10 est née de la
 construction de son premier synoptique réel (RVB du tunnel, voie 2) : il a demandé d'ajouter
-d'un coup les outils qui manquaient. Les autres besoins (vidéo,
+d'un coup les outils qui manquaient. L'étape 12 (« je veux pouvoir modifier les textes en
+cliquant, même dans le phasage ou dans le titre ») est indépendante de l'étape 11 (PowerPoint
+animé, proposée à part et pas encore validée). Les autres besoins (vidéo,
 orthophoto calée, import DXF, 3D en option…) restent à rediscuter.
 
 ### Étape 3 — éléments du plan au calque
@@ -527,6 +530,42 @@ Questions ouvertes de l'étape 10 (choix provisoires en place) :
 - **Couleurs des états d'exploitation** : choisies pour se distinguer des zones (rouge, bleu,
   jaune) ; modifiables dans la page du chantier. Vos habitudes ?
 - **Coupes** : comptées depuis le bout côté Paris / Nord. Faut-il pouvoir partir de l'autre bout ?
+
+### Étape 12 — modifier les textes de la planche en cliquant
+
+Demande du commanditaire : « Je veux pouvoir modifier les textes en cliquant, même dans le
+phasage ou dans le titre. » Quels textes ? « Tout. » Le double-clic qui modifiait déjà un
+commentaire (étape 10) vaut maintenant pour tous les textes de la planche, avec les mêmes règles.
+
+- **Double-clic** (outil Sélection) sur un texte de la planche : il s'ouvre à sa place, même
+  police, même taille, même couleur, sur le fond de son cadre (bleu clair du bandeau, gris du
+  créneau et du PHASAGE, blanc pour une flèche ou un commentaire) :
+  - une **étape du PHASAGE** : seul son texte se tape, son numéro (« 2 – ») reste affiché
+    devant, fixe ; le numéro se change toujours dans le panneau ;
+  - le **titre du créneau** : les heures restent affichées dessous (elles viennent du début et
+    de la fin de l'image et ne se tapent pas ici) ; un créneau sans titre s'ouvre vide ;
+  - le **bandeau** de titre, commun à toutes les images du synoptique ; vide, on double-clique
+    à sa place (au centre, en haut) pour le retaper ;
+  - le **libellé d'une flèche**, le long de la flèche ; double-clic sur le libellé ou sur le
+    trait ; une flèche sans libellé en reçoit un ; il tient sur une ligne ;
+  - un **commentaire**, comme avant.
+- **Entrée** valide, **Maj+Entrée** va à la ligne (sauf libellé de flèche : il valide),
+  **Échap** annule, un clic ailleurs valide. Chaque modification s'annule d'un seul **Ctrl+Z**.
+  Pendant la frappe, aucun raccourci de l'écran (T, Suppr, flèches, Ctrl+Z…) ne se déclenche.
+  Le cadre grandit avec le texte pendant la frappe.
+- Un texte vidé fait comme dans le panneau : l'étape reste, avec son numéro seul ; le
+  bandeau, le titre du créneau et le libellé disparaissent.
+- Le **simple clic** ne change pas (choisir, glisser) ; seul ajout : avec l'outil Texte, un
+  clic sur le bandeau, le créneau ou le PHASAGE n'affiche plus « Cliquez dans le cadre de
+  l'image » (c'est le premier clic du double-clic). Avec l'outil Texte, le double-clic ouvre
+  les commentaires, le bandeau, le créneau et le PHASAGE ; les flèches, avec l'outil Sélection.
+- Les panneaux de droite gardent tous leurs champs. Les exports PowerPoint et PDF reprennent
+  les textes modifiés. Le fichier de chantier ne change pas (version 6).
+
+Limites : les heures du créneau ne se tapent pas sur l'image ; le passage à la ligne pendant
+la frappe peut tomber un mot plus tôt ou plus tard que sur la planche validée ; les en-têtes
+« PHASAGE » et « LÉGENDE » et les lignes de la légende ne se modifient pas (la légende se
+construit d'après l'image).
 
 ## Décisions du commanditaire
 

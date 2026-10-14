@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type PointerEvent as EvenementPointeur } from 'react'
-import { commentaireSousPointeur, deplacerCommentaire, validerTexteCommentaire, type Commentaire } from '../plan/commentaires.ts'
+import { commentaireSousPointeur, deplacerCommentaire, type Commentaire } from '../plan/commentaires.ts'
 import { accrocherVoie, poigneeSousPointeur, zoneSousPointeur } from '../plan/detection.ts'
 import {
   ajouterEngin,
@@ -29,10 +29,11 @@ import { enPoints } from '../plan/dessin.ts'
 import type { Point } from '../plan/projet.ts'
 import { miseEnPage } from '../plan/planche.ts'
 import type { PlanImage } from '../plan/synoptique.ts'
+import { appliquerTexte, champEdition, syntheseEdition, texteDe, texteSousPointeur, type TexteEditable } from '../plan/textesPlanche.ts'
 import { projeterSurPolyligne } from '../plan/trace.ts'
 import { ajusterSurRectangle, deplacer, facteurMolette, versPlan, zoomerAutour, type Vue } from '../plan/vue.ts'
 import { COULEURS } from './couleurs.ts'
-import { EditionCommentaire } from './DessinCommentaires.tsx'
+import { ChampSurPlanche } from './ChampSurPlanche.tsx'
 import { DessinEngin, DessinRame } from './DessinEngins.tsx'
 import { TraceFleche } from './DessinFleches.tsx'
 import { DessinPlanche } from './Planche.tsx'
@@ -44,8 +45,10 @@ import type { EditeurImage } from './useEditeurImage.ts'
 // son état dans le panneau — et par-dessus ses engins et ses rames, qu'on
 // pose, choisit et glisse, et ses flèches, qu'on trace point par point, dont
 // on glisse les points ou toute la flèche. Molette : zoom ; Main, Espace ou
-// clic molette : déplacer la vue. Un double-clic sur un commentaire (outil
-// Sélection ou Texte) ouvre son texte à sa place, sur l'image.
+// clic molette : déplacer la vue. Un double-clic sur un texte de la planche
+// (outil Sélection : commentaire, libellé ou trait d'une flèche, bandeau,
+// titre du créneau, étape du PHASAGE ; outil Texte : les mêmes, sauf les
+// flèches) ouvre ce texte à sa place, sur l'image.
 // Tolérances en pixels d'écran, donc identiques à tout zoom.
 const TOLERANCE_ELEMENT = 6
 const TOLERANCE_ACCROCHE = 12
@@ -65,9 +68,17 @@ type Glisser =
 let compteurGlisser = 0
 let compteurEdition = 0
 
-// Commentaire dont on tape le texte sur l'image : sur quelle image, et le
-// texte en cours (validé d'un coup, en une seule étape d'annulation).
-type Edition = { index: number; id: string; texte: string; ouverture: number }
+// Texte de la planche qu'on tape sur l'image : sur quelle image, lequel, et
+// le texte en cours (validé d'un coup, en une seule étape d'annulation).
+type Edition = { index: number; cible: TexteEditable; texte: string; ouverture: number }
+
+const LIBELLES_EDITION: Record<TexteEditable['genre'], string> = {
+  commentaire: 'Texte du commentaire, sur l’image',
+  fleche: 'Libellé de la flèche, sur l’image',
+  bandeau: 'Bandeau de titre, sur l’image',
+  creneau: 'Titre du créneau, sur l’image',
+  etape: 'Texte de l’étape du PHASAGE, sur l’image',
+}
 
 const dansRectangle = (r: { x: number; y: number; largeur: number; hauteur: number }, p: Point): boolean =>
   p.x >= r.x && p.x <= r.x + r.largeur && p.y >= r.y && p.y <= r.y + r.hauteur
@@ -93,7 +104,10 @@ export function ImageDeTravail({ editeur }: { editeur: EditeurImage }) {
     return () => observateur.disconnect()
   }, [])
 
-  const page = miseEnPage(s, editeur.index, editeur.listes)
+  // Pendant la frappe, la planche est mise en page avec le texte en cours (ses
+  // cadres grandissent avec lui) : la vue ajustée la montre tout entière.
+  const dessine = editionBrute && editionBrute.index === editeur.index ? syntheseEdition(s, editionBrute.index, editionBrute.cible, editionBrute.texte) : s
+  const page = miseEnPage(dessine, editeur.index, editeur.listes)
   const cadre = page.carte
   // Vue « null » = ajustée sur toute la planche (plan, bandeau, créneau, phasage).
   const vue: Vue = editeur.vue ?? ajusterSurRectangle(page.planche, taille, MARGE_ECRAN)
@@ -124,13 +138,16 @@ export function ImageDeTravail({ editeur }: { editeur: EditeurImage }) {
   const unite = uniteFleche(planche)
 
   // Édition sur l'image : seulement sur l'image où elle a commencé, tant que
-  // le commentaire existe et que son calque est modifiable.
+  // le texte existe et, pour un commentaire ou une flèche, que son calque est
+  // modifiable.
   const commentairesActifs = editeur.calqueCommentaires.visible && !editeur.calqueCommentaires.verrouille
+  const calqueActif = (cible: TexteEditable) =>
+    cible.genre === 'commentaire' ? commentairesActifs : cible.genre === 'fleche' ? flechesActives : true
   const edition =
-    editionBrute && editionBrute.index === editeur.index && commentairesActifs && planche.commentaires.some((c) => c.id === editionBrute.id)
+    editionBrute && editionBrute.index === editeur.index && calqueActif(editionBrute.cible) && texteDe(s, editeur.index, editionBrute.cible) !== null
       ? editionBrute
       : null
-  const commentaireEdite = edition ? (planche.commentaires.find((c) => c.id === edition.id) ?? null) : null
+  const champ = edition ? champEdition(s, editeur.index, editeur.listes, edition.cible, edition.texte) : null
   const commentaireSous = (p: Point): string | null =>
     commentairesActifs && dansRectangle(cadre, p) ? commentaireSousPointeur(planche.commentaires, s, p, TOLERANCE_ELEMENT / vue.zoom) : null
   const choisirEtGlisserCommentaire = (id: string, p: Point, ecran: Point, e: EvenementPointeur<SVGSVGElement>) => {
@@ -139,19 +156,26 @@ export function ImageDeTravail({ editeur }: { editeur: EditeurImage }) {
     e.currentTarget.setPointerCapture(e.pointerId)
   }
   const ouvrirEdition = (e: { clientX: number; clientY: number }) => {
-    const id = commentaireSous(versPlan(vue, pointEcran(e)))
-    const c = id ? planche.commentaires.find((x) => x.id === id) : null
-    if (!c) return
-    editeur.choisirCommentaire(c.id)
+    const p = versPlan(vue, pointEcran(e))
+    const cible = texteSousPointeur(s, editeur.index, editeur.listes, p, TOLERANCE_ELEMENT / vue.zoom, {
+      commentaires: commentairesActifs,
+      // Avec l'outil Texte, un clic dans l'image pose un commentaire : les flèches restent à l'outil Sélection.
+      fleches: flechesActives && outil === 'selection',
+    })
+    const texte = cible ? texteDe(s, editeur.index, cible) : null
+    if (!cible || texte === null) return
+    if (cible.genre === 'commentaire') editeur.choisirCommentaire(cible.id)
+    else if (cible.genre === 'fleche') editeur.choisirFleche(cible.id)
+    editeur.setMessage(null)
     const ouverture = ++compteurEdition
     editionOuverte.current = ouverture
-    setEdition({ index: editeur.index, id: c.id, texte: c.texte, ouverture })
+    setEdition({ index: editeur.index, cible, texte, ouverture })
   }
   // Valide (une seule étape d'annulation) ou abandonne le texte tapé.
   const terminerEdition = (garder: boolean) => {
     if (!edition || editionOuverte.current !== edition.ouverture) return
     editionOuverte.current = null
-    if (garder) editeur.modifierCommentaires((liste) => validerTexteCommentaire(liste, edition.id, edition.texte))
+    if (garder) editeur.enregistrerTexte(appliquerTexte(s, edition.index, edition.cible, edition.texte))
     setEdition(null)
   }
 
@@ -189,7 +213,11 @@ export function ImageDeTravail({ editeur }: { editeur: EditeurImage }) {
         return
       }
       if (!dansRectangle(cadre, p)) {
-        editeur.setMessage({ genre: 'erreur', texte: "Cliquez dans le cadre de l'image : ce qui est posé en dehors ne se verrait pas." })
+        // Sur le bandeau, le créneau ou le PHASAGE, pas de message : c'est le
+        // premier clic d'un double-clic qui ouvre ce texte (le message, en
+        // s'affichant, décalerait l'image sous le pointeur).
+        if (!texteSousPointeur(s, editeur.index, editeur.listes, p, 0, { commentaires: false, fleches: false }))
+          editeur.setMessage({ genre: 'erreur', texte: "Cliquez dans le cadre de l'image : ce qui est posé en dehors ne se verrait pas." })
         return
       }
       editeur.poserCommentaire(p)
@@ -395,7 +423,7 @@ export function ImageDeTravail({ editeur }: { editeur: EditeurImage }) {
       {taille.largeur > 0 && (
         <g transform={`translate(${vue.dx} ${vue.dy}) scale(${vue.zoom})`}>
           <DessinPlanche
-            synoptique={s}
+            synoptique={edition ? dessine : s}
             index={editeur.index}
             listes={editeur.listes}
             zoom={vue.zoom}
@@ -403,21 +431,9 @@ export function ImageDeTravail({ editeur }: { editeur: EditeurImage }) {
             zoneChoisie={editeur.zone?.id ?? null}
             flecheChoisie={fleche?.id ?? null}
             commentaireChoisi={editeur.commentaire?.id ?? null}
-            commentaireEnEdition={commentaireEdite?.id ?? null}
+            texteEnEdition={champ ? edition?.cible : null}
             surLaCarte={
               <>
-                {edition && commentaireEdite && (
-                  <EditionCommentaire
-                    key={edition.ouverture}
-                    commentaire={commentaireEdite}
-                    texte={edition.texte}
-                    plan={s}
-                    zoom={vue.zoom}
-                    changer={(texte) => setEdition({ ...edition, texte })}
-                    valider={() => terminerEdition(true)}
-                    annuler={() => terminerEdition(false)}
-                  />
-                )}
                 {apercu && <g style={{ pointerEvents: 'none' }}>{apercu}</g>}
                 {traceFleche}
                 {accroche && (
@@ -434,6 +450,19 @@ export function ImageDeTravail({ editeur }: { editeur: EditeurImage }) {
               </>
             }
           />
+          {/* Le texte qu'on tape, à sa place, par-dessus toute la planche. */}
+          {edition && champ && (
+            <ChampSurPlanche
+              key={edition.ouverture}
+              champ={champ}
+              texte={edition.texte}
+              zoom={vue.zoom}
+              libelle={LIBELLES_EDITION[edition.cible.genre]}
+              changer={(texte) => setEdition({ ...edition, texte })}
+              valider={() => terminerEdition(true)}
+              annuler={() => terminerEdition(false)}
+            />
+          )}
           {poigneesFleche.map(({ cle, point }) => (
             <circle
               key={cle}
