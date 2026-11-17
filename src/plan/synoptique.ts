@@ -1,4 +1,5 @@
 import { creerCartouche, type Cartouche } from './cartouche.ts'
+import type { CoinEchelle } from './coinEchelle.ts'
 import { nouvelIdentifiant } from './edition.ts'
 import type { Rectangle } from './elements.ts'
 import { CALQUE_COMMENTAIRES_PAR_DEFAUT, type Commentaire } from './commentaires.ts'
@@ -99,6 +100,9 @@ export type Synoptique = {
   // Bulles numérotées des engins et des rames sur les images (voir
   // numerosEngins.ts) ; les numéros restent enregistrés sur les engins.
   numerosEngins: boolean
+  // Coin du plan où se place l'échelle graphique, sur toutes les images (voir
+  // coinEchelle.ts) ; en bas à droite par défaut.
+  coinEchelle: CoinEchelle
   // Bandeau de titre, en haut de chaque image (une ou plusieurs lignes) ;
   // vide : pas de bandeau.
   bandeau: string
@@ -243,6 +247,7 @@ export function creerSynoptique(
     afficherLegende: true,
     zonesMasquees: [],
     numerosEngins: true,
+    coinEchelle: 'bas-droite',
     bandeau: '',
     cartouche: creerCartouche(),
     images: [nouvelleImageVide('image-1', 0, demande.fin, contenuDe(projet))],

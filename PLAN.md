@@ -584,6 +584,28 @@ la frappe peut tomber un mot plus tôt ou plus tard que sur la planche validée 
 « PHASAGE » et « LÉGENDE » et les lignes de la légende ne se modifient pas (la légende se
 construit d'après l'image).
 
+### Complément — coin de l'échelle graphique
+
+Retour du commanditaire : la barre d'échelle « 0 — 100 m », toujours en bas à droite du plan,
+tombe parfois sur les voies. Deux façons de faire proposées (placement automatique ou choix du
+coin) : il a choisi **le choix du coin**, pour chaque synoptique.
+
+- Panneau **« Échelle »** de l'écran du synoptique, sous « Numéros des engins » : liste
+  « Échelle : en bas à droite (par défaut) / en bas à gauche / en haut à droite / en haut à
+  gauche ». Réglage **pour tout le synoptique** : image de travail, planche, vignettes,
+  exports PowerPoint et PDF. Chaque changement s'annule d'un Ctrl+Z.
+- La barre reste **dans le cadre du plan** : le bandeau de titre et le créneau sont au-dessus
+  du plan, l'encart PHASAGE et la LÉGENDE au-dessous, elle ne les touche jamais. Mêmes écarts
+  au bord dans les quatre coins. En haut, elle passe **sous les repères « ◀ Nord » et
+  « Sud ▶ »** au lieu de les cacher.
+- En bas à droite, la place est exactement celle d'avant. Champ facultatif `coinEchelle` du
+  synoptique : le fichier reste en **version 6** ; les chantiers enregistrés sans lui (fichier,
+  navigateur ou en ligne) s'ouvrent avec l'échelle en bas à droite ; une valeur illisible
+  aussi. Liste grisée si le synoptique n'a pas d'échelle.
+
+Limite : la barre ne cherche pas les voies elle-même ; si le coin choisi tombe encore sur une
+voie, il faut en choisir un autre.
+
 ## Décisions du commanditaire
 
 - Appareils de voie : **seulement le BS et la communication** pour l'instant, pas d'autres ADV.

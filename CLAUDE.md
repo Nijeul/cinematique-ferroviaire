@@ -76,7 +76,9 @@ src/
               pointeur (textesPlanche.ts), coupes de tronçonnage des zones (coupes.ts), zones
               affichées ou masquées de chaque synoptique (zonesAffichees.ts), opacité du
               fond de plan d'un synoptique, écrite dans toutes ses images (fondSynoptique.ts),
-              numéros des engins affichés ou non sur les images (numerosEngins.ts), légende de
+              numéros des engins affichés ou non sur les images (numerosEngins.ts), coin de
+              l'échelle graphique de chaque synoptique et place de la barre dans le plan, sous
+              les repères Nord / Sud (coinEchelle.ts), légende de
               chaque image construite d'après ce qu'elle montre (legende.ts), mise en page d'une image en planche : bandeau de titre,
               créneau horaire, encart PHASAGE et ses étapes, cadre LÉGENDE en colonnes
               (planche.ts), cartouche de la page de garde (cartouche.ts), exports : choix

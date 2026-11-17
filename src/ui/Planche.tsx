@@ -3,6 +3,7 @@ import { couleurTexteSur, type ReferenceEngin } from '../plan/engins.ts'
 import { uniteFleche } from '../plan/fleches.ts'
 import type { ListesChantier } from '../plan/legende.ts'
 import { BORDS_PLANCHE, COULEURS_PLANCHE, miseEnPage, type EntreePlacee, type LigneMixte, type LigneTexte } from '../plan/planche.ts'
+import { placerEchelle, reperesExtremites } from '../plan/coinEchelle.ts'
 import { enginsAffiches } from '../plan/numerosEngins.ts'
 import { projetDeImage, type Synoptique } from '../plan/synoptique.ts'
 import type { TexteEditable } from '../plan/textesPlanche.ts'
@@ -175,6 +176,7 @@ export function DessinPlanche(props: {
   const planche = projetDeImage(s, image)
   const page = miseEnPage(s, index, props.listes)
   const { carte } = page
+  const echelle = s.echelle ? placerEchelle(carte, s.echelle.pixelsParMetre, s.coinEchelle, reperesExtremites(planche, carte)) : null
   const trait = Math.max(1 / zoom, page.trait)
   const edite = props.texteEnEdition ?? null
   const idEdite = (genre: 'commentaire' | 'fleche') => (edite?.genre === genre ? edite.id : null)
@@ -228,16 +230,18 @@ export function DessinPlanche(props: {
             masque={idEdite('commentaire')}
           />
         )}
-        {/* Échelle graphique de la planche, en bas à droite du plan. */}
-        {s.echelle && (
-          <BarreEchelle
-            x={carte.x + carte.largeur - carte.largeur * 0.015}
-            y={carte.y + carte.hauteur - carte.largeur * 0.015}
-            unitesParMetre={s.echelle.pixelsParMetre}
-            longueurMax={carte.largeur * 0.2}
-            taille={carte.largeur / 90}
-            ancre="droite"
-          />
+        {/* Échelle graphique de la planche, dans le coin du plan choisi pour le synoptique. */}
+        {s.echelle && echelle && (
+          <g data-coin={s.coinEchelle}>
+            <BarreEchelle
+              x={echelle.x}
+              y={echelle.y}
+              unitesParMetre={s.echelle.pixelsParMetre}
+              longueurMax={echelle.longueurMax}
+              taille={echelle.taille}
+              ancre={echelle.ancre}
+            />
+          </g>
         )}
         {props.surLaCarte}
       </g>

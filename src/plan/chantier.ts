@@ -1,4 +1,5 @@
 import { lireCartouche } from './cartouche.ts'
+import { lireCoinEchelle } from './coinEchelle.ts'
 import { ajouterType, creerCatalogue, modifierType, supprimerType, type ChampsType, type DimensionsEngin, type TypeEngin } from './catalogue.ts'
 import type { Resultat } from './echelle.ts'
 import { nomParDefaut, nouvelIdentifiant, remplacerFond } from './edition.ts'
@@ -417,6 +418,7 @@ export function migrerChantier(brut: Chantier): { chantier: Chantier; avis: stri
       bandeau: '',
       ...s,
       cartouche: lireCartouche(s.cartouche),
+      coinEchelle: lireCoinEchelle(s.coinEchelle),
       images: s.images.map((im) => ({
         titre: '',
         heures: 'plage',
