@@ -12,6 +12,7 @@ import {
   numeroEtapePropose,
   supprimerEtape,
 } from '../plan/planche.ts'
+import { COIN_ECHELLE_PAR_DEFAUT, COINS_ECHELLE, estCoinEchelle, modifierCoinEchelle } from '../plan/coinEchelle.ts'
 import { modifierOpaciteFond, pourcentOpaciteFond } from '../plan/fondSynoptique.ts'
 import { modifierNumerosEngins } from '../plan/numerosEngins.ts'
 import type { HeuresCreneau, Synoptique } from '../plan/synoptique.ts'
@@ -555,6 +556,44 @@ export function PanneauNumerosEngins(props: { synoptique: Synoptique; modifier: 
         {s.numerosEngins
           ? 'Les bulles numérotées des engins et des rames s’affichent sur toutes les images, les numéros aussi dans la légende.'
           : 'Aucune bulle numérotée sur les images ni dans les exports ; la légende garde les descriptions, sans numéro. Les numéros restent enregistrés sur chaque engin.'}
+      </p>
+    </Section>
+  )
+}
+
+// ——— Échelle graphique ———
+
+// Coin du plan où se place l'échelle « 0 — 100 m », pour toutes les images du
+// synoptique (l'image de travail, la planche, les vignettes et les exports).
+// Elle reste dans le cadre du plan, sous le bandeau et le créneau.
+export function PanneauEchelle(props: { synoptique: Synoptique; modifier: Modifier }) {
+  const { synoptique: s, modifier } = props
+  const sansEchelle = !s.echelle
+  return (
+    <Section titre="Échelle" testid="panneau-echelle">
+      <label style={styles.ligne}>
+        <span style={{ flexShrink: 0 }}>Échelle</span>
+        <select
+          value={s.coinEchelle}
+          disabled={sansEchelle}
+          aria-label="Coin de l'échelle"
+          style={{ ...styles.champ, flex: 1 }}
+          onChange={(e) => {
+            if (estCoinEchelle(e.target.value)) modifier(modifierCoinEchelle(s, e.target.value))
+          }}
+        >
+          {COINS_ECHELLE.map((c) => (
+            <option key={c.coin} value={c.coin}>
+              {c.libelle.toLowerCase()}
+              {c.coin === COIN_ECHELLE_PAR_DEFAUT ? ' (par défaut)' : ''}
+            </option>
+          ))}
+        </select>
+      </label>
+      <p style={styles.discret}>
+        {sansEchelle
+          ? "Ce synoptique n'a pas d'échelle : aucune barre d'échelle n'est dessinée."
+          : 'Pour toutes les images de ce synoptique et ses exports. La barre reste dans le cadre du plan, sans toucher au bandeau, au créneau, au PHASAGE ni à la légende.'}
       </p>
     </Section>
   )

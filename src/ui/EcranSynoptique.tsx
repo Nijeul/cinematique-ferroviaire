@@ -31,7 +31,16 @@ import { CalqueEngins, ChoixType, RameAPoser } from './PanneauEngins.tsx'
 import { CalqueFleches, ChoixTypeFleche, PanneauFleche } from './PanneauFleches.tsx'
 import { CalqueCommentaires, PanneauCommentaire } from './PanneauCommentaires.tsx'
 import { PanneauExploitation } from './PanneauExploitation.tsx'
-import { PanneauCreneau, PanneauLegende, PanneauPhasage, PanneauFondSynoptique, PanneauNumerosEngins, PanneauZone, PanneauZonesAffichees } from './PanneauImage.tsx'
+import {
+  PanneauCreneau,
+  PanneauEchelle,
+  PanneauLegende,
+  PanneauPhasage,
+  PanneauFondSynoptique,
+  PanneauNumerosEngins,
+  PanneauZone,
+  PanneauZonesAffichees,
+} from './PanneauImage.tsx'
 import { DessinPlanche } from './Planche.tsx'
 import { POLICE, styleBouton, styleBoutonDanger, styleBoutonPrincipal, styleChamp, styleDiscret, styleTitreSection } from './styles.ts'
 import type { Message } from './useEditeur.ts'
@@ -528,6 +537,7 @@ export function EcranSynoptique(props: {
           <PanneauZonesAffichees synoptique={s} modifier={(suivant, cle = null) => modifier(suivant, index, cle)} />
           <PanneauFondSynoptique synoptique={s} index={index} modifier={(suivant, cle = null) => modifier(suivant, index, cle)} />
           <PanneauNumerosEngins synoptique={s} modifier={(suivant, cle = null) => modifier(suivant, index, cle)} />
+          <PanneauEchelle synoptique={s} modifier={(suivant, cle = null) => modifier(suivant, index, cle)} />
           <Section titre={`Image ${index + 1} sur ${s.images.length}`}>
             <ChampInstant libelle="Début" valeur={instantDepuisT0(s.t0, image.debut)} changer={horaireImage('debut')} />
             <ChampInstant libelle="Fin" valeur={instantDepuisT0(s.t0, image.fin)} changer={horaireImage('fin')} />

@@ -1,3 +1,4 @@
+import { cadreBarreEchelle } from '../plan/coinEchelle.ts'
 import { formaterMetres, longueurGraduee } from '../plan/echelle.ts'
 import {
   couleurTexteSur,
@@ -191,14 +192,14 @@ export function BarreEchelle(props: {
   const x0 = props.ancre === 'droite' ? props.x - longueur : props.x
   const y = props.y
   const trait = taille * 0.09
-  const marge = taille * 0.5
+  const cadre = cadreBarreEchelle({ x: props.x, y, ancre: props.ancre, taille, longueur })
   return (
     <g data-testid="echelle-graphique" data-metres={metres} style={{ pointerEvents: 'none', userSelect: 'none' }}>
       <rect
-        x={x0 - marge}
-        y={y - h - taille * 1.45}
-        width={longueur + 2 * marge}
-        height={h + taille * 1.45 + marge * 0.8}
+        x={cadre.x}
+        y={cadre.y}
+        width={cadre.largeur}
+        height={cadre.hauteur}
         rx={taille * 0.25}
         fill="#ffffff"
         fillOpacity={0.88}
