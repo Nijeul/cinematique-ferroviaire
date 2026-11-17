@@ -124,7 +124,7 @@ describe('engin posé sur une voie', () => {
     expect(s.longueur).toBeCloseTo(79.6)
     expect(s.depassement).toBeCloseTo((39.8 - 20) / 4)
     expect(avertissementDepassement('« R39 »', projet.voies[0], s.depassement)).toBe(
-      "« R39 » dépasse l'extrémité de la voie « V1 » de 4,95 m : déplacez-la ou raccourcissez-la.",
+      "« R39 » dépasse l'extrémité de la voie « V1 » de 4,95 m : la partie qui dépasse est dessinée dans le prolongement de la voie.",
     )
     expect(avertissementDepassement('x', projet.voies[0], 0)).toBeNull()
   })

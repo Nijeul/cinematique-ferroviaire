@@ -133,13 +133,16 @@ function lireVoie(v: Brut, libelle: string, erreurs: string[]): Voie | null {
   }
 }
 
-// Vérifie qu'une abscisse est bien sur la voie désignée.
+// Vérifie qu'une abscisse est bien sur la voie désignée. Avec `deborde`, elle
+// peut être au-delà d'un bout (milieu d'un engin ou d'une rame garé en partie
+// hors plan) : elle est lue telle quelle, jamais ramenée sur la voie.
 function verifierSurVoie(
   voieId: unknown,
   abscisses: [string, unknown][],
   voies: Map<string, Voie>,
   libelle: string,
   erreurs: string[],
+  deborde = false,
 ): void {
   if (typeof voieId !== 'string' || voieId === '') {
     erreurs.push(`${libelle} : la voie n'est pas indiquée.`)
@@ -153,7 +156,7 @@ function verifierSurVoie(
   const longueur = longueurPolyligne(voie.points)
   for (const [quoi, s] of abscisses) {
     if (!estNombre(s)) erreurs.push(`${libelle} : ${quoi} n'est pas un nombre.`)
-    else if (s < -MARGE_ABSCISSE || s > longueur + MARGE_ABSCISSE) {
+    else if (!deborde && (s < -MARGE_ABSCISSE || s > longueur + MARGE_ABSCISSE)) {
       erreurs.push(`${libelle} : ${quoi} (${Math.round(s)}) est hors de la voie « ${voie.nom} » (longueur ${Math.round(longueur)}).`)
     }
   }
@@ -443,7 +446,7 @@ function lireEngin(e: Brut, libelleBrut: string, erreurs: string[], voies: Map<s
   const p = e.position
   let position: Engin['position'] | null = null
   if (estObjet(p) && p.genre === 'voie') {
-    verifierSurVoie(p.voieId, [["l'abscisse", p.abscisse]], voies, libelle, erreurs)
+    verifierSurVoie(p.voieId, [["l'abscisse", p.abscisse]], voies, libelle, erreurs, true)
     position = { genre: 'voie', voieId: p.voieId as string, abscisse: p.abscisse as number }
   } else if (estObjet(p) && p.genre === 'libre') {
     if (!estNombre(p.x) || !estNombre(p.y) || !estNombre(p.angle)) erreurs.push(`${libelle} : position (x, y, angle) invalide.`)
@@ -467,7 +470,7 @@ function lireRame(r: Brut, libelle: string, erreurs: string[], voies: Map<string
   const avant = erreurs.length
   if (typeof r.nom !== 'string') erreurs.push(`${libelle} : nom manquant.`)
   verifierCouleur(r.couleur, libelle, erreurs)
-  verifierSurVoie(r.voieId, [["l'abscisse", r.abscisse]], voies, libelle, erreurs)
+  verifierSurVoie(r.voieId, [["l'abscisse", r.abscisse]], voies, libelle, erreurs, true)
   if (r.sens !== 1 && r.sens !== -1) erreurs.push(`${libelle} : sens illisible (1 ou -1 attendu).`)
   if (r.description !== undefined && typeof r.description !== 'string') erreurs.push(`${libelle} : description illisible.`)
   const brutes = Array.isArray(r.vehicules) ? r.vehicules : []
