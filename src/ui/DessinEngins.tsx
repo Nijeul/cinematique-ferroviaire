@@ -117,9 +117,10 @@ export function DessinRame(props: { projet: Planche; rame: Rame; choisie: boolea
   if (!s) return null
   const rayon = rayonPastille(projet)
   const taille = tailleNom(epaisseurParDefaut(projet)) * 0.72
-  // Étiquette au milieu de la rame, à l'extérieur de la courbe, sans
-  // chevaucher de véhicule ; sous une rame droite (la pastille est au-dessus
-  // de la tête).
+  // Étiquette au milieu de la partie de la rame qui est sur la voie, à
+  // l'extérieur de la courbe, sans chevaucher de véhicule ; sous une rame
+  // droite (la pastille est au-dessus de la tête, ou du premier véhicule sur
+  // la voie quand la tête déborde hors plan).
   const texte = etiquetteRame(rame)
   const etiquette = positionEtiquetteRame(s, taille, largeurTexteEstimee(texte, taille, true))
   return (
@@ -145,7 +146,7 @@ export function DessinRame(props: { projet: Planche; rame: Rame; choisie: boolea
         </text>
       )}
       {rame.numero.trim() !== '' && (
-        <Pastille centre={positionPastille(s.vehicules[0], rayon)} rayon={rayon} couleur={rame.couleur} texte={rame.numero.trim()} />
+        <Pastille centre={positionPastille(s.vehicules[s.premierSurVoie], rayon)} rayon={rayon} couleur={rame.couleur} texte={rame.numero.trim()} />
       )}
     </g>
   )

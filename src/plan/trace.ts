@@ -69,6 +69,27 @@ export function projeterSurPolyligne(points: Point[], p: Point): Projection {
   return meilleure
 }
 
+// Comme `projeterSurPolyligne`, mais la voie est prolongée tout droit au-delà
+// de ses deux bouts, dans la direction de son premier et de son dernier
+// segment : l'abscisse peut être négative ou dépasser la longueur de la voie.
+// Sert à glisser un engin ou une rame au-delà du bout de sa voie (hors plan).
+export function projeterSurPolyligneProlongee(points: Point[], p: Point): Projection {
+  let meilleure = projeterSurPolyligne(points, p)
+  const longueur = longueurPolyligne(points)
+  if (longueur === 0) return meilleure
+  const prolonger = (s: number, signe: 1 | -1) => {
+    const { point, direction } = pointAAbscisse(points, s)
+    const au = (p.x - point.x) * direction.x + (p.y - point.y) * direction.y
+    if (au * signe <= 0) return
+    const pied = { x: point.x + direction.x * au, y: point.y + direction.y * au }
+    const d = longueurSegment(p, pied)
+    if (d < meilleure.distance) meilleure = { abscisse: s + au, distance: d, point: pied }
+  }
+  prolonger(0, -1)
+  prolonger(longueur, 1)
+  return meilleure
+}
+
 // Portion du tracé entre deux abscisses (dans n'importe quel ordre), coudes
 // compris : le point de départ, les points intermédiaires, le point d'arrivée.
 export function sousPolyligne(points: Point[], debut: number, fin: number): Point[] {

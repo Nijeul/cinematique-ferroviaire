@@ -30,7 +30,7 @@ import type { Point } from '../plan/projet.ts'
 import { miseEnPage } from '../plan/planche.ts'
 import type { PlanImage } from '../plan/synoptique.ts'
 import { champEdition, syntheseEdition, texteDe, texteSousPointeur, verifierTexte, type TexteEditable } from '../plan/textesPlanche.ts'
-import { projeterSurPolyligne } from '../plan/trace.ts'
+import { projeterSurPolyligneProlongee } from '../plan/trace.ts'
 import { ajusterSurRectangle, deplacer, facteurMolette, versPlan, zoomerAutour, type Vue } from '../plan/vue.ts'
 import { COULEURS } from './couleurs.ts'
 import { ChampSurPlanche } from './ChampSurPlanche.tsx'
@@ -288,7 +288,8 @@ export function ImageDeTravail({ editeur }: { editeur: EditeurImage }) {
   }
 
   // Nouvel état pendant qu'on glisse, calculé depuis l'état de départ : un
-  // engin sur voie et une rame glissent le long de leur voie, un engin libre
+  // engin sur voie et une rame glissent le long de leur voie, prolongée tout
+  // droit au-delà de ses bouts (ils peuvent déborder hors plan), un engin libre
   // se déplace ; la poignée ronde tourne un engin libre (Maj : pas de 15°).
   const pendantGlisser = (g: Extract<Glisser, { genre: 'rotation' | 'corps' }>, p: Point, maj: boolean): PlanImage => {
     const { origine, ref } = g
@@ -303,13 +304,13 @@ export function ImageDeTravail({ editeur }: { editeur: EditeurImage }) {
       if (!engin) return origine
       if (engin.position.genre !== 'voie') return glisserEnginLibre(origine, ref.id, { x: p.x - g.depart.x, y: p.y - g.depart.y })
       const points = voieDe(engin.position.voieId)
-      const glisse = projeterSurPolyligne(points, p).abscisse - projeterSurPolyligne(points, g.depart).abscisse
+      const glisse = projeterSurPolyligneProlongee(points, p).abscisse - projeterSurPolyligneProlongee(points, g.depart).abscisse
       return placerEnginSurVoie(origine, ref.id, engin.position.abscisse + glisse)
     }
     const rame = origine.rames.find((r) => r.id === ref.id)
     if (!rame) return origine
     const points = voieDe(rame.voieId)
-    const glisse = projeterSurPolyligne(points, p).abscisse - projeterSurPolyligne(points, g.depart).abscisse
+    const glisse = projeterSurPolyligneProlongee(points, p).abscisse - projeterSurPolyligneProlongee(points, g.depart).abscisse
     return placerRame(origine, ref.id, rame.abscisse + glisse)
   }
 

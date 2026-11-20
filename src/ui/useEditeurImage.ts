@@ -246,7 +246,7 @@ export function useEditeurImage(args: {
     const depasse = avertissementDepassement(`« ${typeChoisi.modele} »`, voie, silhouetteEngin(suivante, engin)?.depassement ?? 0)
     setMessage(
       depasse
-        ? { genre: 'erreur', texte: depasse }
+        ? { genre: 'info', texte: depasse }
         : accroche
           ? null
           : { genre: 'info', texte: `« ${typeChoisi.modele} » posé hors voie : tournez-le avec la poignée ronde ou le champ « Angle » du panneau.` },
@@ -266,7 +266,7 @@ export function useEditeurImage(args: {
     const rame = suivante.rames.find((r) => r.id === id)!
     const voie = planche.voies.find((v) => v.id === accroche.voieId)
     const depasse = avertissementDepassement(`La rame « ${rame.nom} »`, voie, silhouetteRame(suivante, rame)?.depassement ?? 0)
-    setMessage(depasse ? { genre: 'erreur', texte: depasse } : null)
+    setMessage(depasse ? { genre: 'info', texte: depasse } : null)
   }
 
   const supprimer = (ref: ReferenceEngin) => {

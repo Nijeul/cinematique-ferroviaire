@@ -61,10 +61,11 @@ src/
               enregistrés avant la correction de l'étape 5 ; chantiers et synoptiques des
               étapes 4 à 7 complétés), temps (minutes depuis T0 → « Ve/Sa 01h30 », et heures tapées « 22h30 – 01h15 » → minutes), adresses
               des écrans, vue et cadrage, géométrie du tracé et le long des voies (dont le
-              tracé parallèle, trace.ts), zones / appareils / cadres / textes, échelle,
+              tracé parallèle et la voie prolongée au-delà de ses bouts, trace.ts), zones / appareils / cadres / textes, échelle,
               catalogue d'engins (liste par défaut dans catalogue.ts), engins et rames à
               l'échelle posés dans les images d'un synoptique, avec leur description pour la
-              légende, et leur changement de voie (engins.ts, synoptique.ts), états de la voie d'un chantier (liste par
+              légende, leur débordement au-delà d'un bout de voie (au moins 10 m restent
+              dessus) et leur changement de voie (engins.ts, synoptique.ts), états de la voie d'un chantier (liste par
               défaut et texture ballast dans etatsVoie.ts), état et avancement partiel de
               chaque zone dans une image (etatsZones.ts), types de flèches d'un chantier (liste
               par défaut) et flèches des images : pointes, double trait, contrainte Maj,

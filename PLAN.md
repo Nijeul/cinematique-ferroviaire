@@ -606,6 +606,32 @@ coin) : il a choisi **le choix du coin**, pour chaque synoptique.
 Limite : la barre ne cherche pas les voies elle-même ; si le coin choisi tombe encore sur une
 voie, il faut en choisir un autre.
 
+### Complément — rames et engins au-delà du bout de la voie
+
+Demande du commanditaire : « Modifie pour que les trains ne soient plus bloqués. Je ne peux pas
+mettre le TTX sur VZ comme je veux. » Un TTX de 400 m garé à quai sur une voie de 188 m restait
+bloqué, son milieu ne pouvant pas dépasser le bout de la voie : la queue restait sur le BS.
+
+- Une rame (et un engin sur voie) se glisse **au-delà d'un bout de sa voie**, typiquement hors
+  plan. Seule limite : **au moins 10 m restent sur la voie** (la moitié d'un engin de moins de
+  20 m, qui garde donc son milieu sur la voie, comme avant). Au glisser, la rame suit la souris
+  le long de la voie **prolongée tout droit**, jusqu'à cette limite.
+- La partie qui dépasse est dessinée dans le prolongement droit de la voie (comme avant) et
+  coupée par le cadre de l'image, à l'écran comme dans les exports.
+- L'étiquette « Rame 1 — 253,3 m » se place au milieu de la partie **sur la voie** ; la
+  pastille passe sur le premier véhicule entièrement sur la voie quand la tête déborde : elles
+  restent sur la planche.
+- Le « ⚠ » de l'étiquette, le contour rouge pointillé des véhicules qui dépassent et
+  l'avertissement du panneau sont gardés ; l'avertissement ne demande plus de déplacer la rame
+  (« la partie qui dépasse est dessinée dans le prolongement de la voie »).
+- Changer de voie garde la place de la rame, débordement compris, si la nouvelle voie la porte ;
+  sinon elle est ramenée à la limite. Une rame recomposée plus courte est rapprochée de la voie.
+- Lecture des fichiers (version 6, inchangée) : le milieu d'un engin ou d'une rame peut être
+  hors de la voie ; il est lu tel quel, jamais ramené. Les zones et les appareils restent sur
+  leur voie.
+
+Question ouverte : garder le « ⚠ » et le contour rouge quand le débordement est voulu ?
+
 ## Décisions du commanditaire
 
 - Appareils de voie : **seulement le BS et la communication** pour l'instant, pas d'autres ADV.

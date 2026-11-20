@@ -4,7 +4,7 @@ import { formaterMetres, metresVersPlan, planVersMetres } from './echelle.ts'
 import { nomParDefaut, nouvelIdentifiant } from './edition.ts'
 import { normaleHaut, tailleNom } from './geometrie.ts'
 import { epaisseurParDefaut, type Point, type Projet, type Voie } from './projet.ts'
-import { bornerAbscisse, longueurPolyligne, pointAAbscisse, projeterSurPolyligne } from './trace.ts'
+import { longueurPolyligne, pointAAbscisse, projeterSurPolyligneProlongee } from './trace.ts'
 
 // Engins et rames à l'échelle, posés dans une image de synoptique (jamais sur
 // le plan, qui reste « juste un plan ») : la longueur dessinée est exactement
@@ -84,6 +84,40 @@ export function pointEtendu(points: Point[], abscisse: number): Point {
   return { x: point.x + direction.x * auDela, y: point.y + direction.y * auDela }
 }
 
+// Où l'on peut placer le milieu d'un engin ou d'une rame sur sa voie. Il
+// peut déborder au-delà d'un bout de la voie (un TTX de 400 m garé sur une
+// voie de 188 m, la tête hors plan) : la partie qui dépasse est dessinée
+// dans le prolongement droit de la voie. Seule limite : qu'il en reste au
+// moins `GARDE_SUR_VOIE` mètres sur la voie, ou la moitié d'un engin plus
+// court que le double (comme avant : son milieu reste sur la voie), pour
+// qu'il ne disparaisse jamais complètement.
+export const GARDE_SUR_VOIE = 10
+
+// Bornes du milieu (unités du plan) pour un objet de `longueur` sur une voie
+// de `longueurVoie`, dont `garde` au moins doit rester sur la voie. Sans
+// longueur (pas d'échelle), le milieu reste sur la voie.
+export function bornesMilieu(longueurVoie: number, longueur: number, garde: number): { min: number; max: number } {
+  const demi = Math.max(0, longueur) / 2
+  const g = Math.min(Math.max(0, garde), demi)
+  return { min: g - demi, max: longueurVoie - g + demi }
+}
+
+// Milieu ramené dans ces bornes.
+export function bornerMilieu(points: Point[], abscisse: number, longueur: number, garde: number): number {
+  const { min, max } = bornesMilieu(longueurPolyligne(points), longueur, garde)
+  if (!Number.isFinite(abscisse)) return Math.min(max, Math.max(min, 0))
+  return Math.min(max, Math.max(min, abscisse))
+}
+
+const pointsDe = (projet: PlanEngins, voieId: string): Point[] => projet.voies.find((v) => v.id === voieId)?.points ?? []
+
+// Longueur à l'échelle (unités du plan) ; 0 sans échelle.
+const aEchelle = (projet: Pick<Projet, 'echelle'>, metres: number): number => (projet.echelle ? metresVersPlan(projet.echelle, metres) : 0)
+
+// Milieu d'un objet de `metres` de long, borné sur la voie `voieId`.
+const bornerSurVoie = (projet: PlanEngins, voieId: string, abscisse: number, metres: number): number =>
+  bornerMilieu(pointsDe(projet, voieId), abscisse, aEchelle(projet, metres), aEchelle(projet, GARDE_SUR_VOIE))
+
 export type Pose = { centre: Point; direction: Point }
 
 // Objet de longueur donnée dont le milieu est à l'abscisse `s` : milieu sur la
@@ -151,9 +185,9 @@ function silhouette(pose: Pose, longueur: number, largeur: number, depassement: 
 }
 
 // Longueur (unités du plan) qui sort de la voie, pour un objet de l'abscisse
-// `debut` à `fin`.
+// `debut` à `fin` (toute sa longueur s'il est entièrement au-delà d'un bout).
 const horsVoie = (debut: number, fin: number, longueurVoie: number): number =>
-  Math.max(0, -debut) + Math.max(0, fin - longueurVoie)
+  fin - debut - Math.max(0, Math.min(fin, longueurVoie) - Math.max(debut, 0))
 
 const MARGE = 1e-6
 
@@ -187,8 +221,13 @@ export type SilhouetteRame = {
   // Mètres : longueur totale, et ce qui sort de la voie.
   longueur: number
   depassement: number
-  // Milieu de la rame (pour son étiquette).
+  // Milieu de la partie de la rame qui est sur la voie (pour son étiquette,
+  // qui reste ainsi sur la planche quand la rame déborde hors plan).
   milieu: Pose
+  // Véhicule qui porte la pastille : la tête, sauf si elle déborde ; alors
+  // le premier véhicule, depuis la tête, entièrement sur la voie (à défaut,
+  // le premier qui y touche), pour que la pastille reste sur la planche.
+  premierSurVoie: number
 }
 
 // Abscisse du milieu de chaque véhicule (unités du plan), de la tête à la
@@ -225,11 +264,16 @@ export function silhouetteRame(projet: PlanEngins, rame: Rame): SilhouetteRame |
   const longueur = longueurRame(rame.vehicules)
   const total = metresVersPlan(echelle, longueur)
   const dehors = horsVoie(rame.abscisse - total / 2, rame.abscisse + total / 2, longueurVoie)
+  const debut = Math.max(0, rame.abscisse - total / 2)
+  const fin = Math.min(longueurVoie, rame.abscisse + total / 2)
+  const entier = vehicules.findIndex((v) => v.depassement === 0)
+  const premier = entier >= 0 ? entier : vehicules.findIndex((v) => v.longueur - metresVersPlan(echelle, v.depassement) > MARGE)
   return {
     vehicules,
     longueur,
     depassement: dehors > MARGE ? planVersMetres(echelle, dehors) : 0,
-    milieu: poseSurVoie(voie.points, rame.abscisse, Math.min(total, longueurVoie)),
+    milieu: fin - debut > MARGE ? poseSurVoie(voie.points, (debut + fin) / 2, fin - debut) : poseSurVoie(voie.points, rame.abscisse, Math.min(total, longueurVoie)),
+    premierSurVoie: Math.max(0, premier),
   }
 }
 
@@ -245,10 +289,12 @@ export function texteComposition(vehicules: Vehicule[]): string {
 // « Rame 1 — 213,5 m »
 export const etiquetteRame = (rame: Rame): string => `${rame.nom} — ${formaterMetres(longueurRame(rame.vehicules))}`
 
-// « La rame dépasse l'extrémité de la voie « V2 » de 12,4 m. »
+// « La rame « TTX » dépasse l'extrémité de la voie « VZ » de 212 m : la partie
+// qui dépasse est dessinée dans le prolongement de la voie. » Le débordement
+// est permis (une rame garée la tête hors plan) : c'est une information.
 export function avertissementDepassement(quoi: string, voie: Pick<Voie, 'nom'> | undefined, depassement: number): string | null {
   if (!(depassement > 0)) return null
-  return `${quoi} dépasse l'extrémité de la voie « ${voie?.nom ?? '?'} » de ${formaterMetres(depassement)} : déplacez-la ou raccourcissez-la.`
+  return `${quoi} dépasse l'extrémité de la voie « ${voie?.nom ?? '?'} » de ${formaterMetres(depassement)} : la partie qui dépasse est dessinée dans le prolongement de la voie.`
 }
 
 // Côté de la tête d'une rame d'après les extrémités du plan (« Nord »…) ;
@@ -316,13 +362,11 @@ export function changerNombre(groupes: Groupe[], i: number, nombre: number): Gro
 
 // ——— Création et modification ———
 
-const pointsDe = (projet: PlanEngins, voieId: string): Point[] => projet.voies.find((v) => v.id === voieId)?.points ?? []
-
 export function ajouterEngin<P extends Planche>(projet: P, type: TypeEngin, position: PositionEngin): { planche: P; id: string } {
   const id = nouvelIdentifiant(projet.engins, 'engin')
   const placee: PositionEngin =
     position.genre === 'voie'
-      ? { ...position, abscisse: bornerAbscisse(pointsDe(projet, position.voieId), position.abscisse) }
+      ? { ...position, abscisse: bornerSurVoie(projet, position.voieId, position.abscisse, type.longueur) }
       : { ...position, angle: normaliserAngle(position.angle) }
   const engin: Engin = { id, typeId: type.id, type: dimensionsDe(type), couleur: type.couleur, numero: '', description: '', position: placee }
   return { id, planche: { ...projet, engins: [...projet.engins, engin] } }
@@ -332,13 +376,14 @@ export function modifierEngin<P extends Planche>(projet: P, id: string, champs: 
   return { ...projet, engins: remplacer(projet.engins, id, (e) => ({ ...e, ...champs })) }
 }
 
-// Engin sur une voie : nouvelle abscisse de son milieu, ramenée sur la voie.
+// Engin sur une voie : nouvelle abscisse de son milieu ; il peut déborder au-delà
+// d'un bout de la voie, tant qu'il en reste un bout dessus (`bornesMilieu`).
 export function placerEnginSurVoie<P extends Planche>(projet: P, id: string, abscisse: number): P {
   return {
     ...projet,
     engins: remplacer(projet.engins, id, (e) =>
       e.position.genre === 'voie'
-        ? { ...e, position: { ...e.position, abscisse: bornerAbscisse(pointsDe(projet, e.position.voieId), abscisse) } }
+        ? { ...e, position: { ...e.position, abscisse: bornerSurVoie(projet, e.position.voieId, abscisse, e.type.longueur) } }
         : e,
     ),
   }
@@ -373,7 +418,7 @@ export function changerVoieEngin<P extends Planche>(projet: P, id: string, voieI
   const voie = voieId === null ? null : projet.voies.find((v) => v.id === voieId)
   if (!pose || (voieId !== null && !voie)) return projet
   const position: PositionEngin = voie
-    ? { genre: 'voie', voieId: voie.id, abscisse: projeterSurPolyligne(voie.points, pose.centre).abscisse }
+    ? { genre: 'voie', voieId: voie.id, abscisse: bornerSurVoie(projet, voie.id, projeterSurPolyligneProlongee(voie.points, pose.centre).abscisse, engin.type.longueur) }
     : { genre: 'libre', x: pose.centre.x, y: pose.centre.y, angle: normaliserAngle(angleDe(pose.direction)) }
   return { ...projet, engins: remplacer(projet.engins, id, (e) => ({ ...e, position })) }
 }
@@ -385,8 +430,10 @@ export function changerVoieRame<P extends Planche>(projet: P, id: string, voieId
   const depart = rame && projet.voies.find((v) => v.id === rame.voieId)
   const arrivee = projet.voies.find((v) => v.id === voieId)
   if (!rame || !depart || !arrivee || rame.voieId === voieId) return projet
-  const avant = pointAAbscisse(depart.points, bornerAbscisse(depart.points, rame.abscisse))
-  const abscisse = projeterSurPolyligne(arrivee.points, avant.point).abscisse
+  // Milieu de la rame, même s'il est au-delà du bout de la voie de départ :
+  // elle garde sa place, débordement compris, si la voie d'arrivée la porte.
+  const avant = { point: pointEtendu(depart.points, rame.abscisse), direction: pointAAbscisse(depart.points, rame.abscisse).direction }
+  const abscisse = bornerSurVoie(projet, voieId, projeterSurPolyligneProlongee(arrivee.points, avant.point).abscisse, longueurRame(rame.vehicules))
   const apres = pointAAbscisse(arrivee.points, abscisse)
   // Sens de la tête vu sur le plan : il ne change pas, même si la nouvelle
   // voie a été tracée dans l'autre sens.
@@ -438,7 +485,7 @@ export function angleVers(centre: Point, p: Point, pas = 0): number {
 export function ajouterRame<P extends Planche>(projet: P, vehicules: Vehicule[], voieId: string, abscisse: number): { planche: P; id: string } {
   const id = nouvelIdentifiant(projet.rames, 'rame')
   const points = pointsDe(projet, voieId)
-  const s = bornerAbscisse(points, abscisse)
+  const s = bornerSurVoie(projet, voieId, abscisse, longueurRame(vehicules))
   const rame: Rame = {
     id,
     nom: nomParDefaut(projet.rames, 'Rame'),
@@ -457,10 +504,12 @@ export function modifierRame<P extends Planche>(projet: P, id: string, champs: P
   return { ...projet, rames: remplacer(projet.rames, id, (r) => ({ ...r, ...champs })) }
 }
 
+// Nouvelle abscisse du milieu de la rame ; elle peut déborder au-delà d'un
+// bout de sa voie (hors plan), tant qu'il en reste un bout dessus.
 export function placerRame<P extends Planche>(projet: P, id: string, abscisse: number): P {
   return {
     ...projet,
-    rames: remplacer(projet.rames, id, (r) => ({ ...r, abscisse: bornerAbscisse(pointsDe(projet, r.voieId), abscisse) })),
+    rames: remplacer(projet.rames, id, (r) => ({ ...r, abscisse: bornerSurVoie(projet, r.voieId, abscisse, longueurRame(r.vehicules)) })),
   }
 }
 
@@ -469,10 +518,18 @@ export function inverserRame<P extends Planche>(projet: P, id: string): P {
   return { ...projet, rames: remplacer(projet.rames, id, (r) => ({ ...r, sens: r.sens === 1 ? -1 : 1 })) }
 }
 
-// Nouvelle composition d'une rame (au moins un véhicule), à la même place.
+// Nouvelle composition d'une rame (au moins un véhicule), à la même place
+// (rapprochée de la voie si, raccourcie, elle n'y serait plus).
 export function composerRame<P extends Planche>(projet: P, id: string, vehicules: Vehicule[]): P {
   if (vehicules.length === 0) return projet
-  return { ...projet, rames: remplacer(projet.rames, id, (r) => ({ ...r, vehicules: vehicules.map((v) => ({ ...v, type: { ...v.type } })) })) }
+  return {
+    ...projet,
+    rames: remplacer(projet.rames, id, (r) => ({
+      ...r,
+      abscisse: bornerSurVoie(projet, r.voieId, r.abscisse, longueurRame(vehicules)),
+      vehicules: vehicules.map((v) => ({ ...v, type: { ...v.type } })),
+    })),
+  }
 }
 
 // ——— Pastille et libellé ———
